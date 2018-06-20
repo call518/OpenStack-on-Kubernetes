@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+ name: oaas
+spec:
+ containers:
+ - name: oaas
+   image: call518/oaas
+   ports:
+   - containerPort: 80

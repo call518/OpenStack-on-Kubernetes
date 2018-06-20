@@ -8,7 +8,7 @@ spec:
   ports:
   - port: 3306
     name: mysql
-  clusterIP: None
+  #clusterIP: None
   #type: LoadBalancer
   selector:
     app: galera
