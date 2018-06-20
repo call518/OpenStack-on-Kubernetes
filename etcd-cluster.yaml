@@ -21,6 +21,17 @@ metadata:
     etcd_node: etcd0
   name: etcd0
 spec:
+  terminationGracePeriodSeconds: 10
+  affinity:
+     podAntiAffinity:
+       requiredDuringSchedulingIgnoredDuringExecution:
+       - labelSelector:
+           matchExpressions:
+           - key: "app"
+             operator: In
+             values:
+             - etcd
+         topologyKey: "kubernetes.io/hostname"
   containers:
   - command:
     - /usr/local/bin/etcd
