@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: datadir-mongo-0
+  name: pvc-mongodb-datadir-mongodb-0
 spec:
   accessModes:
     - ReadWriteOnce
@@ -10,7 +10,7 @@ spec:
       storage: 10Gi
   selector:
     matchLabels:
-      app: mongo
+      app: mongodb
       podindex: "0"
 
 ---
@@ -18,7 +18,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: datadir-mongo-1
+  name: pvc-mongodb-datadir-mongodb-1
 spec:
   accessModes:
     - ReadWriteOnce
@@ -27,7 +27,7 @@ spec:
       storage: 10Gi
   selector:
     matchLabels:
-      app: mongo
+      app: mongodb
       podindex: "1"
 
 ---
@@ -35,7 +35,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: datadir-mongo-2
+  name: pvc-mongodb-datadir-mongodb-2
 spec:
   accessModes:
     - ReadWriteOnce
@@ -44,5 +44,5 @@ spec:
       storage: 10Gi
   selector:
     matchLabels:
-      app: mongo
+      app: mongodb
       podindex: "2"

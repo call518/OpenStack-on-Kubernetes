@@ -8,6 +8,7 @@ spec:
   ports:
   - port: 3306
     name: mysql
+  type: NodePort # Or LoadBalancer in production w/ proper security
   #clusterIP: None
   #type: LoadBalancer
   selector:
@@ -76,11 +77,11 @@ spec:
           initialDelaySeconds: 120
           periodSeconds: 1
         volumeMounts:
-        - name: datadir
+        - name: pvc-galera-datadir
           mountPath: /var/lib/mysql
   volumeClaimTemplates:
   - metadata:
-      name: datadir
+      name: pvc-galera-datadir
     spec:
       accessModes: [ "ReadWriteOnce" ]
       # uncomment if using slow storageClass on AWS
