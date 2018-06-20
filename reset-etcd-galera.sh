@@ -1,5 +1,11 @@
 #!/bin/bash
 
-kubectl delete service/galera-ss service/mongo-ss statefulset.apps/galera-ss statefulset.apps/mongo-ss service/etcd-client service/etcd0 service/etcd1 service/etcd2 pod/etcd0 pod/etcd1 pod/etcd2
+kubectl delete service/etcd-client
+kubectl delete service/etcd0
+kubectl delete service/etcd1
+kubectl delete service/etcd2
+kubectl delete pod/etcd0
+kubectl delete pod/etcd1
+kubectl delete pod/etcd2
 
 kubectl get all -o wide
