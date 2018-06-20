@@ -16,10 +16,10 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
+  name: etcd0
   labels:
     app: etcd
     etcd_node: etcd0
-  name: etcd0
 spec:
   terminationGracePeriodSeconds: 10
   affinity:
@@ -91,6 +91,17 @@ metadata:
     etcd_node: etcd1
   name: etcd1
 spec:
+  terminationGracePeriodSeconds: 10
+  affinity:
+     podAntiAffinity:
+       requiredDuringSchedulingIgnoredDuringExecution:
+       - labelSelector:
+           matchExpressions:
+           - key: "app"
+             operator: In
+             values:
+             - etcd
+         topologyKey: "kubernetes.io/hostname"
   containers:
   - command:
     - /usr/local/bin/etcd
@@ -150,6 +161,17 @@ metadata:
     etcd_node: etcd2
   name: etcd2
 spec:
+  terminationGracePeriodSeconds: 10
+  affinity:
+     podAntiAffinity:
+       requiredDuringSchedulingIgnoredDuringExecution:
+       - labelSelector:
+           matchExpressions:
+           - key: "app"
+             operator: In
+             values:
+             - etcd
+         topologyKey: "kubernetes.io/hostname"
   containers:
   - command:
     - /usr/local/bin/etcd
