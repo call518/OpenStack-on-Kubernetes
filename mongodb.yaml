@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: mongodb
   labels:
-    name: mongodb
+    app: mongodb
 spec:
   ports:
   - port: 27017
@@ -39,7 +39,7 @@ spec:
                  - mongodb
              topologyKey: "kubernetes.io/hostname"
 #      affinity:
-#        # This is to prevent mongodbdb replicas from ending up on the same
+#        # This is to prevent mongodb replicas from ending up on the same
 #        # host machine
 #        podAntiAffinity:
 #          preferredDuringSchedulingIgnoredDuringExecution:
@@ -78,11 +78,11 @@ spec:
             # by passing an environment variable that contains the host machines memory
             # and automatically "personalizing" mongodb to the machine its running on
             - |
-              numactl --interleave=all mongodbd --wiredTigerCacheSizeGB 0.25 --bind_ip 0.0.0.0 \
+              numactl --interleave=all mongod --wiredTigerCacheSizeGB 0.25 --bind_ip 0.0.0.0 \
               --replSet MainRepSet --auth --clusterAuthMode keyFile \
               --keyFile /etc/secrets-volume/mongodb-secret \
               --setParameter authenticationMechanisms=SCRAM-SHA-1 \
-              --fork --logpath /var/log/mongodbd.log \
+              --fork --logpath /var/log/mongod.log \
               &&
               if [ $STATEFULSET_NAME == "mongodb-0" ];
               then
@@ -108,7 +108,7 @@ spec:
                       roles: [ { role: 'root', db: 'admin' } ]
                 });"
                 echo "STATEFULSET_NAME: $STATEFULSET_NAME \n MACHINE_MEMORY: $MACHINE_MEMORY";
-              fi && tailf /var/log/mongodbd.log
+              fi && tailf /var/log/mongod.log
           # resources:
           #   requests:
           #     cpu: 1
