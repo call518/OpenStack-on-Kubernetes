@@ -54,8 +54,8 @@ spec:
 #              topologyKey: kubernetes.io/hostname
       containers:
         - name: mongodb
-          #image: pkdone/mongodb-ent:3.4
-          image: mongodb
+          #image: pkdone/mongo-ent:3.4
+          image: mongo
           imagePullPolicy: Always
           env:
           - name: STATEFULSET_NAME
