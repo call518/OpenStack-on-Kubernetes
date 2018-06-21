@@ -1,7 +1,7 @@
 Description
 ===========
 
-OSaaS is OpenStack as a Service /w k8s
+OSaaS is OpenStack as a Service /w k8s.
 
 ### Main Features
 
