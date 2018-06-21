@@ -101,7 +101,7 @@ spec:
                   echo "Replica exists: " $replica_exists;
                   sleep 2
                 done
-                # If everything else is workign then we need to create an admin user
+                # If everything else is working then we need to create an admin user
                 mongo --eval "db.getSiblingDB('admin').createUser({
                       user : \"$MONGO_USER\",
                       pwd  : \"$MONGO_PASSWORD\",
