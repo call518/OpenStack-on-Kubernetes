@@ -91,18 +91,18 @@ spec:
                 while [ "$replica_exists" != true ]
                 do
                   # Need to check to make sure that the other pods are currently up
-                  initiated=`mongodb --quiet --eval 'rs.initiate({_id: "MainRepSet", version: 1, members: [
+                  initiated=`mongo --quiet --eval 'rs.initiate({_id: "MainRepSet", version: 1, members: [
                          { _id: 0, host : "mongodb-0.mongodb.default.svc.cluster.local:27017" },
                          { _id: 1, host : "mongodb-1.mongodb.default.svc.cluster.local:27017" },
                          { _id: 2, host : "mongodb-2.mongodb.default.svc.cluster.local:27017" }
                    ]})["ok"]'`;
-                  replica_exists=`mongodb --quiet --eval 'db.isMaster()["ismaster"]'`;
+                  replica_exists=`mongo --quiet --eval 'db.isMaster()["ismaster"]'`;
                    # Shit we need to check rs status i think instead
                   echo "Replica exists: " $replica_exists;
                   sleep 2
                 done
                 # If everything else is workign then we need to create an admin user
-                mongodb --eval "db.getSiblingDB('admin').createUser({
+                mongo --eval "db.getSiblingDB('admin').createUser({
                       user : \"$MONGO_USER\",
                       pwd  : \"$MONGO_PASSWORD\",
                       roles: [ { role: 'root', db: 'admin' } ]
