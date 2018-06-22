@@ -8,12 +8,12 @@ spec:
   ports:
   - port: 3306
     name: mysql
-  type: NodePort # Or LoadBalancer in production w/ proper security
+  #sessionAffinity: ClientIP
   #clusterIP: None
+  type: NodePort # Or LoadBalancer in production w/ proper security
   #type: LoadBalancer
   selector:
     app: galera
-  #sessionAffinity: ClientIP
 
 ---
 
@@ -22,7 +22,7 @@ kind: StatefulSet
 metadata:
   name: galera
 spec:
-  serviceName: "galera"
+  serviceName: galera
   replicas: 3
   template:
     metadata:

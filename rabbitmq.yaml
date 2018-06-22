@@ -9,9 +9,12 @@ spec:
   ports:
   - port: 15672
     name: http
+  #sessionAffinity: ClientIP
+  #clusterIP: None
+  type: NodePort # Or LoadBalancer in production w/ proper security
+  #type: LoadBalancer
   selector:
     app: rabbitmq
-  type: NodePort # Or LoadBalancer in production w/ proper security
 ---
 apiVersion: v1
 kind: Service
