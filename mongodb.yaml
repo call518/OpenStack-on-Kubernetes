@@ -10,7 +10,7 @@ spec:
     targetPort: 27017
   #sessionAffinity: ClientIP
   #clusterIP: None
-  type: NodePort # Or LoadBalancer in production w/ proper security
+  #type: NodePort # Or LoadBalancer in production w/ proper security
   #type: LoadBalancer
   selector:
     app: mongodb
