@@ -9,7 +9,7 @@ spec:
   - port: 3306
     targetPort: 3306
   #sessionAffinity: ClientIP
-  clusterIP: None
+  #clusterIP: None
   #type: NodePort # Or LoadBalancer in production w/ proper security
   #type: LoadBalancer
   selector:
