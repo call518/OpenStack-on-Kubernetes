@@ -1,3 +1,8 @@
+# Reference: https://www.ibm.com/developerworks/cloud/library/cl-deploy-mongodb-replica-set-using-ibm-cloud-container-service/index.html
+#
+#
+
+
 apiVersion: v1
 kind: Service
 metadata:
