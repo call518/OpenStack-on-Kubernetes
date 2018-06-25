@@ -1,5 +1,5 @@
-# Reference: https://www.ibm.com/developerworks/cloud/library/cl-deploy-mongodb-replica-set-using-ibm-cloud-container-service/index.html
-#
+# Reference1: https://www.ibm.com/developerworks/cloud/library/cl-deploy-mongodb-replica-set-using-ibm-cloud-container-service/index.html
+# Reference2: https://github.com/MichaelScript/kubernetes-mongodb/blob/master/mongodb.yaml
 #
 
 
