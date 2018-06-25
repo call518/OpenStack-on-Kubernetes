@@ -12,7 +12,7 @@ spec:
   #sessionAffinity: ClientIP
   #clusterIP: None
   #type: NodePort # Or LoadBalancer in production w/ proper security
-  #type: LoadBalancer
+  type: LoadBalancer
   selector:
     app: rabbitmq
 ---
@@ -74,7 +74,7 @@ spec:
         - name: RABBITMQ_ERLANG_COOKIE
           valueFrom:
             secretKeyRef:
-              name: rabbitmq-config
+              name: rabbitmq-erlang-cookie
               key: erlang-cookie
         ports:
         - containerPort: 5672
