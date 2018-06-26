@@ -1,0 +1,82 @@
+# Reference: https://blog.bluematador.com/posts/running-haproxy-docker-containers-kubernetes/
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: haproxy
+  labels:
+    app: haproxy
+spec:
+  ports:
+  - port: 3306
+    targetPort: 3306
+  #sessionAffinity: ClientIP
+  #clusterIP: None
+  type: NodePort # Or LoadBalancer in production w/ proper security
+  #type: LoadBalancer
+  selector:
+    app: haproxy
+
+---
+
+apiVersion: apps/v1beta1
+kind: Deployment
+#apiVersion: apps/v1
+#kind: ReplicaSet
+metadata:
+  name: haproxy
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: haproxy
+  template:
+    metadata:
+      labels:
+        app: haproxy
+    spec:
+      terminationGracePeriodSeconds: 10
+      affinity:
+         podAntiAffinity:
+           requiredDuringSchedulingIgnoredDuringExecution:
+           - labelSelector:
+               matchExpressions:
+               - key: "app"
+                 operator: In
+                 values:
+                 - haproxy
+             topologyKey: "kubernetes.io/hostname"
+      containers:
+        - name: haproxy
+          #image: pkdone/mongo-ent:3.4
+          image: call518/oaas-haproxy
+          imagePullPolicy: Always
+          env:
+          - name: USERNAME
+            value: "admin"
+          - name: PASSWORD
+            value: "passw0rd"
+          command:
+            - "bash"
+            - "-c"
+            #the default cache size guidance is: "50% of RAM minus 1 GB, or 256 MB"
+            # Which is why the wired tiger cache size is this way. This assumes 2gb of memory
+            # on the host machine. The plan is to change 0.25 to a calculated value
+            # by passing an environment variable that contains the host machines memory
+            # and automatically "personalizing" haproxy to the machine its running on
+            - |
+              sed -i "s/@@STATS_USERNAME@@/$USERNAME/g" /etc/haproxy/haproxy.cfg \
+              &&
+              sed -i "s/@@STATS_PASSWORD@@/$PASSWORD/g" /etc/haproxy/haproxy.cfg \
+              &&
+              service rsyslog start && haproxy -f /etc/haproxy/haproxy.cfg && tail -F /var/log/haproxy.log
+          ports:
+            - containerPort: 9000
+          ports:
+            - containerPort: 3306
+          livenessProbe:
+            tcpSocket:
+              port: 3306
+            initialDelaySeconds: 5
+            periodSeconds: 10

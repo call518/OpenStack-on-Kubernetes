@@ -66,19 +66,19 @@ spec:
         env:
         # kubectl create secret generic mysql-pass --from-file=password.txt
         - name: MYSQL_ROOT_PASSWORD
-          value: myrootpassword
+          value: "passw0rd"
         - name: DISCOVERY_SERVICE
-          value: etcd-client:2379
+          value: "etcd-client:2379"
         - name: XTRABACKUP_PASSWORD
-          value: password
+          value: "passw0rd"
         - name: CLUSTER_NAME
-          value: mariadb_galera_ss
+          value: "mariadb_galera_ss"
         - name: MYSQL_DATABASE
-          value: mydatabase
+          value: "mydatabase"
         - name: MYSQL_USER
-          value: myuser
+          value: "myuser"
         - name: MYSQL_PASSWORD
-          value: myuserpassword
+          value: "passw0rd"
         readinessProbe:
           exec:
             command:

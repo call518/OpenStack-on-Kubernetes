@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Pod
 metadata:
- name: sample-pod
+ name: haproxy
 spec:
  containers:
- - name: oaas
-   image: nginx
+ - name: haproxy
+   image: call518/oaas-haproxy
    ports:
-   - containerPort: 80
+   - containerPort: 3306
