@@ -73,10 +73,9 @@ spec:
           - name: MACHINE_MEMORY
             value: &machineMemory "500Mi"
           # We can change this to a secret
-          - name: MONGO_USER
-            value: "admin"
-          - name: MONGO_PASSWORD
-            value: "passw0rd"
+          envFrom:
+            - configMapRef:
+                name: env-config
           command:
             - "bash"
             - "-c"

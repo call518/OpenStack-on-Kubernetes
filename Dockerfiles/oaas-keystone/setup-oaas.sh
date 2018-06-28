@@ -1,3 +1,3 @@
 #!/bin/bash
 
-mysql -hhaproxy -uroot -p$
+mysql -hhaproxy -uroot -p$MYSQL_ROOT_PASSWORD
