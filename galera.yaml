@@ -79,6 +79,8 @@ spec:
           value: "myuser"
         - name: MYSQL_PASSWORD
           value: "passw0rd"
+        - name: KEYSTONE_DBPASS
+          value: "passw0rd"
         readinessProbe:
           exec:
             command:
@@ -96,6 +98,17 @@ spec:
         volumeMounts:
         - name: pvc-galera-datadir
           mountPath: /var/lib/mysql
+        command:
+          - "bash"
+          - "-c"
+          - |
+            if [ $STATEFULSET_NAME == "galera-0" ];
+            then
+              ## Setup Keysont Database
+              mysql -s -e "CREATE DATABASE keystone"
+              mysql -s -e "GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'localhost' IDENTIFIED BY 'KEYSTONE_DBPASS'"
+              mysql -s -e "GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY 'KEYSTONE_DBPASS'"
+            fi
   volumeClaimTemplates:
   - metadata:
       name: pvc-galera-datadir

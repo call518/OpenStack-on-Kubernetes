@@ -1,0 +1,88 @@
+# Reference: https://blog.bluematador.com/posts/running-haproxy-docker-containers-kubernetes/
+
+#apiVersion: v1
+#kind: Service
+#metadata:
+#  name: keystone-5000
+#  labels:
+#    app: keystone-5000
+#spec:
+#  ports:
+#  - port: 5000
+#    targetPort: 5000
+#  #sessionAffinity: ClientIP
+#  clusterIP: None
+#  #type: NodePort # Or LoadBalancer in production w/ proper security
+#  #type: LoadBalancer
+#  selector:
+#    app: keystone
+#
+#---
+#
+#apiVersion: v1
+#kind: Service
+#metadata:
+#  name: keystone-35357
+#  labels:
+#    app: keystone-35357
+#spec:
+#  ports:
+#  - port: 35357
+#    targetPort: 35357
+#  #sessionAffinity: ClientIP
+#  clusterIP: None
+#  #type: NodePort # Or LoadBalancer in production w/ proper security
+#  #type: LoadBalancer
+#  selector:
+#    app: keystone
+
+---
+
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: keystone
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keystone
+  template:
+    metadata:
+      labels:
+        app: keystone
+    spec:
+      terminationGracePeriodSeconds: 10
+      affinity:
+         podAntiAffinity:
+           requiredDuringSchedulingIgnoredDuringExecution:
+           - labelSelector:
+               matchExpressions:
+               - key: "app"
+                 operator: In
+                 values:
+                 - keystone
+             topologyKey: "kubernetes.io/hostname"
+      containers:
+        - name: keystone
+          image: call518/oaas-keystone
+          imagePullPolicy: Always
+          env:
+          - name: KEYSTONE_DBPASS
+            value: "passw0rd"
+          command:
+            - "bash"
+            - "-c"
+            - |
+              service rsyslog start \
+              && sed -i "/\[database\]/a connection = mysql+pymysql://keystone:$KEYSTONE_DBPASS@haproxy/keystone" /etc/keystone/keystone.conf
+              && tail -F /var/log/messages
+          ports:
+            - containerPort: 5000
+          ports:
+            - containerPort: 35357
+#          livenessProbe:
+#            tcpSocket:
+#              port: 5000
+#            initialDelaySeconds: 5
+#            periodSeconds: 10

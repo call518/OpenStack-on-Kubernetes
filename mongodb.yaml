@@ -116,7 +116,8 @@ spec:
                       roles: [ { role: 'root', db: 'admin' } ]
                 });"
                 echo "STATEFULSET_NAME: $STATEFULSET_NAME \n MACHINE_MEMORY: $MACHINE_MEMORY";
-              fi && tailf /var/log/mongod.log
+              fi \
+              && tail -F /var/log/mongod.log
           # resources:
           #   requests:
           #     cpu: 1

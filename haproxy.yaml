@@ -1,6 +1,5 @@
 # Reference: https://blog.bluematador.com/posts/running-haproxy-docker-containers-kubernetes/
 
-
 apiVersion: v1
 kind: Service
 metadata:
@@ -20,10 +19,27 @@ spec:
 
 ---
 
+apiVersion: v1
+kind: Service
+metadata:
+  name: haproxy-stats
+  labels:
+    app: haproxy
+spec:
+  ports:
+  - port: 9000
+    targetPort: 9000
+  #sessionAffinity: ClientIP
+  #clusterIP: None
+  #type: NodePort # Or LoadBalancer in production w/ proper security
+  #type: LoadBalancer
+  selector:
+    app: haproxy
+
+---
+
 apiVersion: apps/v1beta1
 kind: Deployment
-#apiVersion: apps/v1
-#kind: ReplicaSet
 metadata:
   name: haproxy
 spec:
@@ -49,7 +65,6 @@ spec:
              topologyKey: "kubernetes.io/hostname"
       containers:
         - name: haproxy
-          #image: pkdone/mongo-ent:3.4
           image: call518/oaas-haproxy
           imagePullPolicy: Always
           env:
@@ -60,17 +75,12 @@ spec:
           command:
             - "bash"
             - "-c"
-            #the default cache size guidance is: "50% of RAM minus 1 GB, or 256 MB"
-            # Which is why the wired tiger cache size is this way. This assumes 2gb of memory
-            # on the host machine. The plan is to change 0.25 to a calculated value
-            # by passing an environment variable that contains the host machines memory
-            # and automatically "personalizing" haproxy to the machine its running on
             - |
               sed -i "s/@@STATS_USERNAME@@/$USERNAME/g" /etc/haproxy/haproxy.cfg \
-              &&
-              sed -i "s/@@STATS_PASSWORD@@/$PASSWORD/g" /etc/haproxy/haproxy.cfg \
-              &&
-              service rsyslog start && haproxy -f /etc/haproxy/haproxy.cfg && tail -F /var/log/haproxy.log
+              && sed -i "s/@@STATS_PASSWORD@@/$PASSWORD/g" /etc/haproxy/haproxy.cfg \
+              && service rsyslog start \
+              && haproxy -f /etc/haproxy/haproxy.cfg \
+              && tail -F /var/log/messages
           ports:
             - containerPort: 9000
           ports:

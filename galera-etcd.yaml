@@ -84,6 +84,10 @@ spec:
     port: 2380
     protocol: TCP
     targetPort: 2380
+  #sessionAffinity: ClientIP
+  #clusterIP: None
+  #type: NodePort # Or LoadBalancer in production w/ proper security
+  #type: LoadBalancer
   selector:
     etcd_node: etcd0
 
@@ -154,6 +158,10 @@ spec:
     port: 2380
     protocol: TCP
     targetPort: 2380
+  #sessionAffinity: ClientIP
+  #clusterIP: None
+  #type: NodePort # Or LoadBalancer in production w/ proper security
+  #type: LoadBalancer
   selector:
     etcd_node: etcd1
 
@@ -224,5 +232,9 @@ spec:
     port: 2380
     protocol: TCP
     targetPort: 2380
+  #sessionAffinity: ClientIP
+  #clusterIP: None
+  #type: NodePort # Or LoadBalancer in production w/ proper security
+  #type: LoadBalancer
   selector:
     etcd_node: etcd2
