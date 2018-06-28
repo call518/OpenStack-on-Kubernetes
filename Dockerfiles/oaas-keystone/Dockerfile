@@ -6,3 +6,4 @@ RUN cp -a /etc/apt/sources.list /etc/apt/sources.list.default \
     && apt-get update \
     && apt-get install -y rsyslog mysql-client keystone apache2 libapache2-mod-wsgi \
     && rm -rf /var/lib/apt/lists/*
+COPY setup-oaas.sh /setup-oaas.sh

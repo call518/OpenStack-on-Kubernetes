@@ -67,20 +67,22 @@ spec:
         - name: haproxy
           image: call518/oaas-haproxy
           imagePullPolicy: Always
-          env:
-          - name: USERNAME
-            value: "admin"
-          - name: PASSWORD
-            value: "passw0rd"
+          envFrom:
+            - configMapRef:
+                name: env-config
           command:
             - "bash"
             - "-c"
             - |
-              sed -i "s/@@STATS_USERNAME@@/$USERNAME/g" /etc/haproxy/haproxy.cfg \
-              && sed -i "s/@@STATS_PASSWORD@@/$PASSWORD/g" /etc/haproxy/haproxy.cfg \
-              && service rsyslog start \
-              && haproxy -f /etc/haproxy/haproxy.cfg \
-              && tail -F /var/log/messages
+              sed -i "s/@@STATS_USERNAME@@/$HAPROXY_STATS_USERNAME/g" /etc/haproxy/haproxy.cfg \
+              &&
+              sed -i "s/@@STATS_PASSWORD@@/$HAPROXY_STATS_PASSWORD/g" /etc/haproxy/haproxy.cfg \
+              &&
+              service rsyslog start \
+              &&
+              haproxy -f /etc/haproxy/haproxy.cfg \
+              &&
+              tail -F /var/log/messages
           ports:
             - containerPort: 9000
           ports:

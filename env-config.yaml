@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: env-config
+data:
+  MYSQL_ROOT_PASSWORD: "passw0rd"
+  DISCOVERY_SERVICE: "etcd-client:2379"
+  XTRABACKUP_PASSWORD: "passw0rd"
+  CLUSTER_NAME: "mariadb_galera_ss"
+  MYSQL_DATABASE: "mydatabase"
+  MYSQL_USER: "myuser"
+  MYSQL_PASSWORD: "passw0rd"
+  MONGO_USER: "admin"
+  MONGO_PASSWORD: "passw0rd"
+  KEYSTONE_DBPASS: "passw0rd"
+  HAPROXY_STATS_USERNAME: "admin"
+  HAPROXY_STATS_PASSWORD: "passw0rd"
