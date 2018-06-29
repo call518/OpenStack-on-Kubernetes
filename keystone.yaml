@@ -11,9 +11,9 @@ spec:
   - port: 5000
     targetPort: 5000
   #sessionAffinity: ClientIP
-  clusterIP: None
+  #clusterIP: None
   #type: NodePort # Or LoadBalancer in production w/ proper security
-  #type: LoadBalancer
+  type: LoadBalancer
   selector:
     app: keystone
 
@@ -30,9 +30,9 @@ spec:
   - port: 35357
     targetPort: 35357
   #sessionAffinity: ClientIP
-  clusterIP: None
+  #clusterIP: None
   #type: NodePort # Or LoadBalancer in production w/ proper security
-  #type: LoadBalancer
+  type: LoadBalancer
   selector:
     app: keystone
 
@@ -77,7 +77,7 @@ spec:
               service rsyslog start \
               &&
               bash -c /setup-oaas.sh \
-              **
+              &&
               sed -i "/\[database\]/a connection = mysql+pymysql://keystone:$KEYSTONE_DBPASS@haproxy/keystone" /etc/keystone/keystone.conf \
               &&
               tail -F /var/log/syslog
