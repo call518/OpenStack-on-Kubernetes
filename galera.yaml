@@ -65,7 +65,8 @@ spec:
         envFrom:
           - configMapRef:
               name: env-config
-        image: severalnines/mariadb:10.1
+        #image: severalnines/mariadb:10.1
+        image: call518/oaas-galera
         readinessProbe:
           exec:
             command:

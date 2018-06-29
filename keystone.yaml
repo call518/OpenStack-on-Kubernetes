@@ -43,7 +43,7 @@ kind: Deployment
 metadata:
   name: keystone
 spec:
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: keystone
@@ -70,23 +70,21 @@ spec:
           envFrom:
             - configMapRef:
                 name: env-config
-          command:
-            - "bash"
-            - "-c"
-            - |
-              service rsyslog start \
-              &&
-              bash -c /setup-oaas.sh \
-              &&
-              sed -i "/\[database\]/a connection = mysql+pymysql://keystone:$KEYSTONE_DBPASS@haproxy/keystone" /etc/keystone/keystone.conf \
-              &&
-              tail -F /var/log/syslog
+          command: ["/scripts/keystone-init.sh"]
           ports:
             - containerPort: 5000
           ports:
             - containerPort: 35357
+          volumeMounts:
+          - name: keystone-init-script
+            mountPath: /scripts
 #          livenessProbe:
 #            tcpSocket:
 #              port: 5000
 #            initialDelaySeconds: 5
 #            periodSeconds: 10
+      volumes:
+      - name: keystone-init-script
+        configMap:
+          name: keystone-init-script
+          defaultMode: 0755
