@@ -23,50 +23,17 @@ spec:
 
 ---
 
-#apiVersion: v1
-#kind: Service
-#metadata:
-#  name: keystone-5000
-#  labels:
-#    app: keystone-5000
-#spec:
-#  ports:
-#  - port: 5000
-#    targetPort: 5000
-#  #sessionAffinity: ClientIP
-#  #clusterIP: None
-#  #type: NodePort # Or LoadBalancer in production w/ proper security
-#  type: LoadBalancer
-#  selector:
-#    app: keystone
-#
-#---
-#
-#apiVersion: v1
-#kind: Service
-#metadata:
-#  name: keystone-35357
-#  labels:
-#    app: keystone-35357
-#spec:
-#  ports:
-#  - port: 35357
-#    targetPort: 35357
-#  #sessionAffinity: ClientIP
-#  #clusterIP: None
-#  #type: NodePort # Or LoadBalancer in production w/ proper security
-#  type: LoadBalancer
-#  selector:
-#    app: keystone
-#
-#---
-
 apiVersion: apps/v1beta1
-kind: Deployment
+kind: StatefulSet
+#apiVersion: apps/v1beta1
+#kind: Deployment
 metadata:
   name: keystone
+  labels:
+    app: keystone
 spec:
-  replicas: 1
+  serviceName: "keystone"
+  replicas: 3
   selector:
     matchLabels:
       app: keystone

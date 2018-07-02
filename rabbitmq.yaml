@@ -16,6 +16,7 @@ spec:
   selector:
     app: rabbitmq
 ---
+
 apiVersion: v1
 kind: Service
 metadata:
@@ -35,6 +36,7 @@ spec:
   selector:
     app: rabbitmq
 ---
+
 apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
