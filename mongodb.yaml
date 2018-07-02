@@ -75,7 +75,7 @@ spec:
           # We can change this to a secret
           envFrom:
             - configMapRef:
-                name: env-config
+                name: env-common
           command:
             - "bash"
             - "-c"

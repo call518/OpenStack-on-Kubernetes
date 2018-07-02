@@ -1,10 +1,15 @@
 apiVersion: v1
 kind: Pod
 metadata:
- name: haproxy
+ name: sample-pod
 spec:
  containers:
- - name: haproxy
-   image: call518/oaas-haproxy
-   ports:
-   - containerPort: 3306
+ - name: sample-pod
+   image: call518/oaas-centos7-systemd
+#   ports:
+#   - containerPort: 3306
+   command:
+     - "bash"
+     - "-c"
+     - |
+       tail -F /var/log/messages

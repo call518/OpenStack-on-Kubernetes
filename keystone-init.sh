@@ -1,12 +1,13 @@
 #!/bin/bash
 set -e
 
-service rsyslog start
+service rsyslog restart
 service keystone restart
 a2dissite 000-default
-a2ensite wsgi-keystone
+cp -a /scripts/keystone-wsgi.conf /etc/apache2/sites-available/keystone-wsgi.conf
+#a2ensite keystone-wsgi
+echo "ServerName localhost" >> /etc/apache2/apache2.conf
 service apache2 restart
-echo $MYSQL_ROOT_PASSWORD $KEYSTONE_DB_PASS $KEYSTONE_ADMIN_PASS $KEYSTONE_DEMO_PASS
 mysql -hhaproxy -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS keystone"
 mysql -hhaproxy -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'localhost' IDENTIFIED BY '$KEYSTONE_DB_PASS'"
 mysql -hhaproxy -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY '$KEYSTONE_DB_PASS'"
@@ -20,7 +21,6 @@ keystone-manage bootstrap --bootstrap-password $KEYSTONE_ADMIN_PASS \
   --bootstrap-internal-url http://keystone-35357:35357/v3/ \
   --bootstrap-public-url http://keystone-5000:5000/v3/ \
   --bootstrap-region-id RegionOne
-echo "ServerName localhost" >> /etc/apache2/apache2.conf
 cat > /root/admin-openrc << EOF
 export OS_PROJECT_DOMAIN_NAME=default
 export OS_USER_DOMAIN_NAME=default
@@ -42,9 +42,10 @@ export OS_IDENTITY_API_VERSION=3
 export OS_IMAGE_API_VERSION=2
 EOF
 source /root/admin-openrc
-openstack project create --domain default --description "Service Project" service
-openstack project create --domain default --description "Demo Project" demo
-openstack user create --domain default --password $KEYSTONE_DEMO_PASS demo
-openstack role create user
-openstack role add --project demo --user demo user
+##openstack domain create --description "Default Domain" default
+#openstack project create --domain default --description "Service Project" service
+#openstack project create --domain default --description "Demo Project" demo
+#openstack user create --domain default --password $KEYSTONE_DEMO_PASS demo
+#openstack role create user
+#openstack role add --project demo --user demo user
 tail -F /var/log/syslog /var/log/apache2/*

@@ -71,11 +71,8 @@ spec:
                   rabbitmqctl stop_app;
                   rabbitmqctl join_cluster rabbit@rabbitmq-0;
                   rabbitmqctl start_app;
-                else
-                  rabbitmqctl set_policy ha-all '^(?!amq\.).*' '{"ha-mode": "all", "ha-sync-mode":"automatic"}'
-                  rabbitmqctl add_user $RABBITMQ_OPENSTACK_USER $RABBITMQ_OPENSTACK_PASS
-                  rabbitmqctl set_permissions $RABBITMQ_OPENSTACK_USER ".*" ".*" ".*"
                 fi;
+                rabbitmqctl set_policy ha-all "." '{"ha-mode":"exactly","ha-params":3,"ha-sync-mode":"automatic"}'
         env:
         - name: RABBITMQ_ERLANG_COOKIE
           valueFrom:

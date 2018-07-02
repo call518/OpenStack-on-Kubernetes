@@ -64,7 +64,7 @@ spec:
           containerPort: 3306
         envFrom:
           - configMapRef:
-              name: env-config
+              name: env-common
         #image: severalnines/mariadb:10.1
         image: call518/oaas-galera
         readinessProbe:

@@ -69,7 +69,7 @@ spec:
           imagePullPolicy: Always
           envFrom:
             - configMapRef:
-                name: env-config
+                name: env-common
           command:
             - "bash"
             - "-c"

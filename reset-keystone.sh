@@ -1,5 +1,5 @@
 #!/bin/bash
 
-kubectl delete service/keystone-5000 service/keystone-35357 deployment.apps/keystone
-
+kubectl delete service/keystone deployment.apps/keystone
+kubectl exec -it galera-0 -- mysql -uroot -ppassw0rd -e "drop database keystone; delete from mysql.user where User='keyston';"
 kubectl get all -o wide
