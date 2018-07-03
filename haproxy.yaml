@@ -74,9 +74,9 @@ spec:
             - "bash"
             - "-c"
             - |
-              sed -i "s/@@STATS_USERNAME@@/$HAPROXY_STATS_USERNAME/g" /etc/haproxy/haproxy.cfg \
+              sed -i "s/@@STATS_USERNAME@@/$K8S_HAPROXY_STATS_USERNAME/g" /etc/haproxy/haproxy.cfg \
               &&
-              sed -i "s/@@STATS_PASSWORD@@/$HAPROXY_STATS_PASSWORD/g" /etc/haproxy/haproxy.cfg \
+              sed -i "s/@@STATS_PASSWORD@@/$K8S_HAPROXY_STATS_PASSWORD/g" /etc/haproxy/haproxy.cfg \
               &&
               service rsyslog start \
               &&

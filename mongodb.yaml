@@ -110,8 +110,8 @@ spec:
                 done
                 # If everything else is working then we need to create an admin user
                 mongo --eval "db.getSiblingDB('admin').createUser({
-                      user : \"$MONGO_USER\",
-                      pwd  : \"$MONGO_PASSWORD\",
+                      user : \"$K8S_MONGO_USER\",
+                      pwd  : \"$K8S_MONGO_PASS\",
                       roles: [ { role: 'root', db: 'admin' } ]
                 });"
                 echo "STATEFULSET_NAME: $STATEFULSET_NAME \n MACHINE_MEMORY: $MACHINE_MEMORY";

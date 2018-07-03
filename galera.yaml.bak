@@ -62,26 +62,11 @@ spec:
         ports:
         - name: mysql
           containerPort: 3306
-        #env:
-        #- name: MYSQL_ROOT_PASSWORD
-        #  value: "passw0rd"
-        #- name: DISCOVERY_SERVICE
-        #  value: "etcd-client:2379"
-        #- name: XTRABACKUP_PASSWORD
-        #  value: "passw0rd"
-        #- name: CLUSTER_NAME
-        #  value: "mariadb_galera_ss"
-        #- name: MYSQL_DATABASE
-        #  value: "mydatabase"
-        #- name: MYSQL_USER
-        #  value: "myuser"
-        #- name: MYSQL_PASSWORD
-        #  value: "passw0rd"
         envFrom:
           - configMapRef:
               name: env-common
-        #image: severalnines/mariadb:10.1
-        image: call518/oaas-galera
+        image: severalnines/mariadb:10.1
+        #image: call518/oaas-galera
         readinessProbe:
           exec:
             command:
