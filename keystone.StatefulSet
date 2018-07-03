@@ -1,0 +1,80 @@
+# Reference: https://blog.bluematador.com/posts/running-haproxy-docker-containers-kubernetes/
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: keystone
+  labels:
+    app: keystone
+spec:
+  ports:
+  - name: keystone-5000
+    port: 5000
+    targetPort: 5000
+  - name: keystone-35357
+    port: 35357
+    targetPort: 35357
+  #sessionAffinity: ClientIP
+  #clusterIP: None
+  #type: NodePort # Or LoadBalancer in production w/ proper security
+  #type: LoadBalancer
+  selector:
+    app: keystone
+
+---
+
+apiVersion: apps/v1beta1
+kind: StatefulSet
+#apiVersion: apps/v1beta1
+#kind: Deployment
+metadata:
+  name: keystone
+  labels:
+    app: keystone
+spec:
+  serviceName: "keystone"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keystone
+  template:
+    metadata:
+      labels:
+        app: keystone
+    spec:
+      terminationGracePeriodSeconds: 10
+      affinity:
+         podAntiAffinity:
+           requiredDuringSchedulingIgnoredDuringExecution:
+           - labelSelector:
+               matchExpressions:
+               - key: "app"
+                 operator: In
+                 values:
+                 - keystone
+             topologyKey: "kubernetes.io/hostname"
+      containers:
+        - name: keystone
+          image: call518/oaas-keystone
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: env-common
+          command: ["/scripts/keystone-init.sh"]
+          ports:
+            - containerPort: 5000
+          ports:
+            - containerPort: 35357
+          volumeMounts:
+          - name: keystone-setup
+            mountPath: /scripts
+          livenessProbe:
+            tcpSocket:
+              port: 35357
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+      - name: keystone-setup
+        configMap:
+          name: keystone-setup
+          defaultMode: 0755
