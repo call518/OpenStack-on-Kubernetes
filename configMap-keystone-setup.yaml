@@ -9,15 +9,15 @@ data:
     service rsyslog restart
     a2dissite 000-default
     echo "ServerName localhost" >> /etc/apache2/apache2.conf
-    mysql -hhaproxy -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS keystone"
-    mysql -hhaproxy -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'localhost' IDENTIFIED BY '$K8S_KEYSTONE_DB_PASS'"
-    mysql -hhaproxy -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY '$K8S_KEYSTONE_DB_PASS'"
+    mysql -h$HAPROXY_GALERA_SERVICE_HOST -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS keystone"
+    mysql -h$HAPROXY_GALERA_SERVICE_HOST -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'localhost' IDENTIFIED BY '$K8S_KEYSTONE_DB_PASS'"
+    mysql -h$HAPROXY_GALERA_SERVICE_HOST -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY '$K8S_KEYSTONE_DB_PASS'"
     cp -a /etc/keystone/keystone.conf /etc/keystone/keystone.conf.default
-    #sed -i "/^\[database\]/a connection = mysql+pymysql://keystone:$K8S_KEYSTONE_DB_PASS@haproxy/keystone" /etc/keystone/keystone.conf
+    #sed -i "/^\[database\]/a connection = mysql+pymysql://keystone:$K8S_KEYSTONE_DB_PASS@$HAPROXY_GALERA_SERVICE_HOST/keystone" /etc/keystone/keystone.conf
     #sed -i "/^\[token\]/a provider = fernet" /etc/keystone/keystone.conf
     cat /scripts/keystone.conf > /etc/keystone/keystone.conf
     sed -i "s/___K8S_KEYSTONE_DB_PASS___/$K8S_KEYSTONE_DB_PASS/g" /etc/keystone/keystone.conf
-    sed -i "s/___K8S_MYSQL_HOST___/$K8S_MYSQL_HOST/g" /etc/keystone/keystone.conf
+    sed -i "s/___HAPROXY_GALERA_SERVICE_HOST___/$HAPROXY_GALERA_SERVICE_HOST/g" /etc/keystone/keystone.conf
     sed -i "s/___K8S_RABBITMQ_OPENSTACK_USER___/$K8S_RABBITMQ_OPENSTACK_USER/g" /etc/keystone/keystone.conf
     sed -i "s/___K8S_RABBITMQ_OPENSTACK_PASS___/$K8S_RABBITMQ_OPENSTACK_PASS/g" /etc/keystone/keystone.conf
     service apache2 restart
@@ -71,7 +71,7 @@ data:
     [cors.subdomain]
     [credential]
     [database]
-    connection = mysql+pymysql://keystone:___K8S_KEYSTONE_DB_PASS___@___K8S_MYSQL_HOST___/keystone
+    connection = mysql+pymysql://keystone:___K8S_KEYSTONE_DB_PASS___@___HAPROXY_GALERA_SERVICE_HOST___/keystone
     [domain_config]
     [endpoint_filter]
     [endpoint_policy]

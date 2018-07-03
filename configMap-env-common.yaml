@@ -3,7 +3,6 @@ kind: ConfigMap
 metadata:
   name: env-common
 data:
-  K8S_MYSQL_HOST: "haproxy"
   MYSQL_ROOT_PASSWORD: "passw0rd"
   DISCOVERY_SERVICE: "etcd-client:2379"
   XTRABACKUP_PASSWORD: "passw0rd"

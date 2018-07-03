@@ -8,10 +8,10 @@ cp -a /scripts/keystone-wsgi.conf /etc/apache2/sites-available/keystone-wsgi.con
 #a2ensite keystone-wsgi
 echo "ServerName localhost" >> /etc/apache2/apache2.conf
 service apache2 restart
-mysql -hhaproxy -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS keystone"
-mysql -hhaproxy -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'localhost' IDENTIFIED BY '$K8S_KEYSTONE_DB_PASS'"
-mysql -hhaproxy -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY '$K8S_KEYSTONE_DB_PASS'"
-sed -i "/^\[database\]/a connection = mysql+pymysql://keystone:$K8S_KEYSTONE_DB_PASS@haproxy/keystone" /etc/keystone/keystone.conf
+mysql -h$HAPROXY_GALERA_SERVICE_HOST -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS keystone"
+mysql -h$HAPROXY_GALERA_SERVICE_HOST -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'localhost' IDENTIFIED BY '$K8S_KEYSTONE_DB_PASS'"
+mysql -h$HAPROXY_GALERA_SERVICE_HOST -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY '$K8S_KEYSTONE_DB_PASS'"
+sed -i "/^\[database\]/a connection = mysql+pymysql://keystone:$K8S_KEYSTONE_DB_PASS@$HAPROXY_GALERA_SERVICE_HOST/keystone" /etc/keystone/keystone.conf
 sed -i "/^\[token\]/a provider = fernet" /etc/keystone/keystone.conf
 su -s /bin/sh -c "keystone-manage db_sync" keystone
 keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
