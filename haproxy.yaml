@@ -3,15 +3,15 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: haproxy
+  name: haproxy-galera
   labels:
-    app: haproxy
+    app: haproxy-galera
 spec:
   ports:
   - port: 3306
     targetPort: 3306
   #sessionAffinity: ClientIP
-  clusterIP: None
+  #clusterIP: None
   #type: NodePort # Or LoadBalancer in production w/ proper security
   #type: LoadBalancer
   selector:
@@ -84,9 +84,9 @@ spec:
               &&
               tail -F /var/log/messages
           ports:
-            - containerPort: 9000
-          ports:
             - containerPort: 3306
+          ports:
+            - containerPort: 9000
           livenessProbe:
             tcpSocket:
               port: 3306

@@ -68,11 +68,11 @@ spec:
           volumeMounts:
           - name: keystone-setup
             mountPath: /scripts
-#          livenessProbe:
-#            tcpSocket:
-#              port: 5000
-#            initialDelaySeconds: 5
-#            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: 35357
+            initialDelaySeconds: 5
+            periodSeconds: 10
       volumes:
       - name: keystone-setup
         configMap:
