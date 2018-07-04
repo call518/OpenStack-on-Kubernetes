@@ -33,7 +33,7 @@ metadata:
     app: keystone
 spec:
   serviceName: "keystone"
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: keystone
@@ -53,6 +53,10 @@ spec:
                  values:
                  - keystone
              topologyKey: "kubernetes.io/hostname"
+      hostAliases:
+      - ip: "127.0.0.1"
+        hostnames:
+        - "keystone"
       containers:
         - name: keystone
           image: call518/oaas-keystone
@@ -68,11 +72,27 @@ spec:
           volumeMounts:
           - name: keystone-setup
             mountPath: /scripts
-          livenessProbe:
-            tcpSocket:
-              port: 35357
-            initialDelaySeconds: 5
+          readinessProbe:
+            exec:
+              command:
+              - /check-init.sh
+            initialDelaySeconds: 60
             periodSeconds: 10
+            #timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 1
+          #livenessProbe:
+          #  exec:
+          #    command:
+          #    - /healthcheck.sh
+          #    - --liveness
+          #initialDelaySeconds: 120
+          #periodSeconds: 1
+          ##livenessProbe:
+          ##  tcpSocket:
+          ##    port: 35357
+          ##  initialDelaySeconds: 5
+          ##  periodSeconds: 10
       volumes:
       - name: keystone-setup
         configMap:

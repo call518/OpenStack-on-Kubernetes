@@ -12,3 +12,4 @@ RUN cp -a /etc/apt/sources.list /etc/apt/sources.list.default \
     && apt-get install -y iputils-ping net-tools vim telnet lsof wget \
     && rm -f /var/lib/keystone/keystone.db \
     && rm -rf /var/lib/apt/lists/*
+COPY check-init.sh /check-init.sh
