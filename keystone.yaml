@@ -33,7 +33,7 @@ metadata:
     app: keystone
 spec:
   serviceName: "keystone"
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: keystone
@@ -79,7 +79,7 @@ spec:
             exec:
               command:
               - /check-init.sh
-            initialDelaySeconds: 30
+            initialDelaySeconds: 10
             periodSeconds: 5
             #timeoutSeconds: 5
             successThreshold: 1
