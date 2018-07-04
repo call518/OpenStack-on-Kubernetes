@@ -9,18 +9,13 @@ data:
     service rsyslog restart
     a2dissite 000-default
     echo "ServerName localhost" >> /etc/apache2/apache2.conf
-    mysql -h$HAPROXY_GALERA_SERVICE_HOST -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS keystone"
-    mysql -h$HAPROXY_GALERA_SERVICE_HOST -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'localhost' IDENTIFIED BY '$K8S_KEYSTONE_DB_PASS'"
-    mysql -h$HAPROXY_GALERA_SERVICE_HOST -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY '$K8S_KEYSTONE_DB_PASS'"
     cp -a /etc/keystone/keystone.conf /etc/keystone/keystone.conf.default
-    #sed -i "/^\[database\]/a connection = mysql+pymysql://keystone:$K8S_KEYSTONE_DB_PASS@$HAPROXY_GALERA_SERVICE_HOST/keystone" /etc/keystone/keystone.conf
-    #sed -i "/^\[token\]/a provider = fernet" /etc/keystone/keystone.conf
     cat /scripts/keystone.conf > /etc/keystone/keystone.conf
     sed -i "s/___K8S_KEYSTONE_DB_PASS___/$K8S_KEYSTONE_DB_PASS/g" /etc/keystone/keystone.conf
     sed -i "s/___HAPROXY_GALERA_SERVICE_HOST___/$HAPROXY_GALERA_SERVICE_HOST/g" /etc/keystone/keystone.conf
     sed -i "s/___K8S_RABBITMQ_OPENSTACK_USER___/$K8S_RABBITMQ_OPENSTACK_USER/g" /etc/keystone/keystone.conf
     sed -i "s/___K8S_RABBITMQ_OPENSTACK_PASS___/$K8S_RABBITMQ_OPENSTACK_PASS/g" /etc/keystone/keystone.conf
-    service apache2 restart
+    service apache2 start
     cat > /root/admin-openrc << EOF
     export OS_PROJECT_DOMAIN_NAME=default
     export OS_USER_DOMAIN_NAME=default
@@ -41,12 +36,19 @@ data:
     export OS_IDENTITY_API_VERSION=3
     export OS_IMAGE_API_VERSION=2
     EOF
+    source /root/admin-openrc
     exist_keyston_db=$(mysql -s -N -q -A --connect-timeout=10 -h$HAPROXY_GALERA_SERVICE_HOST -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW DATABASES LIKE 'keystone';" 2>/dev/null)
     if [ "X$exist_keyston_db" == "X" ]; then
-      source /root/admin-openrc
+      mysql -h$HAPROXY_GALERA_SERVICE_HOST -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS keystone"
+      mysql -h$HAPROXY_GALERA_SERVICE_HOST -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'localhost' IDENTIFIED BY '$K8S_KEYSTONE_DB_PASS'"
+      mysql -h$HAPROXY_GALERA_SERVICE_HOST -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY '$K8S_KEYSTONE_DB_PASS'"
       su -s /bin/sh -c "keystone-manage db_sync" keystone
-      keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
-      keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
+    fi
+    keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
+    cat /keystone-fernet-keys/0 | tr -d '\n' > /etc/keystone/fernet-keys/0
+    cat /keystone-fernet-keys/1 | tr -d '\n' > /etc/keystone/fernet-keys/1
+    keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
+    if [ "X$exist_keyston_db" == "X" ]; then
       keystone-manage bootstrap --bootstrap-password $K8S_KEYSTONE_ADMIN_PASS \
         --bootstrap-admin-url http://keystone:35357/v3/ \
         --bootstrap-internal-url http://keystone:35357/v3/ \
@@ -59,6 +61,7 @@ data:
       openstack role create user
       openstack role add --project demo --user demo user
     fi
+    service apache2 restart
     touch /.setup_completed
     tail -F /var/log/syslog /var/log/apache2/*
 

@@ -33,7 +33,7 @@ metadata:
     app: keystone
 spec:
   serviceName: "keystone"
-  replicas: 3
+  replicas: 1
   selector:
     matchLabels:
       app: keystone
@@ -72,12 +72,15 @@ spec:
           volumeMounts:
           - name: keystone-setup
             mountPath: /scripts
+          - name: keystone-fernet-keys
+            readOnly: true
+            mountPath: /keystone-fernet-keys
           readinessProbe:
             exec:
               command:
               - /check-init.sh
-            initialDelaySeconds: 60
-            periodSeconds: 10
+            initialDelaySeconds: 30
+            periodSeconds: 5
             #timeoutSeconds: 5
             successThreshold: 1
             failureThreshold: 1
@@ -86,8 +89,6 @@ spec:
           #    command:
           #    - /healthcheck.sh
           #    - --liveness
-          #initialDelaySeconds: 120
-          #periodSeconds: 1
           ##livenessProbe:
           ##  tcpSocket:
           ##    port: 35357
@@ -98,3 +99,6 @@ spec:
         configMap:
           name: keystone-setup
           defaultMode: 0755
+      - name: keystone-fernet-keys
+        secret:
+          secretName: keystone-fernet-keys
