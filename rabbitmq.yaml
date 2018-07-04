@@ -10,9 +10,9 @@ spec:
   - port: 15672
     name: http
   #sessionAffinity: ClientIP
-  #clusterIP: None
+  clusterIP: None
   #type: NodePort # Or LoadBalancer in production w/ proper security
-  type: LoadBalancer
+  #type: LoadBalancer
   selector:
     app: rabbitmq
 ---
@@ -32,7 +32,10 @@ spec:
     name: epmd
   - port: 25672
     name: rabbitmq-dist
+  #sessionAffinity: ClientIP
   clusterIP: None
+  #type: NodePort # Or LoadBalancer in production w/ proper security
+  #type: LoadBalancer
   selector:
     app: rabbitmq
 ---

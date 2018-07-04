@@ -12,7 +12,6 @@ data:
     cp -a /etc/keystone/keystone.conf /etc/keystone/keystone.conf.default
     cat /scripts/keystone.conf > /etc/keystone/keystone.conf
     sed -i "s/___K8S_KEYSTONE_DB_PASS___/$K8S_KEYSTONE_DB_PASS/g" /etc/keystone/keystone.conf
-    sed -i "s/___HAPROXY_GALERA_SERVICE_HOST___/$HAPROXY_GALERA_SERVICE_HOST/g" /etc/keystone/keystone.conf
     sed -i "s/___K8S_RABBITMQ_OPENSTACK_USER___/$K8S_RABBITMQ_OPENSTACK_USER/g" /etc/keystone/keystone.conf
     sed -i "s/___K8S_RABBITMQ_OPENSTACK_PASS___/$K8S_RABBITMQ_OPENSTACK_PASS/g" /etc/keystone/keystone.conf
     service apache2 start
@@ -37,11 +36,11 @@ data:
     export OS_IMAGE_API_VERSION=2
     EOF
     source /root/admin-openrc
-    exist_keyston_db=$(mysql -s -N -q -A --connect-timeout=10 -h$HAPROXY_GALERA_SERVICE_HOST -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW DATABASES LIKE 'keystone';" 2>/dev/null)
+    exist_keyston_db=$(mysql -s -N -q -A --connect-timeout=10 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW DATABASES LIKE 'keystone';" 2>/dev/null)
     if [ "X$exist_keyston_db" == "X" ]; then
-      mysql -h$HAPROXY_GALERA_SERVICE_HOST -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS keystone"
-      mysql -h$HAPROXY_GALERA_SERVICE_HOST -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'localhost' IDENTIFIED BY '$K8S_KEYSTONE_DB_PASS'"
-      mysql -h$HAPROXY_GALERA_SERVICE_HOST -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY '$K8S_KEYSTONE_DB_PASS'"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS keystone"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'localhost' IDENTIFIED BY '$K8S_KEYSTONE_DB_PASS'"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY '$K8S_KEYSTONE_DB_PASS'"
       su -s /bin/sh -c "keystone-manage db_sync" keystone
     fi
     keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
@@ -76,7 +75,7 @@ data:
     [cors.subdomain]
     [credential]
     [database]
-    connection = mysql+pymysql://keystone:___K8S_KEYSTONE_DB_PASS___@___HAPROXY_GALERA_SERVICE_HOST___/keystone
+    connection = mysql+pymysql://keystone:___K8S_KEYSTONE_DB_PASS___@haproxy-galera/keystone
     [domain_config]
     [endpoint_filter]
     [endpoint_policy]

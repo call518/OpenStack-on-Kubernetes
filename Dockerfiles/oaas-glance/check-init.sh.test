@@ -1,0 +1,52 @@
+#!/bin/bash
+
+
+return_ok()
+{
+    exit 0
+}
+
+return_fail()
+{
+    exit 1
+}
+
+
+echo "Checking Service~~~!!!"
+
+source /root/admin-openrc 2>/dev/null
+if [ $? -ne 0 ]; then
+	return_fail
+else
+	export OS_AUTH_URL=http://localhost:35357/v3
+fi
+
+lsof -ni:35357 > /dev/null
+if [ $? -ne 0 ]; then
+	return_fail
+fi
+
+DEFAULT_DOMAIN_ENABLED=$(openstack domain list -f value 2>/dev/null | awk '{print $3}')
+if [ $? -ne 0 ] && [ "$DEFAULT_DOMAIN_ENABLED" != "True" ]; then
+	return_fail
+fi
+
+SERVICE_PROJECT_ENABLED=$(openstack project show service -f value -f value -c enabled 2>/dev/null)
+if [ $? -ne 0 ] && [ "$SERVICE_PROJECT_ENABLED" != "True" ]; then
+	return_fail
+fi
+
+DEMO_PROJECT_ENABLED=$(openstack project show demo -f value -f value -c enabled 2>/dev/null)
+if [ $? -ne 0 ] && [ "$DEMO_PROJECT_ENABLED" != "True" ]; then
+	return_fail
+fi
+
+USER_ROLE_CREATED=$(openstack role show user -f value -c name 2>/dev/null)
+if [ $? -ne 0 ] && [ "$USER_ROLE_CREATED" != "user" ]; then
+	return_fail
+fi
+
+echo "Servcie is ready~~~!!!"
+
+
+return_ok

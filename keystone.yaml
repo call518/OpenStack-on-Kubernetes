@@ -15,7 +15,7 @@ spec:
     port: 35357
     targetPort: 35357
   #sessionAffinity: ClientIP
-  #clusterIP: None
+  clusterIP: None
   #type: NodePort # Or LoadBalancer in production w/ proper security
   #type: LoadBalancer
   selector:

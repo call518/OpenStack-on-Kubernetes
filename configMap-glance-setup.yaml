@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: glance-setup
+data:
+  glance-init.sh: |
+    #!/bin/bash
+    set -e
+    touch /.setup_completed
+    tail -F /var/log/syslog /var/log/apache2/*
+
+  glance-api.conf: |
+    [DEFAULT]
+    transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@controller1,openstack:1234@controller2,openstack:1234@controller3
+    [cors]
+    [cors.subdomain]
+    [database]
+    sqlite_db = /var/lib/glance/glance.sqlite
+    backend = sqlalchemy
+    [glance_store]
+    [image_format]
+    disk_formats = ami,ari,aki,vhd,vhdx,vmdk,raw,qcow2,vdi,iso,root-tar
+    [keystone_authtoken]
+    [matchmaker_redis]
+    [oslo_concurrency]
+    [oslo_messaging_amqp]
+    [oslo_messaging_notifications]
+    [oslo_messaging_rabbit]
+    [oslo_messaging_zmq]
+    [oslo_middleware]
+    [oslo_policy]
+    [paste_deploy]
+    [profiler]
+    [store_type_location_strategy]
+    [task]
+    [taskflow_executor]
+
+  glance-registry.conf: |
+    [DEFAULT]
+    [database]
+    sqlite_db = /var/lib/glance/glance.sqlite
+    backend = sqlalchemy
+    [keystone_authtoken]
+    [matchmaker_redis]
+    [oslo_messaging_amqp]
+    [oslo_messaging_notifications]
+    [oslo_messaging_rabbit]
+    [oslo_messaging_zmq]
+    [oslo_policy]
+    [paste_deploy]
+    [profiler]
