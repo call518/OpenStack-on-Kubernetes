@@ -58,7 +58,7 @@ spec:
                - key: "app"
                  operator: In
                  values:
-                 - galera
+                 - rabbitmq
              topologyKey: "kubernetes.io/hostname"
       containers:
       - name: rabbitmq
