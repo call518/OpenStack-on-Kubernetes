@@ -50,6 +50,16 @@ spec:
       labels:
         app: rabbitmq
     spec:
+      affinity:
+         podAntiAffinity:
+           requiredDuringSchedulingIgnoredDuringExecution:
+           - labelSelector:
+               matchExpressions:
+               - key: "app"
+                 operator: In
+                 values:
+                 - galera
+             topologyKey: "kubernetes.io/hostname"
       containers:
       - name: rabbitmq
         image: rabbitmq:3.6.6-management-alpine
