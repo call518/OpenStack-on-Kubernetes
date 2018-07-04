@@ -6,30 +6,104 @@ data:
   glance-init.sh: |
     #!/bin/bash
     set -e
+    service rsyslog restart
+    cp -a /etc/glance/glance-api.conf /etc/glance/glance-api.conf.default
+    cat /scripts/glance-api.conf > /etc/glance/glance-api.conf
+    cp -a /etc/glance/glance-registry.conf /etc/glance/glance-registry.conf.default
+    cat /scripts/glance-registry.conf > /etc/glance/glance-registry.conf
+    sed -i "s/___K8S_GLANCE_DB_PASS___/$K8S_GLANCE_DB_PASS/g" /etc/glance/glance-{api,registry}.conf
+    sed -i "s/___K8S_RABBITMQ_OPENSTACK_USER___/$K8S_RABBITMQ_OPENSTACK_USER/g" /etc/glance/glance-{api,registry}.conf
+    sed -i "s/___K8S_RABBITMQ_OPENSTACK_PASS___/$K8S_RABBITMQ_OPENSTACK_PASS/g" /etc/glance/glance-{api,registry}.conf
+    sed -i "s/___K8S_KEYSTONE_USER_GLANCE_PASS___/$K8S_KEYSTONE_USER_GLANCE_PASS/g" /etc/glance/glance-{api,registry}.conf
+    cat > /root/admin-openrc << EOF
+    export OS_PROJECT_DOMAIN_NAME=default
+    export OS_USER_DOMAIN_NAME=default
+    export OS_PROJECT_NAME=admin
+    export OS_USERNAME=admin
+    export OS_PASSWORD=$K8S_KEYSTONE_USER_ADMIN_PASS
+    export OS_AUTH_URL=http://keystone:35357/v3
+    export OS_IDENTITY_API_VERSION=3
+    export OS_IMAGE_API_VERSION=2
+    EOF
+    cat > /root/demo-openrc << EOF
+    export OS_PROJECT_DOMAIN_NAME=Default
+    export OS_USER_DOMAIN_NAME=Default
+    export OS_PROJECT_NAME=demo
+    export OS_USERNAME=demo
+    export OS_PASSWORD=$K8S_KEYSTONE_USER_DEMO_PASS
+    export OS_AUTH_URL=http://keystone:5000/v3
+    export OS_IDENTITY_API_VERSION=3
+    export OS_IMAGE_API_VERSION=2
+    EOF
+    source /root/admin-openrc
+    exist_glance_db=$(mysql -s -N -q -A --connect-timeout=10 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW DATABASES LIKE 'glance';" 2>/dev/null)
+    if [ "X$exist_glance_db" == "X" ]; then
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS glance"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON keystone.* TO 'glance'@'localhost' IDENTIFIED BY '$K8S_GLANCE_DB_PASS'"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON keystone.* TO 'glance'@'%' IDENTIFIED BY '$K8S_GLANCE_DB_PASS'"
+      openstack user create --domain default --password $K8S_KEYSTONE_USER_GLANCE_PASS demo
+      openstack role add --project service --user glance admin
+      openstack service create --name glance --description "OpenStack Image" image
+      openstack endpoint create --region RegionOne image public http://glance:9292
+      openstack endpoint create --region RegionOne image internal http://glance:9292
+      openstack endpoint create --region RegionOne image admin http://glance:9292
+      su -s /bin/sh -c "glance-manage db_sync" glance
+    fi
+    service glance-api start
+    service glance-registry start
+    if [ "X$exist_glance_db" == "X" ]; then
+      wget http://download.cirros-cloud.net/0.3.4/cirros-0.3.4-x86_64-disk.img -O /cirros-0.3.4-x86_64-disk.img
+      openstack image create "Cirros-0.3.4-x86_64" --file /cirros-0.3.4-x86_64-disk.img --disk-format qcow2 --container-format bare --public
+    fi
     touch /.setup_completed
-    tail -F /var/log/syslog /var/log/apache2/*
+    tail -F /var/log/syslog /var/log/glance/*
 
   glance-api.conf: |
     [DEFAULT]
-    transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@controller1,openstack:1234@controller2,openstack:1234@controller3
+    #transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq
+    transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-0.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-1.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-2.rabbitmq
+    enable_v1_api = True
+    enable_v2_api = True
+    show_image_direct_url = True
+    show_multiple_locations = True
+    ### for Ceph
+    #hw_scsi_model=virtio-scsi
+    #hw_disk_bus=scsi
+    #hw_qemu_guest_agent=yes
+    #os_require_quiesce=yes
     [cors]
     [cors.subdomain]
     [database]
-    sqlite_db = /var/lib/glance/glance.sqlite
-    backend = sqlalchemy
+    connection = mysql+pymysql://glance:___K8S_GLANCE_DB_PASS___@haproxy-galera/keystone
     [glance_store]
+    stores = file,http
+    default_store = file
+    filesystem_store_datadir = /var/lib/glance/images
     [image_format]
     disk_formats = ami,ari,aki,vhd,vhdx,vmdk,raw,qcow2,vdi,iso,root-tar
     [keystone_authtoken]
+    auth_uri = http://keystone:5000/v3
+    auth_url = http://keystone:35357/v3
+    memcached_servers = memcached:11211
+    auth_type = password
+    project_domain_name = default
+    user_domain_name = default
+    project_name = service
+    username = glance
+    password = ___K8S_KEYSTONE_USER_GLANCE_PASS___
     [matchmaker_redis]
     [oslo_concurrency]
     [oslo_messaging_amqp]
     [oslo_messaging_notifications]
+    driver = messagingv2
+    #transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq
+    transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-0.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-1.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-2.rabbitmq
     [oslo_messaging_rabbit]
     [oslo_messaging_zmq]
     [oslo_middleware]
     [oslo_policy]
     [paste_deploy]
+    flavor = keystone
     [profiler]
     [store_type_location_strategy]
     [task]
@@ -38,14 +112,26 @@ data:
   glance-registry.conf: |
     [DEFAULT]
     [database]
-    sqlite_db = /var/lib/glance/glance.sqlite
-    backend = sqlalchemy
+    connection = mysql+pymysql://glance:___K8S_GLANCE_DB_PASS___@haproxy-galera/keystone
     [keystone_authtoken]
+    auth_uri = http://keystone:5000/v3
+    auth_url = http://keystone:35357/v3
+    memcached_servers = memcached:11211
+    auth_type = password
+    project_domain_name = default
+    user_domain_name = default
+    project_name = service
+    username = glance
+    password = ___K8S_KEYSTONE_USER_GLANCE_PASS___
     [matchmaker_redis]
     [oslo_messaging_amqp]
     [oslo_messaging_notifications]
+    driver = messagingv2
+    #transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq
+    transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-0.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-1.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-2.rabbitmq
     [oslo_messaging_rabbit]
     [oslo_messaging_zmq]
     [oslo_policy]
     [paste_deploy]
+    flavor = keystone
     [profiler]

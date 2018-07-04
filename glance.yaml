@@ -1,0 +1,96 @@
+# Reference: https://blog.bluematador.com/posts/running-haproxy-docker-containers-kubernetes/
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: glance
+  labels:
+    app: glance
+spec:
+  ports:
+  - name: glance-api
+    port: 9292
+    targetPort: 9292
+  - name: glance-registry
+    port: 9191
+    targetPort: 9191
+  #sessionAffinity: ClientIP
+  clusterIP: None
+  #type: NodePort # Or LoadBalancer in production w/ proper security
+  #type: LoadBalancer
+  selector:
+    app: glance
+
+---
+
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: glance
+  labels:
+    app: glance
+spec:
+  serviceName: "glance"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: glance
+  template:
+    metadata:
+      labels:
+        app: glance
+    spec:
+      terminationGracePeriodSeconds: 10
+      affinity:
+         podAntiAffinity:
+           requiredDuringSchedulingIgnoredDuringExecution:
+           - labelSelector:
+               matchExpressions:
+               - key: "app"
+                 operator: In
+                 values:
+                 - glance
+             topologyKey: "kubernetes.io/hostname"
+      hostAliases:
+      - ip: "127.0.0.1"
+        hostnames:
+        - "glance"
+      containers:
+        - name: glance
+          image: call518/oaas-glance
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: env-common
+          command: ["/scripts/glance-init.sh"]
+          ports:
+            - containerPort: 9292
+          ports:
+            - containerPort: 9191
+          volumeMounts:
+          - name: glance-setup
+            mountPath: /scripts
+          readinessProbe:
+            exec:
+              command:
+              - /check-init.sh
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            #timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 1
+          #livenessProbe:
+          #  exec:
+          #    command:
+          #    - /healthcheck.sh
+          #    - --liveness
+          ##livenessProbe:
+          ##  tcpSocket:
+          ##    port: 35357
+          ##  initialDelaySeconds: 5
+          ##  periodSeconds: 10
+      volumes:
+      - name: glance-setup
+        configMap:
+          name: glance-setup
+          defaultMode: 0755

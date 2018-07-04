@@ -8,7 +8,7 @@ RUN cp -a /etc/apt/sources.list /etc/apt/sources.list.default \
     #&& add-apt-repository -y cloud-archive:queens \
     && add-apt-repository -y cloud-archive:newton \
     && apt-get update \
-    && apt-get install -y rsyslog mysql-client glance \
+    && apt-get install -y rsyslog mysql-client glance python-openstackclient \
     && apt-get install -y iputils-ping net-tools vim telnet lsof wget \
     && rm -rf /var/lib/apt/lists/*
 COPY check-init.sh /check-init.sh

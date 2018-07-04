@@ -20,7 +20,7 @@ data:
     export OS_USER_DOMAIN_NAME=default
     export OS_PROJECT_NAME=admin
     export OS_USERNAME=admin
-    export OS_PASSWORD=$K8S_KEYSTONE_ADMIN_PASS
+    export OS_PASSWORD=$K8S_KEYSTONE_USER_ADMIN_PASS
     export OS_AUTH_URL=http://keystone:35357/v3
     export OS_IDENTITY_API_VERSION=3
     export OS_IMAGE_API_VERSION=2
@@ -30,7 +30,7 @@ data:
     export OS_USER_DOMAIN_NAME=Default
     export OS_PROJECT_NAME=demo
     export OS_USERNAME=demo
-    export OS_PASSWORD=$K8S_KEYSTONE_DEMO_PASS
+    export OS_PASSWORD=$K8S_KEYSTONE_USER_DEMO_PASS
     export OS_AUTH_URL=http://keystone:5000/v3
     export OS_IDENTITY_API_VERSION=3
     export OS_IMAGE_API_VERSION=2
@@ -48,7 +48,7 @@ data:
     cat /keystone-fernet-keys/1 | tr -d '\n' > /etc/keystone/fernet-keys/1
     keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
     if [ "X$exist_keyston_db" == "X" ]; then
-      keystone-manage bootstrap --bootstrap-password $K8S_KEYSTONE_ADMIN_PASS \
+      keystone-manage bootstrap --bootstrap-password $K8S_KEYSTONE_USER_ADMIN_PASS \
         --bootstrap-admin-url http://keystone:35357/v3/ \
         --bootstrap-internal-url http://keystone:35357/v3/ \
         --bootstrap-public-url http://keystone:5000/v3/ \
@@ -56,7 +56,7 @@ data:
       #openstack domain create --description "Default Domain" default
       openstack project create --domain default --description "Service Project" service
       openstack project create --domain default --description "Demo Project" demo
-      openstack user create --domain default --password $K8S_KEYSTONE_DEMO_PASS demo
+      openstack user create --domain default --password $K8S_KEYSTONE_USER_DEMO_PASS demo
       openstack role create user
       openstack role add --project demo --user demo user
     fi
@@ -95,7 +95,8 @@ data:
     [oslo_messaging_amqp]
     [oslo_messaging_notifications]
     driver = messagingv2
-    transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq
+    #transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq
+    transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-0.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-1.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-2.rabbitmq
     [oslo_messaging_rabbit]
     [oslo_messaging_zmq]
     [oslo_middleware]
