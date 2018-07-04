@@ -2,7 +2,7 @@
 
 ## Diagram
 
-![Diagram](etc-files/EYWA-Scalable-Gateway.png)
+![Diagram](etc-files/OaaS-Introduce.png)
 
 # Main Features
 
