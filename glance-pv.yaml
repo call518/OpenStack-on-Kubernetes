@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-glance-datadir-glance-images
+  labels:
+    app: pv-glance-datadir-glance-images
+spec:
+  accessModes:
+  #- ReadWriteOnce
+  - ReadWriteMany
+  capacity:
+    storage: 10Gi
+  #hostPath:
+  #  path: /data/pods/glance-images/datadir
+  volumeMode: Filesystem
+  #persistentVolumeReclaimPolicy: Recycle
+  persistentVolumeReclaimPolicy: Retain
+  mountOptions:
+    - hard
+    - nfsvers=4.1
+  nfs:
+    path: /data/pods/glance-images/datadir
+    server: nfs-server

@@ -14,7 +14,7 @@ data:
     sed -i "s/___K8S_KEYSTONE_DB_PASS___/$K8S_KEYSTONE_DB_PASS/g" /etc/keystone/keystone.conf
     sed -i "s/___K8S_RABBITMQ_OPENSTACK_USER___/$K8S_RABBITMQ_OPENSTACK_USER/g" /etc/keystone/keystone.conf
     sed -i "s/___K8S_RABBITMQ_OPENSTACK_PASS___/$K8S_RABBITMQ_OPENSTACK_PASS/g" /etc/keystone/keystone.conf
-    service apache2 start
+    service apache2 restart
     cat > /root/admin-openrc << EOF
     export OS_PROJECT_DOMAIN_NAME=default
     export OS_USER_DOMAIN_NAME=default
@@ -116,36 +116,10 @@ data:
     [tokenless_auth]
     [trust]
 
-#  keystone-wsgi.conf: |
-#    Listen 5000
-#    Listen 35357
-#
-#    <VirtualHost *:5000>
-#        WSGIDaemonProcess keystone-public processes=5 threads=1 user=keystone group=keystone display-name=%{GROUP}
-#        WSGIProcessGroup keystone-public
-#        WSGIScriptAlias / /usr/bin/keystone-wsgi-public
-#        WSGIApplicationGroup %{GLOBAL}
-#        WSGIPassAuthorization On
-#        ErrorLogFormat "%{cu}t %M"
-#        ErrorLog /var/log/apache2/keystone.log
-#        CustomLog /var/log/apache2/keystone_access.log combined
-#
-#        <Directory /usr/bin>
-#            Require all granted
-#        </Directory>
-#    </VirtualHost>
-#
-#    <VirtualHost *:35357>
-#        WSGIDaemonProcess keystone-admin processes=5 threads=1 user=keystone group=keystone display-name=%{GROUP}
-#        WSGIProcessGroup keystone-admin
-#        WSGIScriptAlias / /usr/bin/keystone-wsgi-admin
-#        WSGIApplicationGroup %{GLOBAL}
-#        WSGIPassAuthorization On
-#        ErrorLogFormat "%{cu}t %M"
-#        ErrorLog /var/log/apache2/keystone.log
-#        CustomLog /var/log/apache2/keystone_access.log combined
-#
-#        <Directory /usr/bin>
-#            Require all granted
-#        </Directory>
-#    </VirtualHost>
+  remove-glance.sh: |
+    #!/bin/bash
+    source /root/admin-openrc
+    openstack endpoint delete $(openstack endpoint list --service glance -f value -c ID)
+    openstack service delete glance
+    openstack user delete glance
+    mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "DROP DATABASE IF EXISTS glance; DELETE FROM mysql.user WHERE User='glance'; DELETE FROM mysql.db WHERE Db='glance' AND User='glance'; FLUSH PRIVILEGES;"

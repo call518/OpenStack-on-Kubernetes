@@ -2,6 +2,6 @@
 
 #kubectl delete service/glance deployment.apps/glance
 kubectl delete service/glance statefulset.apps/glance
-kubectl exec -it galera-0 -- mysql -uroot -ppassw0rd -e "drop database glance; delete from mysql.user where User='glance';"
-kubectl exec -it galera-0 -- mysql -uroot -ppassw0rd -e "show databases;"
+kubectl exec -it keystone-0 -- /bin/bash /scripts/remove-glance.sh
+kubectl exec -it galera-0 -- mysql -uroot -ppassw0rd -e "SHOW DATABASES;"
 kubectl get all -o wide

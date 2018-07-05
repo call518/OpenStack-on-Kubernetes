@@ -11,6 +11,7 @@
 
 kubectl create -f galera-etcd.yaml 
 kubectl create -f galera.yaml
+kubectl create -f haproxy.yaml
 kubectl create -f memcached.yaml
 kubectl create -f mongodb.yaml
 kubectl create -f rabbitmq.yaml

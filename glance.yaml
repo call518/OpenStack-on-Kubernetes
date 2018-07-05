@@ -31,7 +31,7 @@ metadata:
     app: glance
 spec:
   serviceName: "glance"
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: glance
@@ -70,6 +70,8 @@ spec:
           volumeMounts:
           - name: glance-setup
             mountPath: /scripts
+          - name: pvc-glance-datadir
+            mountPath: /var/lib/glance/images
           readinessProbe:
             exec:
               command:
@@ -94,3 +96,6 @@ spec:
         configMap:
           name: glance-setup
           defaultMode: 0755
+      - name: pvc-glance-datadir
+        persistentVolumeClaim:
+          claimName: pvc-glance-datadir-glance-images

@@ -13,7 +13,8 @@ spec:
   #hostPath:
   #  path: /data/pods/rabbitmq-0/datadir
   volumeMode: Filesystem
-  persistentVolumeReclaimPolicy: Recycle
+  #persistentVolumeReclaimPolicy: Recycle
+  persistentVolumeReclaimPolicy: Retain
   mountOptions:
     - hard
     - nfsvers=4.1
@@ -38,7 +39,8 @@ spec:
   #hostPath:
   #  path: /data/pods/rabbitmq-1/datadir
   volumeMode: Filesystem
-  persistentVolumeReclaimPolicy: Recycle
+  #persistentVolumeReclaimPolicy: Recycle
+  persistentVolumeReclaimPolicy: Retain
   mountOptions:
     - hard
     - nfsvers=4.1
@@ -63,7 +65,8 @@ spec:
   #hostPath:
   #  path: /data/pods/rabbitmq-2/datadir
   volumeMode: Filesystem
-  persistentVolumeReclaimPolicy: Recycle
+  #persistentVolumeReclaimPolicy: Recycle
+  persistentVolumeReclaimPolicy: Retain
   mountOptions:
     - hard
     - nfsvers=4.1
