@@ -18,4 +18,4 @@ kubectl delete secret rabbitmq-erlang-cookie
 
 sleep 10
 
-./reset-pv-and-pvc.sh
+./reset-all-pv-pvc.sh
