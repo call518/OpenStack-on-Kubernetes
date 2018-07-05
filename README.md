@@ -6,7 +6,7 @@ OpenStack on Kubernetes (OaaS)
 # 머릿글
 
 * OaaS는 "OpenStack as a Service"를 뜻함.
-* Kubernetes(이하 k8s)의 기능을 활용하여, 탄력적인 OpenStack 환경을 쉽게 구축/운영하고, 업데이트 및 장애상황에도 유연하게 대응할 수있는 솔루션을 목표로 함.
+* Kubernetes(이하 k8s)의 기능을 활용하여, 탄력적인 OpenStack 환경을 쉽게 구축/운영하고, 업데이트 및 장애상황에도 유연하게 대응할 수있는 도구를 목표로 함.
 
 > (Note) 현 상태는 1차 개발 단계로서, Controller부에 속한 컴포넌트들 위주로 작업중... (협업 환영)
 
