@@ -1,7 +1,7 @@
 OpenStack on Kubernetes (OaaS)
 ================================
 
-# 관리자: Jung-In.Jung (call518@gmail.com)
+* 관리자: Jung-In.Jung (call518@gmail.com)
 
 # 머릿글
 
