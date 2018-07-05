@@ -1,7 +1,7 @@
 # OpenStack on Kubernetes (OaaS)
 
 **(Note)**
-* **This is not completed. now in developing...**
+* **Now OaaS is currently under development.**
 * OaaS is OpenStack as a Service
 
 ## Diagram
