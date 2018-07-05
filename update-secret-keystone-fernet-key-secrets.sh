@@ -31,9 +31,9 @@ key1="$TMP_DIR/1"
 #fi
 #
 #
-#if [ ! -d $TMP_DIR ]; then
-#	mkdir -p $TMP_DIR
-#fi
+if [ ! -d $TMP_DIR ]; then
+	mkdir -p $TMP_DIR
+fi
 
 python fernet-key-generator.py > $key0
 python fernet-key-generator.py > $key1
