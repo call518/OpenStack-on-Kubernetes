@@ -1,7 +1,8 @@
-# OSaaS is OpenStack as a Service /w k8s.
+# OpenStack on Kubernetes (OaaS)
 
 **(Note)**
 * **This is not completed. now in developing...**
+* OaaS is OpenStack as a Service
 
 ## Diagram
 
