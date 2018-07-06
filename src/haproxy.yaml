@@ -73,9 +73,6 @@ spec:
           - /bin/bash
           - -c
           - >
-            #until nc -z -v -w 3 galera-0.galera 3306; do sleep 5; done;
-            #until nc -z -v -w 3 galera-1.galera 3306; do sleep 5; done;
-            #until nc -z -v -w 3 galera-2.galera 3306; do sleep 5; done;
             QUERY_WSREP_READY="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_READY';";
             QUERY_WSREP_CLUSTER_SIZE="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_CLUSTER_SIZE';";
             QUERY_WSREP_CLUSTER_STATUS="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_CLUSTER_STATUS';";
