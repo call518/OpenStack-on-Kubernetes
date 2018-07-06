@@ -88,6 +88,10 @@ spec:
                   rabbitmqctl start_app;
                 else
                   rabbitmqctl set_policy ha-all '^(?!amq\.).*' '{"ha-mode": "all", "ha-sync-mode":"automatic"}'
+                  rabbitmqctl add_user $K8S_RABBITMQ_ADMIN_USER $K8S_RABBITMQ_ADMIN_PASS
+                  rabbitmqctl set_user_tags $K8S_RABBITMQ_ADMIN_USER administrator
+                  rabbitmqctl set_permissions -p / $K8S_RABBITMQ_ADMIN_USER ".*" ".*" ".*"
+                  rabbitmqctl delete_user guest
                   rabbitmqctl add_user $K8S_RABBITMQ_OPENSTACK_USER $K8S_RABBITMQ_OPENSTACK_PASS
                   rabbitmqctl set_permissions $K8S_RABBITMQ_OPENSTACK_USER ".*" ".*" ".*"
                 fi;

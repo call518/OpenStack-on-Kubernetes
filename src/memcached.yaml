@@ -48,6 +48,9 @@ spec:
         - name: memcached
           image: call518/oaas-memcached
           imagePullPolicy: Always
+          #envFrom:
+          #  - configMapRef:
+          #      name: env-common
           env:
           - name: MAXCONN
             value: "1024"

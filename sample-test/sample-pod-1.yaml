@@ -5,7 +5,7 @@ metadata:
 spec:
  containers:
  - name: sample-pod
-   image: call518/oaas-centos7-systemd
+   image: call518/oaas-init-container
 #   ports:
 #   - containerPort: 3306
    command:

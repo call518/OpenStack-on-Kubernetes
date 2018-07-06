@@ -57,6 +57,22 @@ spec:
                  values:
                  - galera
              topologyKey: "kubernetes.io/hostname"
+      initContainers:
+      - name: wait-etcd
+        image: call518/oaas-init-container
+        envFrom:
+          - configMapRef:
+              name: env-common
+        command:
+          - /bin/bash
+          - -c
+          - >
+            until [ "`curl -s -L --connect-timeout 3 \"http://$DISCOVERY_SERVICE/health\"`" == "{\"health\":\"true\"}" ];
+            do
+              echo "etcd is not ready..... waiting...";
+              sleep 5;
+            done;
+            echo "OK~ etcd is ready~~";
       containers:
       - name: galera
         ports:

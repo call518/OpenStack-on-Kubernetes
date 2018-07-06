@@ -63,32 +63,63 @@ spec:
                  values:
                  - haproxy
              topologyKey: "kubernetes.io/hostname"
+      initContainers:
+      - name: wait-galera
+        image: call518/oaas-init-container
+        envFrom:
+          - configMapRef:
+              name: env-common
+        command:
+          - /bin/bash
+          - -c
+          - >
+            #until nc -z -v -w 3 galera-0.galera 3306; do sleep 5; done;
+            #until nc -z -v -w 3 galera-1.galera 3306; do sleep 5; done;
+            #until nc -z -v -w 3 galera-2.galera 3306; do sleep 5; done;
+            QUERY_WSREP_READY="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_READY';";
+            QUERY_WSREP_CLUSTER_SIZE="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_CLUSTER_SIZE';";
+            QUERY_WSREP_CLUSTER_STATUS="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_CLUSTER_STATUS';";
+            QUERY_WSREP_LOCAL_STATE_COMMENT="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_LOCAL_STATE_COMMENT';";
+            until [ "$G0_WSREP_READY" == "ON" ] && [ "$G1_WSREP_READY" == "ON" ] && [ "$G2_WSREP_READY" == "ON" ] && [ "$G0_WSREP_CLUSTER_SIZE" == "3" ] && [ "$G1_WSREP_CLUSTER_SIZE" == "3" ] && [ "$G2_WSREP_CLUSTER_SIZE" == "3" ] && [ "$G0_WSREP_CLUSTER_STATUS" == "Primary" ] && [ "$G1_WSREP_CLUSTER_STATUS" == "Primary" ] && [ "$G2_WSREP_CLUSTER_STATUS" == "Primary" ] && [ "$G0_WSREP_LOCAL_STATE_COMMENT" == "Synced" ] && [ "$G1_WSREP_LOCAL_STATE_COMMENT" == "Synced" ] && [ "$G2_WSREP_LOCAL_STATE_COMMENT" == "Synced" ];
+            do
+              echo "galera is not ready..... waiting...";
+              G0_WSREP_READY=$(mysql -hgalera-0.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_READY" 2>1 2> /dev/null;);
+              G1_WSREP_READY=$(mysql -hgalera-1.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_READY" 2>1 2> /dev/null;);
+              G2_WSREP_READY=$(mysql -hgalera-2.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_READY" 2>1 2> /dev/null;);
+              G0_WSREP_CLUSTER_SIZE=$(mysql -hgalera-0.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_SIZE" 2>1 2> /dev/null;);
+              G1_WSREP_CLUSTER_SIZE=$(mysql -hgalera-1.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_SIZE" 2>1 2> /dev/null;);
+              G2_WSREP_CLUSTER_SIZE=$(mysql -hgalera-2.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_SIZE" 2>1 2> /dev/null;);
+              G0_WSREP_CLUSTER_STATUS=$(mysql -hgalera-0.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_STATUS" 2>1 2> /dev/null;);
+              G1_WSREP_CLUSTER_STATUS=$(mysql -hgalera-1.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_STATUS" 2>1 2> /dev/null;);
+              G2_WSREP_CLUSTER_STATUS=$(mysql -hgalera-2.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_STATUS" 2>1 2> /dev/null;);
+              G0_WSREP_LOCAL_STATE_COMMENT=$(mysql -hgalera-0.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_LOCAL_STATE_COMMENT" 2>1 2> /dev/null;);
+              G1_WSREP_LOCAL_STATE_COMMENT=$(mysql -hgalera-1.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_LOCAL_STATE_COMMENT" 2>1 2> /dev/null;);
+              G2_WSREP_LOCAL_STATE_COMMENT=$(mysql -hgalera-2.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_LOCAL_STATE_COMMENT" 2>1 2> /dev/null;);
+              sleep 5;
+            done;
+            echo "OK~ galera is ready~~";
       containers:
-        - name: haproxy
-          image: call518/oaas-haproxy
-          imagePullPolicy: Always
-          envFrom:
-            - configMapRef:
-                name: env-common
-          command:
-            - "bash"
-            - "-c"
-            - |
-              sed -i "s/@@STATS_USERNAME@@/$K8S_HAPROXY_STATS_USERNAME/g" /etc/haproxy/haproxy.cfg \
-              &&
-              sed -i "s/@@STATS_PASSWORD@@/$K8S_HAPROXY_STATS_PASSWORD/g" /etc/haproxy/haproxy.cfg \
-              &&
-              service rsyslog start \
-              &&
-              haproxy -f /etc/haproxy/haproxy.cfg \
-              &&
-              tail -F /var/log/messages
-          ports:
-            - containerPort: 3306
-          ports:
-            - containerPort: 9000
-          livenessProbe:
-            tcpSocket:
-              port: 3306
-            initialDelaySeconds: 5
-            periodSeconds: 10
+      - name: haproxy
+        image: call518/oaas-haproxy
+        imagePullPolicy: Always
+        envFrom:
+          - configMapRef:
+              name: env-common
+        command:
+          - bash
+          - -c
+          - >
+            sed -i "s/@@STATS_USERNAME@@/$K8S_HAPROXY_STATS_USERNAME/g" /etc/haproxy/haproxy.cfg;
+            sed -i "s/@@STATS_PASSWORD@@/$K8S_HAPROXY_STATS_PASSWORD/g" /etc/haproxy/haproxy.cfg;
+            service rsyslog start;
+            haproxy -f /etc/haproxy/haproxy.cfg;
+            tail -F /var/log/messages;
+        ports:
+          - containerPort: 3306
+        ports:
+          - containerPort: 9000
+        livenessProbe:
+          tcpSocket:
+            port: 3306
+          initialDelaySeconds: 5
+          periodSeconds: 10
