@@ -4,6 +4,7 @@
 
 ./update-configMap-env-common.sh
 ./update-configMap-keystone-setup.sh
+./update-configMap-glance-setup.sh
 
 ./update-secret-mongodb-keyfile.sh
 ./update-secret-rabbitmq-erlang-cookie.sh
