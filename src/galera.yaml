@@ -69,10 +69,10 @@ spec:
           - >
             until [ "`curl -s -L --connect-timeout 3 \"http://$DISCOVERY_SERVICE/health\"`" == "{\"health\":\"true\"}" ];
             do
-              echo "etcd is not ready..... waiting...";
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` etcd is not ready..... waiting...";
               sleep 5;
             done;
-            echo "OK~ etcd is ready~~";
+            echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ etcd is ready~~";
       containers:
       - name: galera
         ports:

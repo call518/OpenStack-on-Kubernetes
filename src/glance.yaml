@@ -67,14 +67,14 @@ spec:
             QUERY_WSREP_LOCAL_STATE_COMMENT="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_LOCAL_STATE_COMMENT';";
             until [ "$WSREP_READY" == "ON" ] && [ "$WSREP_CLUSTER_SIZE" == "3" ] && [ "$WSREP_CLUSTER_STATUS" == "Primary" ] && [ "$WSREP_LOCAL_STATE_COMMENT" == "Synced" ];
             do
-              echo "haproxy-galera is not ready..... waitng...";
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` haproxy-galera is not ready..... waitng...";
               WSREP_READY=$(mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_READY" 2>1 2> /dev/null;);
               WSREP_CLUSTER_SIZE=$(mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_SIZE" 2>1 2> /dev/null;);
               WSREP_CLUSTER_STATUS=$(mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_STATUS" 2>1 2> /dev/null;);
               WSREP_LOCAL_STATE_COMMENT=$(mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_LOCAL_STATE_COMMENT" 2>1 2> /dev/null;);
               sleep 5;
             done;
-            echo "OK~ haproxy-galera is ready~~";
+            echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ haproxy-galera is ready~~";
       - name: wait-memcached
         image: call518/oaas-init-container
         envFrom:
@@ -88,7 +88,7 @@ spec:
             CURRENT_CONNECTIONS=-1;
             until [ $RETURN -eq 0 ];
             do
-              echo "memcached is not ready..... waiting...";
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` memcached is not ready..... waiting...";
               CURRENT_CONNECTIONS=$((echo stats ; echo quit) | nc memcached 11211 | awk '/curr_connections/ {print $3}' | tr -d '\015');
               RETURN=$?;
               sleep 5;
@@ -96,10 +96,10 @@ spec:
             UPTIME=$((echo stats ; echo quit) | nc memcached 11211 | awk '/uptime/ {print $3}' | tr -d '\015');
             until [ $CURRENT_CONNECTIONS -gt 0 ] && [ $UPTIME -gt 0 ];
             do
-              echo "memcached is not ready..... waitng...";
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` memcached is not ready..... waitng...";
               sleep 5;
             done;
-            echo "OK~ memcached is ready~~";
+            echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ memcached is ready~~";
       - name: wait-rabbitmq
         image: call518/oaas-init-container
         envFrom:
@@ -114,10 +114,10 @@ spec:
             R2_ALIVENESS=$(curl -s -u $K8S_RABBITMQ_ADMIN_USER:$K8S_RABBITMQ_ADMIN_PASS "http://rabbitmq-2.rabbitmq:15672/api/aliveness-test/%2F");
             until [ "$R0_ALIVENESS" == "{\"status\":\"ok\"}" ] && [ "$R1_ALIVENESS" == "{\"status\":\"ok\"}" ] && [ "$R2_ALIVENESS" == "{\"status\":\"ok\"}" ];
             do
-              echo "rabbitmq is not ready..... waitng...";
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` rabbitmq is not ready..... waitng...";
               sleep 5;
             done;
-            echo "OK~ rabbitmq is ready~~";
+            echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ rabbitmq is ready~~";
       - name: wait-keystone
         image: call518/oaas-init-container
         envFrom:
@@ -135,10 +135,10 @@ spec:
             K2_API_5000=$(curl -s "http://keystone-0.keystone:5000" | jq ".versions.values[0].status");
             until [ "$K0_API_35357" == "\"stable\"" ] && [ "$K1_API_35357" == "\"stable\"" ] && [ "$K2_API_35357" == "\"stable\"" ] && [ "$K0_API_5000" == "\"stable\"" ] && [ "$K1_API_5000" == "\"stable\"" ] && [ "$K2_API_5000" == "\"stable\"" ];
             do
-              echo "keystone is not ready..... waitng...";
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` keystone is not ready..... waitng...";
               sleep 5;
             done;
-            echo "OK~ keystone is ready~~";
+            echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ keystone is ready~~";
       hostAliases:
       - ip: "127.0.0.1"
         hostnames:

@@ -16,3 +16,4 @@ kubectl create -f memcached.yaml
 kubectl create -f mongodb.yaml
 kubectl create -f rabbitmq.yaml
 kubectl create -f keystone.yaml
+kubectl create -f glance.yaml
