@@ -2,6 +2,7 @@ OpenStack on Kubernetes (OaaS)
 ================================
 
 * 관리자: Jung-In.Jung (call518@gmail.com)
+* 프로젝트 기간: 2018-06-20 ~ (진행중...)
 
 # 머릿글
 
