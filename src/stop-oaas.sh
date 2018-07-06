@@ -1,13 +1,13 @@
 #!/bin/bash
 
-./reset-galera-etcd.sh
-./reset-galera.sh
-./reset-memcached.sh
-./reset-mongodb.sh
-./reset-rabbitmq.sh
-./reset-haproxy.sh
-./reset-keystone.sh
 ./reset-glance.sh
+./reset-keystone.sh
+./reset-haproxy.sh
+./reset-rabbitmq.sh
+./reset-mongodb.sh
+./reset-memcached.sh
+./reset-galera.sh
+./reset-galera-etcd.sh
 
 kubectl delete configmap env-common
 kubectl delete configmap glance-setup
