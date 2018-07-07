@@ -32,6 +32,8 @@ metadata:
 spec:
   serviceName: "glance"
   replicas: 3
+  podManagementPolicy: OrderedReady
+  #podManagementPolicy: Parallel
   selector:
     matchLabels:
       app: glance

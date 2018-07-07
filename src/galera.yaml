@@ -41,6 +41,8 @@ metadata:
 spec:
   serviceName: galera
   replicas: 3
+  podManagementPolicy: OrderedReady
+  #podManagementPolicy: Parallel
   template:
     metadata:
       labels:

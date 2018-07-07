@@ -28,6 +28,8 @@ metadata:
 spec:
   serviceName: mongodb
   replicas: 3
+  podManagementPolicy: OrderedReady
+  #podManagementPolicy: Parallel
   template:
     metadata:
       labels:
