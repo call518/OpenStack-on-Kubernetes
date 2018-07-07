@@ -58,7 +58,7 @@ spec:
                  - galera
              topologyKey: "kubernetes.io/hostname"
       initContainers:
-      - name: wait-1
+      - name: wait1
         image: call518/oaas-init-container
         envFrom:
           - configMapRef:
@@ -67,7 +67,7 @@ spec:
           - /bin/bash
           - -c
           - >
-            until [ "`curl -s -L --connect-timeout 3 \"http://$DISCOVERY_SERVICE/health\"`" == "{\"health\":\"true\"}" ];
+            until [ "`curl --connect-timeout 3 -s -L \"http://$DISCOVERY_SERVICE/health\"`" == "{\"health\":\"true\"}" ];
             do
               echo "`date +"[%Y-%m-%d %H:%M:%S]"` etcd is not ready..... waiting...";
               sleep 5;

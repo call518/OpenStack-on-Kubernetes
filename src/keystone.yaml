@@ -52,7 +52,7 @@ spec:
                  - keystone
              topologyKey: "kubernetes.io/hostname"
       initContainers:
-      - name: wait-1
+      - name: wait1
         image: call518/oaas-init-container
         envFrom:
           - configMapRef:
@@ -68,14 +68,14 @@ spec:
             until [ "$WSREP_READY" == "ON" ] && [ "$WSREP_CLUSTER_SIZE" == "3" ] && [ "$WSREP_CLUSTER_STATUS" == "Primary" ] && [ "$WSREP_LOCAL_STATE_COMMENT" == "Synced" ];
             do
               echo "`date +"[%Y-%m-%d %H:%M:%S]"` haproxy-galera is not ready..... waitng...";
-              WSREP_READY=$(mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_READY" 2>1 2> /dev/null;);
-              WSREP_CLUSTER_SIZE=$(mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_SIZE" 2>1 2> /dev/null;);
-              WSREP_CLUSTER_STATUS=$(mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_STATUS" 2>1 2> /dev/null;);
-              WSREP_LOCAL_STATE_COMMENT=$(mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_LOCAL_STATE_COMMENT" 2>1 2> /dev/null;);
+              WSREP_READY=$(mysql --connect-timeout=3 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_READY" 2>1 2> /dev/null;);
+              WSREP_CLUSTER_SIZE=$(mysql --connect-timeout=3 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_SIZE" 2>1 2> /dev/null;);
+              WSREP_CLUSTER_STATUS=$(mysql --connect-timeout=3 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_STATUS" 2>1 2> /dev/null;);
+              WSREP_LOCAL_STATE_COMMENT=$(mysql --connect-timeout=3 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_LOCAL_STATE_COMMENT" 2>1 2> /dev/null;);
               sleep 5;
             done;
             echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ haproxy-galera is ready~~";
-      - name: wait-2
+      - name: wait2
         image: call518/oaas-init-container
         envFrom:
           - configMapRef:
@@ -100,7 +100,7 @@ spec:
               sleep 5;
             done;
             echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ memcached is ready~~";
-      - name: wait-3
+      - name: wait3
         image: call518/oaas-init-container
         envFrom:
           - configMapRef:
@@ -109,9 +109,9 @@ spec:
           - /bin/bash
           - -c
           - >
-            R0_ALIVENESS=$(curl -s -u $K8S_RABBITMQ_ADMIN_USER:$K8S_RABBITMQ_ADMIN_PASS "http://rabbitmq-0.rabbitmq:15672/api/aliveness-test/%2F");
-            R1_ALIVENESS=$(curl -s -u $K8S_RABBITMQ_ADMIN_USER:$K8S_RABBITMQ_ADMIN_PASS "http://rabbitmq-1.rabbitmq:15672/api/aliveness-test/%2F");
-            R2_ALIVENESS=$(curl -s -u $K8S_RABBITMQ_ADMIN_USER:$K8S_RABBITMQ_ADMIN_PASS "http://rabbitmq-2.rabbitmq:15672/api/aliveness-test/%2F");
+            R0_ALIVENESS=$(curl --connect-timeout 3 -s -u $K8S_RABBITMQ_ADMIN_USER:$K8S_RABBITMQ_ADMIN_PASS "http://rabbitmq-0.rabbitmq:15672/api/aliveness-test/%2F");
+            R1_ALIVENESS=$(curl --connect-timeout 3 -s -u $K8S_RABBITMQ_ADMIN_USER:$K8S_RABBITMQ_ADMIN_PASS "http://rabbitmq-1.rabbitmq:15672/api/aliveness-test/%2F");
+            R2_ALIVENESS=$(curl --connect-timeout 3 -s -u $K8S_RABBITMQ_ADMIN_USER:$K8S_RABBITMQ_ADMIN_PASS "http://rabbitmq-2.rabbitmq:15672/api/aliveness-test/%2F");
             until [ "$R0_ALIVENESS" == "{\"status\":\"ok\"}" ] && [ "$R1_ALIVENESS" == "{\"status\":\"ok\"}" ] && [ "$R2_ALIVENESS" == "{\"status\":\"ok\"}" ];
             do
               echo "`date +"[%Y-%m-%d %H:%M:%S]"` rabbitmq is not ready..... waitng...";

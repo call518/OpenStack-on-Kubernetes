@@ -64,7 +64,7 @@ spec:
                  - haproxy
              topologyKey: "kubernetes.io/hostname"
       initContainers:
-      - name: wait-galera
+      - name: wait1
         image: call518/oaas-init-container
         envFrom:
           - configMapRef:
@@ -81,18 +81,18 @@ spec:
             do
               #ping -c 1 -W 1 galera;
               echo "`date +"[%Y-%m-%d %H:%M:%S]"` galera is not ready..... waiting...";
-              G0_WSREP_READY=$(mysql -hgalera-0.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_READY" 2>1 2> /dev/null;);
-              G1_WSREP_READY=$(mysql -hgalera-1.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_READY" 2>1 2> /dev/null;);
-              G2_WSREP_READY=$(mysql -hgalera-2.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_READY" 2>1 2> /dev/null;);
-              G0_WSREP_CLUSTER_SIZE=$(mysql -hgalera-0.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_SIZE" 2>1 2> /dev/null;);
-              G1_WSREP_CLUSTER_SIZE=$(mysql -hgalera-1.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_SIZE" 2>1 2> /dev/null;);
-              G2_WSREP_CLUSTER_SIZE=$(mysql -hgalera-2.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_SIZE" 2>1 2> /dev/null;);
-              G0_WSREP_CLUSTER_STATUS=$(mysql -hgalera-0.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_STATUS" 2>1 2> /dev/null;);
-              G1_WSREP_CLUSTER_STATUS=$(mysql -hgalera-1.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_STATUS" 2>1 2> /dev/null;);
-              G2_WSREP_CLUSTER_STATUS=$(mysql -hgalera-2.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_STATUS" 2>1 2> /dev/null;);
-              G0_WSREP_LOCAL_STATE_COMMENT=$(mysql -hgalera-0.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_LOCAL_STATE_COMMENT" 2>1 2> /dev/null;);
-              G1_WSREP_LOCAL_STATE_COMMENT=$(mysql -hgalera-1.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_LOCAL_STATE_COMMENT" 2>1 2> /dev/null;);
-              G2_WSREP_LOCAL_STATE_COMMENT=$(mysql -hgalera-2.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_LOCAL_STATE_COMMENT" 2>1 2> /dev/null;);
+              G0_WSREP_READY=$(mysql --connect-timeout=3 -hgalera-0.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_READY" 2>1 2> /dev/null;);
+              G1_WSREP_READY=$(mysql --connect-timeout=3 -hgalera-1.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_READY" 2>1 2> /dev/null;);
+              G2_WSREP_READY=$(mysql --connect-timeout=3 -hgalera-2.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_READY" 2>1 2> /dev/null;);
+              G0_WSREP_CLUSTER_SIZE=$(mysql --connect-timeout=3 -hgalera-0.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_SIZE" 2>1 2> /dev/null;);
+              G1_WSREP_CLUSTER_SIZE=$(mysql --connect-timeout=3 -hgalera-1.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_SIZE" 2>1 2> /dev/null;);
+              G2_WSREP_CLUSTER_SIZE=$(mysql --connect-timeout=3 -hgalera-2.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_SIZE" 2>1 2> /dev/null;);
+              G0_WSREP_CLUSTER_STATUS=$(mysql --connect-timeout=3 -hgalera-0.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_STATUS" 2>1 2> /dev/null;);
+              G1_WSREP_CLUSTER_STATUS=$(mysql --connect-timeout=3 -hgalera-1.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_STATUS" 2>1 2> /dev/null;);
+              G2_WSREP_CLUSTER_STATUS=$(mysql --connect-timeout=3 -hgalera-2.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_STATUS" 2>1 2> /dev/null;);
+              G0_WSREP_LOCAL_STATE_COMMENT=$(mysql --connect-timeout=3 -hgalera-0.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_LOCAL_STATE_COMMENT" 2>1 2> /dev/null;);
+              G1_WSREP_LOCAL_STATE_COMMENT=$(mysql --connect-timeout=3 -hgalera-1.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_LOCAL_STATE_COMMENT" 2>1 2> /dev/null;);
+              G2_WSREP_LOCAL_STATE_COMMENT=$(mysql --connect-timeout=3 -hgalera-2.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_LOCAL_STATE_COMMENT" 2>1 2> /dev/null;);
               sleep 5;
             done;
             echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ galera is ready~~";
