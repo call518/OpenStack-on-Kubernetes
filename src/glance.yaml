@@ -69,7 +69,7 @@ spec:
             QUERY_WSREP_LOCAL_STATE_COMMENT="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_LOCAL_STATE_COMMENT';";
             until [ "$WSREP_READY" == "ON" ] && [ "$WSREP_CLUSTER_SIZE" == "3" ] && [ "$WSREP_CLUSTER_STATUS" == "Primary" ] && [ "$WSREP_LOCAL_STATE_COMMENT" == "Synced" ];
             do
-              echo "`date +"[%Y-%m-%d %H:%M:%S]"` haproxy-galera is not ready..... waitng...";
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` haproxy-galera is not ready..... waiting...";
               WSREP_READY=$(mysql --connect-timeout=3 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_READY" 2>1 2> /dev/null;);
               WSREP_CLUSTER_SIZE=$(mysql --connect-timeout=3 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_SIZE" 2>1 2> /dev/null;);
               WSREP_CLUSTER_STATUS=$(mysql --connect-timeout=3 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_STATUS" 2>1 2> /dev/null;);
@@ -98,7 +98,7 @@ spec:
             UPTIME=$((echo stats ; echo quit) | nc memcached 11211 | awk '/uptime/ {print $3}' | tr -d '\015');
             until [ $CURRENT_CONNECTIONS -gt 0 ] && [ $UPTIME -gt 0 ];
             do
-              echo "`date +"[%Y-%m-%d %H:%M:%S]"` memcached is not ready..... waitng...";
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` memcached is not ready..... waiting...";
               sleep 5;
             done;
             echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ memcached is ready~~";
@@ -116,7 +116,7 @@ spec:
               R0_ALIVENESS=$(curl --connect-timeout 3 -s -u $K8S_RABBITMQ_ADMIN_USER:$K8S_RABBITMQ_ADMIN_PASS "http://rabbitmq-0.rabbitmq:15672/api/aliveness-test/%2F");
               R1_ALIVENESS=$(curl --connect-timeout 3 -s -u $K8S_RABBITMQ_ADMIN_USER:$K8S_RABBITMQ_ADMIN_PASS "http://rabbitmq-1.rabbitmq:15672/api/aliveness-test/%2F");
               R2_ALIVENESS=$(curl --connect-timeout 3 -s -u $K8S_RABBITMQ_ADMIN_USER:$K8S_RABBITMQ_ADMIN_PASS "http://rabbitmq-2.rabbitmq:15672/api/aliveness-test/%2F");
-              echo "`date +"[%Y-%m-%d %H:%M:%S]"` rabbitmq is not ready..... waitng...";
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` rabbitmq is not ready..... waiting...";
               sleep 5;
             done;
             echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ rabbitmq is ready~~";
@@ -138,7 +138,7 @@ spec:
               K0_API_5000=$(curl --connect-timeout 3 -s "http://keystone-0.keystone:5000" | jq ".versions.values[0].status");
               K1_API_5000=$(curl --connect-timeout 3 -s "http://keystone-1.keystone:5000" | jq ".versions.values[0].status");
               K2_API_5000=$(curl --connect-timeout 3 -s "http://keystone-2.keystone:5000" | jq ".versions.values[0].status");
-              echo "`date +"[%Y-%m-%d %H:%M:%S]"` keystone is not ready..... waitng...";
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` keystone is not ready..... waiting...";
               sleep 5;
             done;
             echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ keystone is ready~~";

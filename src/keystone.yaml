@@ -70,7 +70,7 @@ spec:
             until [ "$WSREP_READY" == "ON" ] && [ "$WSREP_CLUSTER_SIZE" == "3" ] && [ "$WSREP_CLUSTER_STATUS" == "Primary" ] && [ "$WSREP_LOCAL_STATE_COMMENT" == "Synced" ];
             do
               ping -c 1 -W 1 haproxy-galera 2>&1 >/dev/null
-              echo "`date +"[%Y-%m-%d %H:%M:%S]"` haproxy-galera is not ready..... waitng...";
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` haproxy-galera is not ready..... waiting...";
               WSREP_READY=$(mysql --connect-timeout=3 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_READY" 2>1 2> /dev/null;);
               WSREP_CLUSTER_SIZE=$(mysql --connect-timeout=3 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_SIZE" 2>1 2> /dev/null;);
               WSREP_CLUSTER_STATUS=$(mysql --connect-timeout=3 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_STATUS" 2>1 2> /dev/null;);
@@ -99,7 +99,7 @@ spec:
             UPTIME=$((echo stats ; echo quit) | nc memcached 11211 | awk '/uptime/ {print $3}' | tr -d '\015');
             until [ $CURRENT_CONNECTIONS -gt 0 ] && [ $UPTIME -gt 0 ];
             do
-              echo "`date +"[%Y-%m-%d %H:%M:%S]"` memcached is not ready..... waitng...";
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` memcached is not ready..... waiting...";
               sleep 5;
             done;
             echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ memcached is ready~~";
@@ -117,7 +117,7 @@ spec:
             R2_ALIVENESS=$(curl --connect-timeout 3 -s -u $K8S_RABBITMQ_ADMIN_USER:$K8S_RABBITMQ_ADMIN_PASS "http://rabbitmq-2.rabbitmq:15672/api/aliveness-test/%2F");
             until [ "$R0_ALIVENESS" == "{\"status\":\"ok\"}" ] && [ "$R1_ALIVENESS" == "{\"status\":\"ok\"}" ] && [ "$R2_ALIVENESS" == "{\"status\":\"ok\"}" ];
             do
-              echo "`date +"[%Y-%m-%d %H:%M:%S]"` rabbitmq is not ready..... waitng...";
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` rabbitmq is not ready..... waiting...";
               sleep 5;
             done;
             echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ rabbitmq is ready~~";
