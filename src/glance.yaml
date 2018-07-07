@@ -128,11 +128,11 @@ spec:
           - -c
           - >
             K0_API_35357=$(curl -s "http://keystone-0.keystone:35357" | jq ".versions.values[0].status");
-            K1_API_35357=$(curl -s "http://keystone-0.keystone:35357" | jq ".versions.values[0].status");
-            K2_API_35357=$(curl -s "http://keystone-0.keystone:35357" | jq ".versions.values[0].status");
+            K1_API_35357=$(curl -s "http://keystone-1.keystone:35357" | jq ".versions.values[0].status");
+            K2_API_35357=$(curl -s "http://keystone-2.keystone:35357" | jq ".versions.values[0].status");
             K0_API_5000=$(curl -s "http://keystone-0.keystone:5000" | jq ".versions.values[0].status");
-            K1_API_5000=$(curl -s "http://keystone-0.keystone:5000" | jq ".versions.values[0].status");
-            K2_API_5000=$(curl -s "http://keystone-0.keystone:5000" | jq ".versions.values[0].status");
+            K1_API_5000=$(curl -s "http://keystone-1.keystone:5000" | jq ".versions.values[0].status");
+            K2_API_5000=$(curl -s "http://keystone-2.keystone:5000" | jq ".versions.values[0].status");
             until [ "$K0_API_35357" == "\"stable\"" ] && [ "$K1_API_35357" == "\"stable\"" ] && [ "$K2_API_35357" == "\"stable\"" ] && [ "$K0_API_5000" == "\"stable\"" ] && [ "$K1_API_5000" == "\"stable\"" ] && [ "$K2_API_5000" == "\"stable\"" ];
             do
               echo "`date +"[%Y-%m-%d %H:%M:%S]"` keystone is not ready..... waitng...";
