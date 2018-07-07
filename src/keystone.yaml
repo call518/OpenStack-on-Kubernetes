@@ -52,7 +52,7 @@ spec:
                  - keystone
              topologyKey: "kubernetes.io/hostname"
       initContainers:
-      - name: wait-haproxy-galera
+      - name: wait-1
         image: call518/oaas-init-container
         envFrom:
           - configMapRef:
@@ -75,7 +75,7 @@ spec:
               sleep 5;
             done;
             echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ haproxy-galera is ready~~";
-      - name: wait-memcached
+      - name: wait-2
         image: call518/oaas-init-container
         envFrom:
           - configMapRef:
@@ -100,7 +100,7 @@ spec:
               sleep 5;
             done;
             echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ memcached is ready~~";
-      - name: wait-rabbitmq
+      - name: wait-3
         image: call518/oaas-init-container
         envFrom:
           - configMapRef:

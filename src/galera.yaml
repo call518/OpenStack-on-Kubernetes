@@ -58,7 +58,7 @@ spec:
                  - galera
              topologyKey: "kubernetes.io/hostname"
       initContainers:
-      - name: wait-etcd
+      - name: wait-1
         image: call518/oaas-init-container
         envFrom:
           - configMapRef:
