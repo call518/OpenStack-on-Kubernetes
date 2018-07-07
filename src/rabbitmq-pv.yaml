@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: pv-rabbitmq-datadir-rabbitmq-0
+  name: pv-rabbitmq-rabbitmq-0
   labels:
     app: rabbitmq
     podindex: "0"
@@ -11,7 +11,7 @@ spec:
   capacity:
     storage: 10Gi
   #hostPath:
-  #  path: /data/pods/rabbitmq-0/datadir
+  #  path: /data/pv/rabbitmq-0
   volumeMode: Filesystem
   #persistentVolumeReclaimPolicy: Recycle
   persistentVolumeReclaimPolicy: Retain
@@ -19,7 +19,7 @@ spec:
     - hard
     - nfsvers=4.1
   nfs:
-    path: /data/pods/rabbitmq-0/datadir
+    path: /data/pv/rabbitmq-0
     server: nfs-server
 
 ---
@@ -27,7 +27,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: pv-rabbitmq-datadir-rabbitmq-1
+  name: pv-rabbitmq-rabbitmq-1
   labels:
     app: rabbitmq
     podindex: "1"
@@ -37,7 +37,7 @@ spec:
   capacity:
     storage: 10Gi
   #hostPath:
-  #  path: /data/pods/rabbitmq-1/datadir
+  #  path: /data/pv/rabbitmq-1
   volumeMode: Filesystem
   #persistentVolumeReclaimPolicy: Recycle
   persistentVolumeReclaimPolicy: Retain
@@ -45,7 +45,7 @@ spec:
     - hard
     - nfsvers=4.1
   nfs:
-    path: /data/pods/rabbitmq-1/datadir
+    path: /data/pv/rabbitmq-1
     server: nfs-server
 
 ---
@@ -53,7 +53,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: pv-rabbitmq-datadir-rabbitmq-2
+  name: pv-rabbitmq-rabbitmq-2
   labels:
     app: rabbitmq
     podindex: "2"
@@ -63,7 +63,7 @@ spec:
   capacity:
     storage: 10Gi
   #hostPath:
-  #  path: /data/pods/rabbitmq-2/datadir
+  #  path: /data/pv/rabbitmq-2
   volumeMode: Filesystem
   #persistentVolumeReclaimPolicy: Recycle
   persistentVolumeReclaimPolicy: Retain
@@ -71,5 +71,5 @@ spec:
     - hard
     - nfsvers=4.1
   nfs:
-    path: /data/pods/rabbitmq-2/datadir
+    path: /data/pv/rabbitmq-2
     server: nfs-server

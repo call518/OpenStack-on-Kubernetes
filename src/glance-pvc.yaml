@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: pvc-glance-datadir-glance-images
+  name: pvc-glance-images
 spec:
   accessModes:
     #- ReadWriteOnce
@@ -11,4 +11,4 @@ spec:
       storage: 10Gi
   selector:
     matchLabels:
-      app: pv-glance-datadir-glance-images
+      app: pv-glance-images

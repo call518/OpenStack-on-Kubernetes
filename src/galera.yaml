@@ -113,11 +113,11 @@ spec:
           initialDelaySeconds: 120
           periodSeconds: 1
         volumeMounts:
-        - name: pvc-galera-datadir
+        - name: pvc-galera
           mountPath: /var/lib/mysql
   volumeClaimTemplates:
   - metadata:
-      name: pvc-galera-datadir
+      name: pvc-galera
     spec:
       accessModes: [ "ReadWriteOnce" ]
       # uncomment if using slow storageClass on AWS

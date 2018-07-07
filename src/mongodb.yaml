@@ -128,7 +128,7 @@ spec:
               # readOnly: true
               mountPath: /etc/secrets-volume/mongodb-secret
               subPath: mongodb-secret
-            - name: pvc-mongodb-datadir
+            - name: pvc-mongodb
               mountPath: /data/db
       volumes:
         - name: secrets-volume
@@ -140,7 +140,7 @@ spec:
             defaultMode: 256
   volumeClaimTemplates:
   - metadata:
-      name: pvc-mongodb-datadir
+      name: pvc-mongodb
 #      annotations:
 #        volume.beta.kubernetes.io/storage-class: "fast"
     spec:
@@ -148,34 +148,3 @@ spec:
       resources:
         requests:
           storage: 500Mi
-# ---
-# Google cloud
-# kind: StorageClass
-# apiVersion: storage.k8s.io/v1beta1
-# metadata:
-#   name: fast
-# provisioner: kubernetes.io/gce-pd
-# parameters:
-#   type: pd-ssd
-# apiVersion: "v1"
-# ---
-# kind: "PersistentVolume"
-# metadata:
-#   name: data-volume-INST
-# spec:
-#   capacity:
-#     storage: 10Gi
-#   accessModes:
-#     - ReadWriteOnce
-#   persistentVolumeReclaimPolicy: Retain
-#   storageClassName: fast
-#   gcePersistentDisk:
-#     fsType: xfs
-#     pdName: pd-ssd-disk-INST
----
-## Local storage
-#kind: StorageClass
-#apiVersion: storage.k8s.io/v1beta1
-#metadata:
-#  name: fast
-#provisioner: k8s.io/minikube-hostpath

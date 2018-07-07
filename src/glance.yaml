@@ -158,7 +158,7 @@ spec:
           volumeMounts:
           - name: glance-setup
             mountPath: /scripts
-          - name: pvc-glance-datadir
+          - name: pvc-glance-images
             mountPath: /var/lib/glance/images
           readinessProbe:
             exec:
@@ -184,6 +184,6 @@ spec:
         configMap:
           name: glance-setup
           defaultMode: 0755
-      - name: pvc-glance-datadir
+      - name: pvc-glance-images
         persistentVolumeClaim:
-          claimName: pvc-glance-datadir-glance-images
+          claimName: pvc-glance-images

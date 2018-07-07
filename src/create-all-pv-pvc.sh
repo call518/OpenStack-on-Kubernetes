@@ -1,9 +1,9 @@
 #!/bin/bash
 
-mkdir -p /data/pods/galera-{0,1,2}/datadir
-mkdir -p /data/pods/mongodb-{0,1,2}/datadir
-mkdir -p /data/pods/rabbitmq-{0,1,2}/datadir
-mkdir -p /data/pods/glance-images/datadir
+mkdir -p /data/pv/galera-{0,1,2}
+mkdir -p /data/pv/mongodb-{0,1,2}
+mkdir -p /data/pv/rabbitmq-{0,1,2}
+mkdir -p /data/pv/glance-images
 
 kubectl create -f galera-pv.yaml 
 kubectl create -f galera-pvc.yaml 
