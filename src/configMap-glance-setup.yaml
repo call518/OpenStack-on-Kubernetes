@@ -63,8 +63,13 @@ data:
     service glance-registry restart
     chown -R glance:glance /var/lib/glance/*
     if [ "X$exist_glance_db" == "X" ]; then
-      wget http://download.cirros-cloud.net/0.3.4/cirros-0.3.4-x86_64-disk.img -O /cirros-0.3.4-x86_64-disk.img
-      openstack image create "Cirros-0.3.4-x86_64" --file /cirros-0.3.4-x86_64-disk.img --disk-format qcow2 --container-format bare --public
+      until openstack image list -f value | grep Cirros;
+      do
+        echo "creating.... image of Cirros-0.3.4-x86_64..........."
+        wget http://download.cirros-cloud.net/0.3.4/cirros-0.3.4-x86_64-disk.img -O /cirros-0.3.4-x86_64-disk.img
+        openstack image create "Cirros-0.3.4-x86_64" --file /cirros-0.3.4-x86_64-disk.img --disk-format qcow2 --container-format bare --public
+        sleep 5
+      done
     fi
     until openstack image list -f value | grep Cirros; do echo "wating for service response....."; sleep 5; done
     echo "ok~~~~ service is ready~~!!!"

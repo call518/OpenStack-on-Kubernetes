@@ -1,0 +1,5 @@
+curl -X PUT http://$DISCOVERY_SERVICE/v2/keys/message -d value="Hello"
+curl -X GET http://$DISCOVERY_SERVICE/v2/keys/message
+curl -X DELETE http://$DISCOVERY_SERVICE/v2/keys/message
+
+curl -s http://$DISCOVERY_SERVICE/v2/keys/galera/$CLUSTER_NAME?recursive=true\&sorted=true | jq -r '.node.nodes[].| contains ("wsrep_local_state_comment")) | select(.value == "Synced") | .key' | awk -F'/' '{print $(NF-1)}' | tr "\n" ' '| sed -e 's/[[:space:]]*$//'
