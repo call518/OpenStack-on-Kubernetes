@@ -66,6 +66,8 @@ data:
       wget http://download.cirros-cloud.net/0.3.4/cirros-0.3.4-x86_64-disk.img -O /cirros-0.3.4-x86_64-disk.img
       openstack image create "Cirros-0.3.4-x86_64" --file /cirros-0.3.4-x86_64-disk.img --disk-format qcow2 --container-format bare --public
     fi
+    until openstack image list -f value | grep Cirros; do echo "wating for service response....."; sleep 5; done
+    echo "ok~~~~ service is ready~~!!!"
     touch /.setup_completed
     tail -F /var/log/syslog /var/log/glance/*
 

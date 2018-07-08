@@ -61,6 +61,8 @@ data:
       openstack role add --project demo --user demo user
     fi
     service apache2 restart
+    until openstack user list -f value | grep demo; do echo "wating for service response....."; sleep 5; done
+    echo "ok~~~~ service is ready~~!!!"
     touch /.setup_completed
     tail -F /var/log/syslog /var/log/apache2/*
 
