@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-cinder-volumes
+  labels:
+    app: pv-cinder-volumes
+spec:
+  accessModes:
+  #- ReadWriteOnce
+  - ReadWriteMany
+  capacity:
+    storage: 10Gi
+  #hostPath:
+  #  path: /data/pv/cinder-volumes
+  volumeMode: Filesystem
+  #persistentVolumeReclaimPolicy: Recycle
+  persistentVolumeReclaimPolicy: Retain
+  mountOptions:
+    - hard
+    - nfsvers=4.1
+  nfs:
+    path: /data/pv/cinder-volumes
+    server: nfs-server

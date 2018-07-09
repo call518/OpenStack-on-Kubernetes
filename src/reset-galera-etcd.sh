@@ -1,5 +1,6 @@
 #!/bin/bash
 
+kubectl delete pdb/etcd-pdb
 kubectl delete service/etcd-client
 kubectl delete service/etcd0
 kubectl delete service/etcd1

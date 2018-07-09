@@ -8,9 +8,8 @@ RUN cp -a /etc/apt/sources.list /etc/apt/sources.list.default \
     #&& add-apt-repository -y cloud-archive:queens \
     && add-apt-repository -y cloud-archive:newton \
     && apt-get update \
-    && apt-get install -y rsyslog mysql-client keystone python-openstackclient apache2 libapache2-mod-wsgi python-pip \
+    && apt-get install -y rsyslog mysql-client openstack-dashboard python-openstackclient python-pip \
     && pip install python-memcached \
     && apt-get install -y iputils-ping net-tools vim telnet lsof wget \
-    && rm -f /var/lib/keystone/keystone.db \
     && rm -rf /var/lib/apt/lists/*
 COPY check-init.sh /check-init.sh

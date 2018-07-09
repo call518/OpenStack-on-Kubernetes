@@ -1,3 +1,5 @@
+## Ref: https://kubernetes.io/docs/tutorials/stateful-application/zookeeper/
+
 apiVersion: v1
 kind: Service
 metadata:
@@ -35,6 +37,7 @@ spec:
   selector:
     matchLabels:
       app: zk
+  #minAvailable: 2
   maxUnavailable: 1
 ---
 apiVersion: apps/v1

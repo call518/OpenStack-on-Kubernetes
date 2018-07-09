@@ -1,0 +1,179 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cinder-setup
+data:
+  NFS_BACKEND_HOSTNAME: nfs-server
+  NFS_BACKEND_IP: 192.168.0.150
+  NFS_BACKEND_PATH_VOLUME: /data/pv/cinder-volumes
+  NFS_BACKEND_PATH_BACKUP: /data/pv/cinder-backups
+  cinder-init.sh: |
+    #!/bin/bash
+    set -e
+    service rsyslog restart
+    echo "$NFS_BACKEND_IP $NFS_BACKEND_HOSTNAME" >> /etc/hosts
+    echo "$NFS_BACKEND_HOSTNAME:$NFS_BACKEND_PATH_VOLUME" > /etc/cinder/nfsshares
+    chown root:cinder /etc/cinder/nfsshares
+    chmod 0640 /etc/cinder/nfsshares
+    #exportfs -a
+    #service rpcbind start
+    #service nfs-kernel-server start
+    #chown -R cinder:cinder /var/lib/cinder/volumes
+    cp -a /etc/cinder/cinder.conf /etc/cinder/cinder.conf.default
+    cat /scripts/cinder.conf > /etc/cinder/cinder.conf
+    sed -i "s/___NFS_BACKEND_HOSTNAME___/$NFS_BACKEND_HOSTNAME/g" /etc/cinder/cinder.conf
+    sed -i "s/___NFS_BACKEND_PATH_BACKUP___/$NFS_BACKEND_PATH_BACKUP/g" /etc/cinder/cinder.conf
+    sed -i "s/___K8S_CINDER_DB_PASS___/$K8S_CINDER_DB_PASS/g" /etc/cinder/cinder.conf
+    sed -i "s/___K8S_RABBITMQ_OPENSTACK_USER___/$K8S_RABBITMQ_OPENSTACK_USER/g" /etc/cinder/cinder.conf
+    sed -i "s/___K8S_RABBITMQ_OPENSTACK_PASS___/$K8S_RABBITMQ_OPENSTACK_PASS/g" /etc/cinder/cinder.conf
+    sed -i "s/___K8S_KEYSTONE_USER_CINDER_PASS___/$K8S_KEYSTONE_USER_CINDER_PASS/g" /etc/cinder/cinder.conf
+    cat > /root/admin-openrc << EOF
+    export OS_PROJECT_DOMAIN_NAME=default
+    export OS_USER_DOMAIN_NAME=default
+    export OS_PROJECT_NAME=admin
+    export OS_USERNAME=admin
+    export OS_PASSWORD=$K8S_KEYSTONE_USER_ADMIN_PASS
+    export OS_AUTH_URL=http://keystone:35357/v3
+    export OS_IDENTITY_API_VERSION=3
+    export OS_IMAGE_API_VERSION=2
+    EOF
+    cat > /root/demo-openrc << EOF
+    export OS_PROJECT_DOMAIN_NAME=Default
+    export OS_USER_DOMAIN_NAME=Default
+    export OS_PROJECT_NAME=demo
+    export OS_USERNAME=demo
+    export OS_PASSWORD=$K8S_KEYSTONE_USER_DEMO_PASS
+    export OS_AUTH_URL=http://keystone:5000/v3
+    export OS_IDENTITY_API_VERSION=3
+    export OS_IMAGE_API_VERSION=2
+    EOF
+    source /root/admin-openrc
+    exist_cinder_db=$(mysql -s -N -q -A --connect-timeout=10 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW DATABASES LIKE 'cinder';" 2>/dev/null)
+    if [ "X$exist_cinder_db" == "X" ]; then
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS cinder"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON cinder.* TO 'cinder'@'localhost' IDENTIFIED BY '$K8S_CINDER_DB_PASS'"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON cinder.* TO 'cinder'@'%' IDENTIFIED BY '$K8S_CINDER_DB_PASS'"
+      if ! openstack user list -f value -c Name | grep cinder > /dev/null; then
+        openstack user create --domain default --password $K8S_KEYSTONE_USER_CINDER_PASS cinder 2>/dev/null
+      fi
+      openstack role add --project service --user cinder admin
+      if ! openstack service list -f value -c Name | grep "^cinder$" > /dev/null; then
+        openstack service create --name cinder --description "OpenStack Block Storage" volume;
+      fi
+      if ! openstack service list -f value -c Name | grep "^cinderv2$" > /dev/null; then
+        openstack service create --name cinderv2 --description "OpenStack Block Storage" volumev2;
+      fi
+      if ! openstack endpoint list --service cinder -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "cinder volume public" > /dev/null; then
+        openstack endpoint create --region RegionOne volume public http://cinder:8776/v1/%\(tenant_id\)s
+      fi
+      if ! openstack endpoint list --service cinder -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "cinder volume internal" > /dev/null; then
+        openstack endpoint create --region RegionOne volume internal http://cinder:8776/v1/%\(tenant_id\)s
+      fi
+      if ! openstack endpoint list --service cinder -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "cinder volume admin" > /dev/null; then
+        openstack endpoint create --region RegionOne volume admin http://cinder:8776/v1/%\(tenant_id\)s
+      fi
+      if ! openstack endpoint list --service cinderv2 -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "cinderv2 volumev2 public" > /dev/null; then
+        openstack endpoint create --region RegionOne volumev2 public http://cinder:8776/v2/%\(tenant_id\)s
+      fi
+      if ! openstack endpoint list --service cinderv2 -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "cinderv2 volumev2 internal" > /dev/null; then
+        openstack endpoint create --region RegionOne volumev2 internal http://cinder:8776/v2/%\(tenant_id\)s
+      fi
+      if ! openstack endpoint list --service cinderv2 -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "cinderv2 volumev2 admin" > /dev/null; then
+        openstack endpoint create --region RegionOne volumev2 admin http://cinder:8776/v2/%\(tenant_id\)s
+      fi
+    fi
+    su -s /bin/sh -c "cinder-manage db sync" cinder
+    service cinder-volume restart
+    service cinder-scheduler restart
+    service cinder-backup restart
+    service cinder-api restart
+    sleep 5;
+    VOLUME_SERVICES=$(openstack volume service list -f value -c "Binary" -c "Status")
+    until (echo $VOLUME_SERVICES | grep -q "cinder-volume") && (echo $VOLUME_SERVICES | grep -q "cinder-scheduler") && (echo $VOLUME_SERVICES | grep -q "cinder-backup")
+    do
+      echo "wating for service response....."
+      sleep 5
+    done
+    echo "ok~~~~ service is ready~~!!!"
+    openstack volume service list
+    touch /.setup_completed
+    tail -F /var/log/syslog /var/log/cinder/*
+
+  cinder.conf: |
+    [DEFAULT]
+    #transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq
+    transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-0.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-1.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-2.rabbitmq
+    auth_strategy = keystone
+    #control_exchange = openstack
+    #control_exchange = cinder
+    volume_usage_audit_period = hour
+    glance_api_servers = http://glance:9292
+    glance_api_version = 2
+    scheduler_max_attempts = 100
+    ## Volume to NFS
+    nfs_shares_config = /etc/cinder/nfsshares
+    volume_driver = cinder.volume.drivers.nfs.NfsDriver
+    #nfs_mount_options = None
+    nfs_mount_point_base = $state_path/mnt
+    nfs_sparsed_volumes = true
+    nfs_mount_attempts = 3
+    ## Backup to NFS
+    backup_driver = cinder.backup.drivers.nfs
+    #backup_container = None
+    #backup_enable_progress_timer = True
+    #backup_mount_options = None
+    #backup_mount_point_base = $state_path/backup_mount
+    #backup_file_size = 1999994880
+    #backup_sha_block_size_bytes = 32768
+    backup_share = ___NFS_BACKEND_HOSTNAME___:___NFS_BACKEND_PATH_BACKUP___
+    ## Backup to Swift
+    #backup_driver = cinder.backup.drivers.swift
+    #backup_swift_url = http://192.168.51.223/swift/v1
+    #swift_catalog_info=object-store:swift:publicURL
+    #backup_swift_auth = per_user
+    #backup_swift_auth_version = 1
+    #backup_swift_user =
+    #backup_swift_key =
+    #backup_swift_container = volumebackups
+    #backup_swift_object_size = 52428800
+    #backup_swift_block_size = 32768
+    #backup_swift_retry_attempts = 3
+    #backup_swift_retry_backoff = 2
+    #backup_compression_algorithm = zlib
+    [BACKEND]
+    [BRCD_FABRIC_EXAMPLE]
+    [CISCO_FABRIC_EXAMPLE]
+    [COORDINATION]
+    [FC-ZONE-MANAGER]
+    [KEY_MANAGER]
+    [barbican]
+    [cors]
+    [cors.subdomain]
+    [database]
+    connection = mysql+pymysql://cinder:___K8S_CINDER_DB_PASS___@haproxy-galera/cinder
+    [key_manager]
+    [keystone_authtoken]
+    auth_uri = http://keystone:5000/v3
+    auth_url = http://keystone:35357/v3
+    memcached_servers = memcached:11211
+    auth_type = password
+    project_domain_name = default
+    user_domain_name = default
+    project_name = service
+    username = cinder
+    password = ___K8S_KEYSTONE_USER_CINDER_PASS___
+    [matchmaker_redis]
+    [oslo_concurrency]
+    lock_path = /var/lib/cinder/tmp
+    [oslo_messaging_amqp]
+    [oslo_messaging_notifications]
+    driver = messagingv2
+    #transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq
+    transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-0.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-1.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-2.rabbitmq
+    [oslo_messaging_rabbit]
+    [oslo_messaging_zmq]
+    [oslo_middleware]
+    [oslo_policy]
+    [oslo_reports]
+    [oslo_versionedobjects]
+    [ssl] 

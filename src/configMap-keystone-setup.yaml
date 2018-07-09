@@ -125,3 +125,13 @@ data:
     openstack service delete glance
     openstack user delete glance
     mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "DROP DATABASE IF EXISTS glance; DELETE FROM mysql.user WHERE User='glance'; DELETE FROM mysql.db WHERE Db='glance' AND User='glance'; FLUSH PRIVILEGES;"
+
+  remove-cinder.sh: |
+    #!/bin/bash
+    source /root/admin-openrc
+    openstack endpoint delete $(openstack endpoint list --service cinder -f value -c ID)
+    openstack endpoint delete $(openstack endpoint list --service cinderv2 -f value -c ID)
+    openstack service delete cinder
+    openstack service delete cinderv2
+    openstack user delete cinder
+    mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "DROP DATABASE IF EXISTS cinder; DELETE FROM mysql.user WHERE User='cinder'; DELETE FROM mysql.db WHERE Db='cinder' AND User='cinder'; FLUSH PRIVILEGES;"

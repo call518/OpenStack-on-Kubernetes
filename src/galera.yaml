@@ -1,4 +1,6 @@
-# Reference: https://hub.docker.com/r/severalnines/mariadb/
+## Ref: https://github.com/severalnines/galera-docker-mariadb/tree/master/example-kubernetes
+
+# (Image) https://hub.docker.com/r/severalnines/mariadb/
 #
 # [[[ Known Limitations ]]]
 # The image are tested and built using Docker version 1.12.3, build 6b644ec on CentOS 7.1.
@@ -31,6 +33,19 @@ spec:
   #type: LoadBalancer
   selector:
     app: galera
+
+---
+
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: galera-pdb
+spec:
+  selector:
+    matchLabels:
+      app: galera
+  #minAvailable: 2
+  maxUnavailable: 1
 
 ---
 
@@ -77,6 +92,9 @@ spec:
             echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ etcd is ready~~";
       containers:
       - name: galera
+        imagePullPolicy: Always
+        #image: severalnines/mariadb:10.1
+        image: call518/oaas-galera
         ports:
         - name: mysql
           containerPort: 3306
@@ -98,8 +116,6 @@ spec:
         envFrom:
           - configMapRef:
               name: env-common
-        #image: severalnines/mariadb:10.1
-        image: call518/oaas-galera
         readinessProbe:
           exec:
             command:

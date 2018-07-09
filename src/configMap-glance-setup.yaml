@@ -61,7 +61,7 @@ data:
     fi
     service glance-api restart
     service glance-registry restart
-    chown -R glance:glance /var/lib/glance/*
+    chown -R glance:glance /var/lib/glance
     if [ "X$exist_glance_db" == "X" ]; then
       until openstack image list -f value | grep Cirros;
       do

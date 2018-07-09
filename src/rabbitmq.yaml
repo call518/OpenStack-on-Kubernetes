@@ -38,6 +38,20 @@ spec:
   #type: LoadBalancer
   selector:
     app: rabbitmq
+
+---
+
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: rabbitmq-pdb
+spec:
+  selector:
+    matchLabels:
+      app: rabbitmq
+  #minAvailable: 2
+  maxUnavailable: 1
+
 ---
 
 apiVersion: apps/v1beta1
@@ -66,6 +80,7 @@ spec:
              topologyKey: "kubernetes.io/hostname"
       containers:
       - name: rabbitmq
+        imagePullPolicy: Always
         image: rabbitmq:3.6.6-management-alpine
         envFrom:
           - configMapRef:

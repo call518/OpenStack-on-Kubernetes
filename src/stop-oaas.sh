@@ -1,5 +1,7 @@
 #!/bin/bash
 
+#./reset-zookeeper.sh
+./reset-cinder.sh
 ./reset-glance.sh
 ./reset-keystone.sh
 ./reset-haproxy.sh
