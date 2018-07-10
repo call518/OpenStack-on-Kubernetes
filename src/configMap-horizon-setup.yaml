@@ -3,8 +3,8 @@ kind: ConfigMap
 metadata:
   name: horizon-setup
 data:
-  HORIZON_TIME_ZONE: UTC
-  #HORIZON_TIME_ZONE: Asia/Seoul
+  #HORIZON_TIME_ZONE: UTC
+  HORIZON_TIME_ZONE: Asia/Seoul
 
   horizon-init.sh: |
     #!/bin/bash
