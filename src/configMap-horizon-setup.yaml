@@ -3,16 +3,12 @@ kind: ConfigMap
 metadata:
   name: horizon-setup
 data:
-  #HORIZON_TIME_ZONE: UTC
-  HORIZON_TIME_ZONE: Asia/Seoul
-
   horizon-init.sh: |
     #!/bin/bash
     set -e
     service rsyslog restart
     cp -a /etc/openstack-dashboard/local_settings.py /etc/openstack-dashboard/local_settings.py.default
     cat /scripts/local_settings.py > /etc/openstack-dashboard/local_settings.py
-    sed -i "s|___HORIZON_TIME_ZONE___|$HORIZON_TIME_ZONE|g" /etc/openstack-dashboard/local_settings.py
     a2dissite 000-default
     echo "ServerName localhost" >> /etc/apache2/apache2.conf
     service apache2 restart
@@ -193,7 +189,7 @@ data:
     #]
     
     OPENSTACK_HOST = "keystone"
-    OPENSTACK_KEYSTONE_URL = "http://%s:5000/v2.0" % OPENSTACK_HOST
+    #OPENSTACK_KEYSTONE_URL = "http://%s:5000/v2.0" % OPENSTACK_HOST
     #OPENSTACK_KEYSTONE_URL = "http://%s:5000/v2.0" % OPENSTACK_HOST
     OPENSTACK_KEYSTONE_URL = "http://%s:5000/v3" % OPENSTACK_HOST
     #OPENSTACK_KEYSTONE_DEFAULT_ROLE = "_member_"
@@ -445,7 +441,7 @@ data:
     # The timezone of the server. This should correspond with the timezone
     # of your entire OpenStack installation, and hopefully be in UTC.
     #TIME_ZONE = "UTC"
-    TIME_ZONE = "___HORIZON_TIME_ZONE___"
+    TIME_ZONE = "Asia/Seoul"
     
     # When launching an instance, the menu of available flavors is
     # sorted by RAM usage, ascending. If you would like a different sort order,
