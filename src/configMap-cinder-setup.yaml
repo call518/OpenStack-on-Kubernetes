@@ -109,43 +109,17 @@ data:
     #transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq
     transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-0.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-1.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-2.rabbitmq
     auth_strategy = keystone
-    #control_exchange = openstack
-    #control_exchange = cinder
     volume_usage_audit_period = hour
     glance_api_servers = http://glance:9292
     glance_api_version = 2
     scheduler_max_attempts = 100
-    ## Config for NFS
-    #nas_secure_file_operations = false
-    #nas_secure_file_permissions = false
-    nfs_shares_config = /etc/cinder/nfsshares
     volume_driver = cinder.volume.drivers.nfs.NfsDriver
-    #nfs_mount_options = None
+    nfs_shares_config = /etc/cinder/nfsshares
     nfs_mount_point_base = $state_path/mnt
     nfs_sparsed_volumes = true
     nfs_mount_attempts = 3
     backup_driver = cinder.backup.drivers.nfs
-    #backup_container = None
-    #backup_enable_progress_timer = True
-    #backup_mount_options = None
-    #backup_mount_point_base = $state_path/backup_mount
-    #backup_file_size = 1999994880
-    #backup_sha_block_size_bytes = 32768
     backup_share = ___NFS_BACKEND_HOSTNAME___:___NFS_BACKEND_PATH_BACKUP___
-    ## Backup to Swift
-    #backup_driver = cinder.backup.drivers.swift
-    #backup_swift_url = http://192.168.51.223/swift/v1
-    #swift_catalog_info=object-store:swift:publicURL
-    #backup_swift_auth = per_user
-    #backup_swift_auth_version = 1
-    #backup_swift_user =
-    #backup_swift_key =
-    #backup_swift_container = volumebackups
-    #backup_swift_object_size = 52428800
-    #backup_swift_block_size = 32768
-    #backup_swift_retry_attempts = 3
-    #backup_swift_retry_backoff = 2
-    #backup_compression_algorithm = zlib
     [BACKEND]
     [BRCD_FABRIC_EXAMPLE]
     [CISCO_FABRIC_EXAMPLE]
