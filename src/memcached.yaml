@@ -1,3 +1,18 @@
+## Ref: 
+
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: memcached-pdb
+spec:
+  selector:
+    matchLabels:
+      app: memcached
+  #minAvailable: 2
+  maxUnavailable: 1
+
+---
+
 # Memcached
 
 apiVersion: v1
