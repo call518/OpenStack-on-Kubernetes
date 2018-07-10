@@ -12,7 +12,7 @@ data:
     service rsyslog restart
     cp -a /etc/openstack-dashboard/local_settings.py /etc/openstack-dashboard/local_settings.py.default
     cat /scripts/local_settings.py > /etc/openstack-dashboard/local_settings.py
-    sed -i "s/___HORIZON_TIME_ZONE___/$HORIZON_TIME_ZONE/g" /etc/openstack-dashboard/local_settings.py
+    sed -i "s|___HORIZON_TIME_ZONE___|$HORIZON_TIME_ZONE|g" /etc/openstack-dashboard/local_settings.py
     a2dissite 000-default
     echo "ServerName localhost" >> /etc/apache2/apache2.conf
     service apache2 restart
