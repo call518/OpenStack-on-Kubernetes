@@ -10,6 +10,7 @@ mkdir -p /data/pv/zookeeper-{0,1,2}
 ## for Direct NFS
 mkdir -p /data/pv/cinder-volumes
 mkdir -p /data/pv/cinder-backups
+#chown -R 108:111 /data/pv/cinder-volumes /data/pv/cinder-backups
 
 kubectl create -f galera-pv.yaml 
 kubectl create -f galera-pvc.yaml 

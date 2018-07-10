@@ -3,14 +3,18 @@ kind: ConfigMap
 metadata:
   name: cinder-setup
 data:
-  NFS_BACKEND_HOSTNAME: nfs-server
-  NFS_BACKEND_IP: 192.168.0.150
-  NFS_BACKEND_PATH_VOLUME: /data/pv/cinder-volumes
-  NFS_BACKEND_PATH_BACKUP: /data/pv/cinder-backups
+  ## Temporary Env. for NFS-Backend-Storage(Tutorial)
+  env-nfs-backend: |
+    export NFS_BACKEND_HOSTNAME="nfs-server"
+    export NFS_BACKEND_IP="192.168.0.150"
+    export NFS_BACKEND_PATH_VOLUME="/data/pv/cinder-volumes"
+    export NFS_BACKEND_PATH_BACKUP="/data/pv/cinder-backups"
+
   cinder-init.sh: |
     #!/bin/bash
     set -e
     service rsyslog restart
+    source /scripts/env-nfs-backend
     echo "$NFS_BACKEND_IP $NFS_BACKEND_HOSTNAME" >> /etc/hosts
     echo "$NFS_BACKEND_HOSTNAME:$NFS_BACKEND_PATH_VOLUME" > /etc/cinder/nfsshares
     chown root:cinder /etc/cinder/nfsshares
@@ -22,7 +26,7 @@ data:
     cp -a /etc/cinder/cinder.conf /etc/cinder/cinder.conf.default
     cat /scripts/cinder.conf > /etc/cinder/cinder.conf
     sed -i "s/___NFS_BACKEND_HOSTNAME___/$NFS_BACKEND_HOSTNAME/g" /etc/cinder/cinder.conf
-    sed -i "s/___NFS_BACKEND_PATH_BACKUP___/$NFS_BACKEND_PATH_BACKUP/g" /etc/cinder/cinder.conf
+    sed -i "s|___NFS_BACKEND_PATH_BACKUP___|$NFS_BACKEND_PATH_BACKUP|g" /etc/cinder/cinder.conf
     sed -i "s/___K8S_CINDER_DB_PASS___/$K8S_CINDER_DB_PASS/g" /etc/cinder/cinder.conf
     sed -i "s/___K8S_RABBITMQ_OPENSTACK_USER___/$K8S_RABBITMQ_OPENSTACK_USER/g" /etc/cinder/cinder.conf
     sed -i "s/___K8S_RABBITMQ_OPENSTACK_PASS___/$K8S_RABBITMQ_OPENSTACK_PASS/g" /etc/cinder/cinder.conf
@@ -96,6 +100,7 @@ data:
     done
     echo "ok~~~~ service is ready~~!!!"
     openstack volume service list
+    chown -R cinder:cinder /var/lib/cinder/mnt
     touch /.setup_completed
     tail -F /var/log/syslog /var/log/cinder/*
 
@@ -110,14 +115,15 @@ data:
     glance_api_servers = http://glance:9292
     glance_api_version = 2
     scheduler_max_attempts = 100
-    ## Volume to NFS
+    ## Config for NFS
+    #nas_secure_file_operations = false
+    #nas_secure_file_permissions = false
     nfs_shares_config = /etc/cinder/nfsshares
     volume_driver = cinder.volume.drivers.nfs.NfsDriver
     #nfs_mount_options = None
     nfs_mount_point_base = $state_path/mnt
     nfs_sparsed_volumes = true
     nfs_mount_attempts = 3
-    ## Backup to NFS
     backup_driver = cinder.backup.drivers.nfs
     #backup_container = None
     #backup_enable_progress_timer = True
@@ -155,7 +161,8 @@ data:
     [keystone_authtoken]
     auth_uri = http://keystone:5000/v3
     auth_url = http://keystone:35357/v3
-    memcached_servers = memcached:11211
+    #memcached_servers = memcached:11211
+    memcached_servers = memcached-0.memcached:11211,memcached-1.memcached:11211,memcached-2.memcached:11211
     auth_type = password
     project_domain_name = default
     user_domain_name = default

@@ -1,3 +1,16 @@
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: rabbitmq-pdb
+spec:
+  selector:
+    matchLabels:
+      app: rabbitmq
+  minAvailable: 2
+  #maxUnavailable: 1
+
+---
+
 apiVersion: v1
 kind: Service
 metadata:
@@ -41,19 +54,6 @@ spec:
 
 ---
 
-apiVersion: policy/v1beta1
-kind: PodDisruptionBudget
-metadata:
-  name: rabbitmq-pdb
-spec:
-  selector:
-    matchLabels:
-      app: rabbitmq
-  #minAvailable: 2
-  maxUnavailable: 1
-
----
-
 apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
@@ -80,7 +80,8 @@ spec:
              topologyKey: "kubernetes.io/hostname"
       containers:
       - name: rabbitmq
-        imagePullPolicy: Always
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         image: rabbitmq:3.6.6-management-alpine
         envFrom:
           - configMapRef:

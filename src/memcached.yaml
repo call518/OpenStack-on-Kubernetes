@@ -1,4 +1,4 @@
-## Ref: 
+## Ref: None 
 
 apiVersion: policy/v1beta1
 kind: PodDisruptionBudget
@@ -8,12 +8,10 @@ spec:
   selector:
     matchLabels:
       app: memcached
-  #minAvailable: 2
-  maxUnavailable: 1
+  minAvailable: 1
+  #maxUnavailable: 2
 
 ---
-
-# Memcached
 
 apiVersion: v1
 kind: Service
@@ -35,11 +33,16 @@ spec:
 ---
 
 apiVersion: apps/v1beta1
-kind: Deployment
+kind: StatefulSet
+#apiVersion: apps/v1beta1
+#kind: Deployment
 metadata:
   name: memcached
 spec:
+  serviceName: "memcached"
   replicas: 3
+  #podManagementPolicy: OrderedReady
+  podManagementPolicy: Parallel
   selector:
     matchLabels:
       app: memcached
@@ -62,7 +65,8 @@ spec:
       containers:
         - name: memcached
           image: call518/oaas-memcached
-          imagePullPolicy: Always
+          #imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           #envFrom:
           #  - configMapRef:
           #      name: env-common

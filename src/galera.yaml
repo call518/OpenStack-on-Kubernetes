@@ -44,8 +44,8 @@ spec:
   selector:
     matchLabels:
       app: galera
-  #minAvailable: 2
-  maxUnavailable: 1
+  minAvailable: 2
+  #maxUnavailable: 1
 
 ---
 
@@ -76,6 +76,8 @@ spec:
              topologyKey: "kubernetes.io/hostname"
       initContainers:
       - name: wait1
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         image: call518/oaas-init-container
         envFrom:
           - configMapRef:
@@ -92,7 +94,8 @@ spec:
             echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ etcd is ready~~";
       containers:
       - name: galera
-        imagePullPolicy: Always
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         #image: severalnines/mariadb:10.1
         image: call518/oaas-galera
         ports:

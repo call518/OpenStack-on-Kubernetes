@@ -91,7 +91,8 @@ data:
     [ldap]
     [matchmaker_redis]
     [memcache]
-    servers = memcached:11211
+    #servers = memcached:11211
+    servers = memcached-0.memcached:11211,memcached-1.memcached:11211,memcached-2.memcached:11211
     [oauth1]
     [os_inherit]
     [oslo_messaging_amqp]

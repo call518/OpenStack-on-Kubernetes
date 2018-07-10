@@ -55,7 +55,8 @@ spec:
     - etcd0=http://etcd0:2380,etcd1=http://etcd1:2380,etcd2=http://etcd2:2380
     - --initial-cluster-state
     - new
-    imagePullPolicy: Always
+    #imagePullPolicy: Always
+    imagePullPolicy: IfNotPresent
     image: quay.io/coreos/etcd:latest
     name: etcd0
     ports:

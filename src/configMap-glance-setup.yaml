@@ -102,7 +102,8 @@ data:
     [keystone_authtoken]
     auth_uri = http://keystone:5000/v3
     auth_url = http://keystone:35357/v3
-    memcached_servers = memcached:11211
+    #memcached_servers = memcached:11211
+    memcached_servers = memcached-0.memcached:11211,memcached-1.memcached:11211,memcached-2.memcached:11211
     auth_type = password
     project_domain_name = default
     user_domain_name = default
@@ -134,7 +135,8 @@ data:
     [keystone_authtoken]
     auth_uri = http://keystone:5000/v3
     auth_url = http://keystone:35357/v3
-    memcached_servers = memcached:11211
+    #memcached_servers = memcached:11211
+    memcached_servers = memcached-0.memcached:11211,memcached-1.memcached:11211,memcached-2.memcached:11211
     auth_type = password
     project_domain_name = default
     user_domain_name = default
