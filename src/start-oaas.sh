@@ -21,5 +21,5 @@ kubectl create -f rabbitmq.yaml
 kubectl create -f keystone.yaml
 kubectl create -f glance.yaml
 kubectl create -f cinder.yaml
-kubectl create -f horizon.yaml
+#kubectl create -f horizon.yaml
 #kubectl create -f zookeeper.yaml
