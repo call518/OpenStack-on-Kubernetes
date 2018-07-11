@@ -110,6 +110,7 @@ data:
     # will require the user to enter the Domain name in addition to the username
     # for login.
     OPENSTACK_KEYSTONE_MULTIDOMAIN_SUPPORT = True
+    #OPENSTACK_KEYSTONE_MULTIDOMAIN_SUPPORT = False
     
     # Overrides the default domain used when running on single-domain model
     # with Keystone V3. All entities will be created in the default domain.
