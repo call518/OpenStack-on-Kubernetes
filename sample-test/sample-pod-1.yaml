@@ -1,15 +1,47 @@
 apiVersion: v1
 kind: Pod
 metadata:
- name: sample-pod
+ name: sample-pod-1
 spec:
+ #hostNetwork: true
  containers:
- - name: sample-pod
-   image: call518/oaas-init-container
+ - name: sample-pod-1
+   #image: call518/oaas-init-container
+   image: call518/oaas-neutron-server
+   securityContext:
+     privileged: true
 #   ports:
 #   - containerPort: 3306
    command:
      - "bash"
      - "-c"
      - |
-       tail -F /var/log/messages
+       sleep 10;
+       ip link set eth0 down;
+       ip addr flush dev eth0;
+       ip link set eth0 name phy-eth0;
+       ip link add eth0 type bridge;
+       ip link set phy-eth0 master eth0;
+       ip link set phy-eth0 up;
+       ip link set eth0 up;
+       ip link add veth-ext type veth peer name veth-int;
+       ip link set veth-ext master eth0;
+       ip link set veth-ext up;
+       ip link set veth-int up;
+       ip addr add $MY_POD_IP/24 dev veth-int;
+       route add default gw $(echo $MY_POD_IP | awk -F'.' '{print $1"."$2"."$3".1"}') dev veth-int;
+       route add -net $(echo $MY_POD_IP | awk -F'.' '{print $1"."$2".0.0"}') netmask 255.255.0.0 gw $(echo $MY_POD_IP | awk -F'.' '{print $1"."$2"."$3".1"}') dev veth-int;
+       tail -F /var/log/messages;
+   env:
+#     - name: MY_POD_NAME
+#       valueFrom:
+#         fieldRef:
+#           fieldPath: metadata.name
+#     - name: MY_POD_NAMESPACE
+#       valueFrom:
+#         fieldRef:
+#           fieldPath: metadata.namespace
+     - name: MY_POD_IP
+       valueFrom:
+         fieldRef:
+           fieldPath: status.podIP
