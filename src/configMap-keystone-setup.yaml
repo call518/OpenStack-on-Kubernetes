@@ -140,7 +140,7 @@ data:
   remove-neutron-server.sh: |
     #!/bin/bash
     source /root/admin-openrc
-    openstack endpoint delete $(openstack endpoint list --service neutron value -c ID)
+    openstack endpoint delete $(openstack endpoint list --service neutron -f value -c ID)
     openstack service delete neutron
     openstack user delete neutron
     mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "DROP DATABASE IF EXISTS neutron; DELETE FROM mysql.user WHERE User='neutron'; DELETE FROM mysql.db WHERE Db='neutron' AND User='neutron'; FLUSH PRIVILEGES;"

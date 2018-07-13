@@ -6,21 +6,30 @@ data:
   neutron-server-init.sh: |
     #!/bin/bash
     set -e
-    sleep 30;
+    export KRS_DEFAULT_GW_IP=$(ip route | awk '/default/ { print $3 }')
+    until ping -c 1 -W 1 $KRS_DEFAULT_GW_IP; do sleep 1; done
+    export KRS_DEFAULT_GW_MAC=$(ip neigh | awk -v gw_ip="$KRS_DEFAULT_GW_IP" '$0~gw_ip {print $5}')
     ip link set eth0 down;
     ip addr flush dev eth0;
     ip link set eth0 name phy-eth0;
-    ip link add eth0 type bridge;
-    ip link set phy-eth0 master eth0;
+    ip link add br-pod type bridge;
+    ip link set phy-eth0 master br-pod;
+    ip link add veth-br-pod type veth peer name eth0;
+    ip link set veth-br-pod master br-pod;
+    export K8S_ETH0_MAC=$(cat /sys/class/net/eth0/address)
+    export K8S_PHY_ETH0_MAC=$(cat /sys/class/net/phy-eth0/address)
+    ip link set dev eth0 address $K8S_PHY_ETH0_MAC
+    ip link set dev phy-eth0 address $K8S_ETH0_MAC
     ip link set phy-eth0 up;
+    ip link set br-pod up;
+    ip link set veth-br-pod up;
     ip link set eth0 up;
-    ip link add veth-ext type veth peer name veth-int;
-    ip link set veth-ext master eth0;
-    ip link set veth-ext up;
-    ip link set veth-int up;
-    ip addr add $MY_POD_IP/24 dev veth-int;
-    route add default gw $(echo $MY_POD_IP | awk -F'.' '{print $1"."$2"."$3".1"}') dev veth-int;
-    route add -net $(echo $MY_POD_IP | awk -F'.' '{print $1"."$2".0.0"}') netmask 255.255.0.0 gw $(echo $MY_POD_IP | awk -F'.' '{print $1"."$2"."$3".1"}') dev veth-int;
+    ip addr add $MY_POD_IP/24 dev eth0;
+    route add default gw $(echo $MY_POD_IP | awk -F'.' '{print $1"."$2"."$3".1"}') dev eth0;
+    route add -net $(echo $MY_POD_IP | awk -F'.' '{print $1"."$2".0.0"}') netmask 255.255.0.0 gw $KRS_DEFAULT_GW_IP dev eth0;
+    echo "arp -s $KRS_DEFAULT_GW_IP $KRS_DEFAULT_GW_MAC"
+    arp -s $KRS_DEFAULT_GW_IP $KRS_DEFAULT_GW_MAC
+    unset KRS_DEFAULT_GW_IP K8S_ETH0_MAC K8S_PHY_ETH0_MAC
     service rsyslog restart
     cp -a /etc/neutron /etc/neutron.default
     cat /scripts/neutron.conf > /etc/neutron/neutron.conf
@@ -88,7 +97,7 @@ data:
     until neutron ext-list; do echo "wating for service response....."; sleep 5; done
     echo "ok~~~~ service is ready~~!!!"
     touch /.setup_completed
-    tail -F /var/log/syslog /var/log/cinder/*
+    tail -F /var/log/syslog /var/log/neutron/*
 
   neutron.conf: |
     [DEFAULT]
@@ -158,7 +167,7 @@ data:
     [DEFAULT]
     [agent]
     [linux_bridge]
-    physical_interface_mappings = provider:veth-int
+    physical_interface_mappings = provider:eth0
     [securitygroup]
     enable_security_group = true
     firewall_driver = neutron.agent.linux.iptables_firewall.IptablesFirewallDriver
