@@ -64,6 +64,8 @@ spec:
                  values:
                  - neutron-server
              topologyKey: "kubernetes.io/hostname"
+      nodeSelector:
+        network: "true"
       initContainers:
       - name: wait1
         #imagePullPolicy: Always
@@ -200,6 +202,8 @@ spec:
           volumeMounts:
           - name: neutron-server-setup
             mountPath: /scripts
+          - name: kernel-modules
+            mountPath: /lib/modules
           readinessProbe:
             exec:
               command:
@@ -224,3 +228,7 @@ spec:
         configMap:
           name: neutron-server-setup
           defaultMode: 0755
+      - name: kernel-modules
+        hostPath:
+          path: /lib/modules
+          type: Directory
