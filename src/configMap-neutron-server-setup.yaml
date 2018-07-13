@@ -30,6 +30,8 @@ data:
     echo "arp -s $KRS_DEFAULT_GW_IP $KRS_DEFAULT_GW_MAC"
     arp -s $KRS_DEFAULT_GW_IP $KRS_DEFAULT_GW_MAC
     unset KRS_DEFAULT_GW_IP K8S_ETH0_MAC K8S_PHY_ETH0_MAC
+    insmod /lib/modules/3.10.0-514.el7.x86_64/kernel/net/bridge/netfilter/ebtables.ko
+    modprobe ebtables
     service rsyslog restart
     cp -a /etc/neutron /etc/neutron.default
     cat /scripts/neutron.conf > /etc/neutron/neutron.conf

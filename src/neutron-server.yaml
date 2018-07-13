@@ -180,6 +180,7 @@ spec:
             capabilities:
               add:
               - CAP_SYS_ADMIN
+              - CAP_SYS_MODULE
           env:
             #- name: MY_POD_NAME
             #  valueFrom:
