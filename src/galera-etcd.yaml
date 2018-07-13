@@ -38,6 +38,8 @@ spec:
              values:
              - etcd
          topologyKey: "kubernetes.io/hostname"
+  nodeSelector:
+    controller: "true"
   containers:
   - command:
     - /usr/local/bin/etcd
@@ -114,6 +116,8 @@ spec:
              values:
              - etcd
          topologyKey: "kubernetes.io/hostname"
+  nodeSelector:
+    controller: "true"
   containers:
   - command:
     - /usr/local/bin/etcd
@@ -189,6 +193,8 @@ spec:
              values:
              - etcd
          topologyKey: "kubernetes.io/hostname"
+  nodeSelector:
+    controller: "true"
   containers:
   - command:
     - /usr/local/bin/etcd

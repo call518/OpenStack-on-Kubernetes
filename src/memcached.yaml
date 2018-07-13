@@ -62,6 +62,8 @@ spec:
                  values:
                  - memcached
              topologyKey: "kubernetes.io/hostname"
+      nodeSelector:
+        controller: "true"
       containers:
         - name: memcached
           image: call518/oaas-memcached

@@ -76,6 +76,8 @@ spec:
                  values:
                  - haproxy
              topologyKey: "kubernetes.io/hostname"
+      nodeSelector:
+        controller: "true"
       initContainers:
       - name: wait1
         #imagePullPolicy: Always

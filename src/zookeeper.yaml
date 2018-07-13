@@ -68,6 +68,8 @@ spec:
                     values:
                     - zk
               topologyKey: "kubernetes.io/hostname"
+      nodeSelector:
+        controller: "true"
       containers:
       - name: kubernetes-zookeeper
         #imagePullPolicy: Always

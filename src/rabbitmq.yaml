@@ -78,6 +78,8 @@ spec:
                  values:
                  - rabbitmq
              topologyKey: "kubernetes.io/hostname"
+      nodeSelector:
+        controller: "true"
       containers:
       - name: rabbitmq
         #imagePullPolicy: Always

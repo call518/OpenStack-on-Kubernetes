@@ -62,6 +62,8 @@ spec:
 #                  values:
 #                  - MainRepSet
 #              topologyKey: kubernetes.io/hostname
+      nodeSelector:
+        controller: "true"
       containers:
         - name: mongodb
           #image: pkdone/mongo-ent:3.4
