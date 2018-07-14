@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: Pod
+metadata:
+ name: sample-neutron
+spec:
+ #hostNetwork: true
+ containers:
+ - name: sample-neutron
+   #image: call518/oaas-init-container
+   image: call518/oaas-neutron-server
+   securityContext:
+     privileged: true
+#   ports:
+#   - containerPort: 3306
+   command:
+     - "bash"
+     - "-c"
+     - |
+       service rsyslog restart;
+       if ! (lsmod | grep -q "^openvswitch "); then
+         insmod /lib/modules/$(uname -r)/kernel/net/openvswitch/openvswitch.ko;
+       fi;
+       modprobe openvswitch;
+       service openvswitch-switch restart;
+       sleep 5;
+       export K8S_DEFAULT_GW_IP=$(ip route | awk '/default/ { print $3 }');
+       until ping -c 1 -W 1 $K8S_DEFAULT_GW_IP; do sleep 1; done;
+       export KRS_DEFAULT_GW_MAC=$(ip neigh | awk -v gw_ip="$K8S_DEFAULT_GW_IP" '$0~gw_ip {print $5}');
+       ip link set eth0 down;
+       ip addr flush dev eth0;
+       ip link set eth0 name phy-eth0;
+       export K8S_PHY_ETH0_MAC=$(cat /sys/class/net/phy-eth0/address);
+       ovs-vsctl add-br eth0;
+       export K8S_BRIDGE_MAC=$(cat /sys/class/net/eth0/address);
+       ovs-vsctl del-br eth0;
+       ovs-vsctl add-br eth0 -- set bridge eth0 other-config:hwaddr="$K8S_PHY_ETH0_MAC";
+       ip link set dev phy-eth0 address $K8S_BRIDGE_MAC;
+       ovs-vsctl add-port eth0 phy-eth0;
+       ip link set phy-eth0 up;
+       ip link set eth0 up;
+       ip addr add $MY_POD_IP/24 dev eth0;
+       route add default gw $K8S_DEFAULT_GW_IP dev eth0;
+       route add -net $(echo $MY_POD_IP | awk -F'.' '{print $1"."$2".0.0"}') netmask 255.255.0.0 gw $K8S_DEFAULT_GW_IP dev eth0;
+       arp -s $K8S_DEFAULT_GW_IP $KRS_DEFAULT_GW_MAC;
+       unset K8S_DEFAULT_GW_IP K8S_BRIDGE_MAC K8S_PHY_ETH0_MAC;
+       if ! (lsmod | grep -q "^ebtables "); then
+         insmod /lib/modules/$(uname -r)/kernel/net/bridge/netfilter/ebtables.ko;
+       fi;
+       ovs-vsctl add-br br-ex;
+       ovs-vsctl add-port eth0 patch-eth0 -- set Interface patch-eth0 type=patch options:peer=patch-br-ex;
+       ovs-vsctl add-port br-ex patch-br-ex -- set Interface patch-br-ex type=patch options:peer=patch-eth0;
+       ip link set br-ex up;
+       tail -F /var/log/messages;
+   env:
+#     - name: MY_POD_NAME
+#       valueFrom:
+#         fieldRef:
+#           fieldPath: metadata.name
+#     - name: MY_POD_NAMESPACE
+#       valueFrom:
+#         fieldRef:
+#           fieldPath: metadata.namespace
+     - name: MY_POD_IP
+       valueFrom:
+         fieldRef:
+           fieldPath: status.podIP

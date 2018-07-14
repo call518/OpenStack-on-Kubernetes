@@ -38,9 +38,8 @@ spec:
        ip addr add $MY_POD_IP/24 dev eth0;
        route add default gw $(echo $MY_POD_IP | awk -F'.' '{print $1"."$2"."$3".1"}') dev eth0;
        route add -net $(echo $MY_POD_IP | awk -F'.' '{print $1"."$2".0.0"}') netmask 255.255.0.0 gw $KRS_DEFAULT_GW_IP dev eth0;
-       echo "arp -s $KRS_DEFAULT_GW_IP $KRS_DEFAULT_GW_MAC"
-       arp -s $KRS_DEFAULT_GW_IP $KRS_DEFAULT_GW_MAC
-       unset KRS_DEFAULT_GW_IP K8S_ETH0_MAC K8S_PHY_ETH0_MAC
+       arp -s $KRS_DEFAULT_GW_IP $KRS_DEFAULT_GW_MAC;
+       unset KRS_DEFAULT_GW_IP K8S_ETH0_MAC K8S_PHY_ETH0_MAC;
        tail -F /var/log/messages;
    env:
 #     - name: MY_POD_NAME

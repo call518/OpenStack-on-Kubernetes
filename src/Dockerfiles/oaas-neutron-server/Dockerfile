@@ -8,7 +8,7 @@ RUN cp -a /etc/apt/sources.list /etc/apt/sources.list.default \
     #&& add-apt-repository -y cloud-archive:queens \
     && add-apt-repository -y cloud-archive:newton \
     && apt-get update \
-    && apt-get install -y rsyslog mysql-client python-openstackclient python-pip neutron-server neutron-plugin-ml2 neutron-linuxbridge-agent neutron-l3-agent neutron-dhcp-agent neutron-metadata-agent \
+    && apt-get install -y rsyslog mysql-client python-openstackclient python-pip neutron-server neutron-plugin-ml2 neutron-plugin-openvswitch-agent neutron-linuxbridge-agent neutron-l3-agent neutron-dhcp-agent neutron-metadata-agent neutron-lbaasv2-agent neutron-metering-agent haproxy \
     && pip install python-memcached \
     && apt-get install -y iputils-ping net-tools vim telnet lsof wget \
     && rm -rf /var/lib/apt/lists/*
