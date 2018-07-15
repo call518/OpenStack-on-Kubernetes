@@ -93,7 +93,7 @@ data:
     VOLUME_SERVICES=$(openstack volume service list -f value -c "Binary" -c "Status")
     until (echo $VOLUME_SERVICES | grep -q "cinder-volume") && (echo $VOLUME_SERVICES | grep -q "cinder-scheduler") && (echo $VOLUME_SERVICES | grep -q "cinder-backup")
     do
-      echo "wating for service response....."
+      echo "waiting for service response....."
       sleep 5
     done
     echo "ok~~~~ service is ready~~!!!"

@@ -41,20 +41,20 @@ data:
       mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS glance"
       mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'localhost' IDENTIFIED BY '$K8S_GLANCE_DB_PASS'"
       mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON glance.* TO 'glance'@'%' IDENTIFIED BY '$K8S_GLANCE_DB_PASS'"
-      if ! openstack user list -f value -c Name | grep glance > /dev/null; then
+      if ! (openstack user list -f value -c Name | grep -q glance); then
         openstack user create --domain default --password $K8S_KEYSTONE_USER_GLANCE_PASS glance 2>/dev/null
       fi
       openstack role add --project service --user glance admin
-      if ! openstack service list -f value -c Name | grep glance > /dev/null; then
+      if ! (openstack service list -f value -c Name | grep -q glance); then
         openstack service create --name glance --description "OpenStack Image" image;
       fi
-      if ! openstack endpoint list --service glance -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "glance image public" > /dev/null; then
+      if ! (openstack endpoint list --service glance -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "glance image public"); then
         openstack endpoint create --region RegionOne image public http://glance:9292
       fi
-      if ! openstack endpoint list --service glacne -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "glance image internal" > /dev/null; then
+      if ! (openstack endpoint list --service glacne -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "glance image internal"); then
         openstack endpoint create --region RegionOne image internal http://glance:9292
       fi
-      if ! openstack endpoint list --service glance -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "glance image admin" > /dev/null; then
+      if ! (openstack endpoint list --service glance -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "glance image admin"); then
         openstack endpoint create --region RegionOne image admin http://glance:9292
       fi
       su -s /bin/sh -c "glance-manage db_sync" glance
@@ -63,7 +63,7 @@ data:
     service glance-registry restart
     chown -R glance:glance /var/lib/glance
     if [ "X$exist_glance_db" == "X" ]; then
-      until openstack image list -f value | grep Cirros;
+      until (openstack image list -f value | grep -q Cirros);
       do
         echo "creating.... image of Cirros-0.3.4-x86_64..........."
         wget http://download.cirros-cloud.net/0.3.4/cirros-0.3.4-x86_64-disk.img -O /cirros-0.3.4-x86_64-disk.img
@@ -71,7 +71,7 @@ data:
         sleep 5
       done
     fi
-    until openstack image list -f value | grep Cirros; do echo "wating for service response....."; sleep 5; done
+    until (openstack image list -f value | grep -q Cirros); do echo "waiting for service response....."; sleep 5; done
     echo "ok~~~~ service is ready~~!!!"
     touch /.setup_completed
     tail -F /var/log/syslog /var/log/glance/*

@@ -35,7 +35,7 @@ data:
     sleep 5;
     until lsof -ni:80 > /dev/null
     do
-      echo "wating for service response....."
+      echo "waiting for service response....."
       sleep 5
     done
     echo "ok~~~~ service is ready~~!!!"

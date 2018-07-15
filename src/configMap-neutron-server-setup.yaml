@@ -119,7 +119,7 @@ data:
     service neutron-lbaasv2-agent restart
     service neutron-ovs-cleanup restart
     sleep 5;
-    until neutron ext-list; do echo "wating for service response....."; sleep 5; done
+    until neutron ext-list; do echo "waiting for service response....."; sleep 5; done
     echo "ok~~~~ service is ready~~!!!"
     touch /.setup_completed
     tail -F /var/log/syslog /var/log/neutron/*
