@@ -10,6 +10,6 @@ RUN cp -a /etc/apt/sources.list /etc/apt/sources.list.default \
     && apt-get update \
     && apt-get install -y rsyslog mysql-client cinder-api cinder-scheduler cinder-volume cinder-backup nfs-common tgt python-openstackclient python-pip \
     && pip install python-memcached \
-    && apt-get install -y iputils-ping net-tools vim telnet lsof wget \
+    && apt-get install -y iputils-ping net-tools vim telnet lsof wget curl jq \
     && rm -rf /var/lib/apt/lists/*
 COPY check-init.sh /check-init.sh

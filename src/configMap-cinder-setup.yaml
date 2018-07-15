@@ -5,7 +5,7 @@ metadata:
 data:
   ## Temporary Env. for NFS-Backend-Storage(Tutorial)
   env-nfs-backend: |
-    export NFS_BACKEND_HOSTNAME="nfs-server"
+    export NFS_BACKEND_HOST_IP=$(curl -s -L "http://$DISCOVERY_SERVICE/v2/keys/$K8S_NFS_SERVER_IP_ETC_KEY" -XGET | jq -r .node.value)
     export NFS_BACKEND_PATH_VOLUME="/pv/cinder-volumes"
     export NFS_BACKEND_PATH_BACKUP="/pv/cinder-backups"
 
@@ -14,7 +14,7 @@ data:
     set -e
     service rsyslog restart
     source /scripts/env-nfs-backend
-    echo "$NFS_BACKEND_HOSTNAME:$NFS_BACKEND_PATH_VOLUME" > /etc/cinder/nfsshares
+    echo "$NFS_BACKEND_HOST_IP:$NFS_BACKEND_PATH_VOLUME" > /etc/cinder/nfsshares
     chown root:cinder /etc/cinder/nfsshares
     chmod 0640 /etc/cinder/nfsshares
     #exportfs -a
@@ -23,7 +23,7 @@ data:
     #chown -R cinder:cinder /var/lib/cinder/volumes
     cp -a /etc/cinder/cinder.conf /etc/cinder/cinder.conf.default
     cat /scripts/cinder.conf > /etc/cinder/cinder.conf
-    sed -i "s/___NFS_BACKEND_HOSTNAME___/$NFS_BACKEND_HOSTNAME/g" /etc/cinder/cinder.conf
+    sed -i "s/___NFS_BACKEND_HOST_IP___/$NFS_BACKEND_HOST_IP/g" /etc/cinder/cinder.conf
     sed -i "s|___NFS_BACKEND_PATH_BACKUP___|$NFS_BACKEND_PATH_BACKUP|g" /etc/cinder/cinder.conf
     sed -i "s/___K8S_CINDER_DB_PASS___/$K8S_CINDER_DB_PASS/g" /etc/cinder/cinder.conf
     sed -i "s/___K8S_RABBITMQ_OPENSTACK_USER___/$K8S_RABBITMQ_OPENSTACK_USER/g" /etc/cinder/cinder.conf
@@ -113,13 +113,14 @@ data:
     scheduler_max_attempts = 100
     enabled_backends = NFS
     backup_driver = cinder.backup.drivers.nfs
-    backup_share = ___NFS_BACKEND_HOSTNAME___:___NFS_BACKEND_PATH_BACKUP___
+    backup_share = ___NFS_BACKEND_HOST_IP___:___NFS_BACKEND_PATH_BACKUP___
     [NFS]
     volume_driver = cinder.volume.drivers.nfs.NfsDriver
     nfs_shares_config = /etc/cinder/nfsshares
     nfs_mount_point_base = $state_path/mnt
     nfs_sparsed_volumes = true
     nfs_mount_attempts = 3
+    nfs_mount_options = v4
     [BACKEND]
     [BRCD_FABRIC_EXAMPLE]
     [CISCO_FABRIC_EXAMPLE]

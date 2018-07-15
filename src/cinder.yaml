@@ -77,6 +77,23 @@ spec:
           - /bin/bash
           - -c
           - >
+            until [ "`curl --connect-timeout 3 -s -L 'http://$DISCOVERY_SERVICE/v2/keys/$K8S_NFS_SERVER_IP_ETC_KEY' -XGET | jq -r .node.value`" != "null" ];
+            do
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` nfs-server is not ready..... waiting...";
+              sleep 5;
+            done;
+            echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ nfs-server is ready~~";
+      - name: wait2
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        image: call518/oaas-init-container
+        envFrom:
+          - configMapRef:
+              name: env-common
+        command:
+          - /bin/bash
+          - -c
+          - >
             QUERY_WSREP_READY="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_READY';";
             QUERY_WSREP_CLUSTER_SIZE="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_CLUSTER_SIZE';";
             QUERY_WSREP_CLUSTER_STATUS="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_CLUSTER_STATUS';";
@@ -91,7 +108,7 @@ spec:
               sleep 5;
             done;
             echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ haproxy-galera is ready~~";
-      - name: wait2
+      - name: wait3
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
         image: call518/oaas-init-container
@@ -118,7 +135,7 @@ spec:
               sleep 5;
             done;
             echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ memcached is ready~~";
-      - name: wait3
+      - name: wait4
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
         image: call518/oaas-init-container
@@ -138,7 +155,7 @@ spec:
               sleep 5;
             done;
             echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ rabbitmq is ready~~";
-      - name: wait4
+      - name: wait5
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
         image: call518/oaas-init-container
@@ -162,7 +179,7 @@ spec:
               sleep 5;
             done;
             echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ keystone is ready~~";
-      - name: wait5
+      - name: wait6
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
         image: call518/oaas-init-container

@@ -6,7 +6,7 @@ LABEL modified by Jung-In.Jung(call518@gmail.com) : added FSID env for exportfs.
 COPY Dockerfile /Dockerfile
 COPY README.md /README.md
 
-RUN apk add --update --verbose nfs-utils bash iproute2 && \
+RUN apk add --update --verbose nfs-utils bash iproute2 curl jq && \
     rm -rf /var/cache/apk/* /tmp/* && \
     rm -f /sbin/halt /sbin/poweroff /sbin/reboot && \
     mkdir -p /var/lib/nfs/rpc_pipefs && \

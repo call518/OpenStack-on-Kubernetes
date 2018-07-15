@@ -1,27 +1,28 @@
-apiVersion: v1
-kind: Service
-metadata:
-  name: nfs-server
-  labels:
-    app: nfs-server
-spec:
-  ports:
-  - port: 111
-    protocol: TCP
-  - port: 111
-    protocol: UDP
-  - port: 2049
-    protocol: TCP
-  - port: 2049
-    protocol: UDP
-  #sessionAffinity: ClientIP
-  #clusterIP: None
-  #type: NodePort # Or LoadBalancer in production w/ proper security
-  #type: LoadBalancer
-  selector:
-    app: nfs-server
-
----
+#apiVersion: v1
+#kind: Service
+#metadata:
+#  name: nfs-server
+#  labels:
+#    app: nfs-server
+#spec:
+#  ports:
+#  - port: 111
+#    protocol: TCP
+#    name: nfs-111-tcp
+#  - port: 111
+#    protocol: UDP
+#    name: nfs-111-udp
+#  - port: 2049
+#    protocol: TCP
+#    name: nfs-2049-tcp
+#  #sessionAffinity: ClientIP
+#  #clusterIP: None
+#  #type: NodePort # Or LoadBalancer in production w/ proper security
+#  #type: LoadBalancer
+#  selector:
+#    app: nfs-server
+#
+#---
 
 apiVersion: v1
 kind: Pod
@@ -31,6 +32,24 @@ spec:
   nodeSelector:
     nfs-server: "true"
   restartPolicy: Always
+  initContainers:
+  - name: wait1
+    #imagePullPolicy: Always
+    imagePullPolicy: IfNotPresent
+    image: call518/oaas-init-container
+    envFrom:
+      - configMapRef:
+          name: env-common
+    command:
+      - /bin/bash
+      - -c
+      - >
+        until [ "`curl --connect-timeout 3 -s -L \"http://$DISCOVERY_SERVICE/health\"`" == "{\"health\":\"true\"}" ];
+        do
+          echo "`date +"[%Y-%m-%d %H:%M:%S]"` etcd is not ready..... waiting...";
+          sleep 5;
+        done;
+        echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ etcd is ready~~";
   containers:
   - name: nfs-server
     image: call518/oaas-nfs-server
@@ -43,12 +62,17 @@ spec:
       protocol: UDP
     - containerPort: 2049
       protocol: TCP
-    - containerPort: 2049
-      protocol: UDP
     volumeMounts:
     - name: pvc-nfs-server
       mountPath: /data
+    envFrom:
+      - configMapRef:
+          name: env-common
     env:
+    - name: MY_POD_IP
+      valueFrom:
+        fieldRef:
+          fieldPath: status.podIP
     - name: SHARED_DIRECTORY
       value: /data
     - name: FSID
@@ -57,6 +81,7 @@ spec:
       - "bash"
       - "-c"
       - |
+        curl -s -L "http://$DISCOVERY_SERVICE/v2/keys/$K8S_NFS_SERVER_IP_ETC_KEY" -XPUT -d value="$MY_POD_IP"
         rm -rf /data/*
         mkdir -p /data/pv/galera-{0,1,2}
         mkdir -p /data/pv/mongodb-{0,1,2}
@@ -66,6 +91,14 @@ spec:
         mkdir -p /data/pv/cinder-volumes
         mkdir -p /data/pv/cinder-backups
         /usr/bin/nfsd.sh;
+    lifecycle:
+      preStop:
+        exec:
+          command:
+          - /bin/sh
+          - -c
+          - >
+            curl -s -L "http://$DISCOVERY_SERVICE/v2/keys/$K8S_NFS_SERVER_IP_ETC_KEY" -XDELETE
   volumes:
   - name: pvc-nfs-server
     persistentVolumeClaim:

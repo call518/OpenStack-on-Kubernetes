@@ -30,3 +30,4 @@ data:
   K8S_RABBITMQ_OPENSTACK_USER: "openstack"
   K8S_RABBITMQ_OPENSTACK_PASS: "passw0rd"
   K8S_METADATA_PROXY_SHARED_SECRET: "QU6muuXhU4oAeLzDas6obGsDtoFNZTHq"
+  K8S_NFS_SERVER_IP_ETC_KEY: "k8s-oaas-nfs-server-ip-address"
