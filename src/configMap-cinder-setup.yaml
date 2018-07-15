@@ -6,16 +6,14 @@ data:
   ## Temporary Env. for NFS-Backend-Storage(Tutorial)
   env-nfs-backend: |
     export NFS_BACKEND_HOSTNAME="nfs-server"
-    export NFS_BACKEND_IP="192.168.0.150"
-    export NFS_BACKEND_PATH_VOLUME="/data/pv/cinder-volumes"
-    export NFS_BACKEND_PATH_BACKUP="/data/pv/cinder-backups"
+    export NFS_BACKEND_PATH_VOLUME="/pv/cinder-volumes"
+    export NFS_BACKEND_PATH_BACKUP="/pv/cinder-backups"
 
   cinder-init.sh: |
     #!/bin/bash
     set -e
     service rsyslog restart
     source /scripts/env-nfs-backend
-    echo "$NFS_BACKEND_IP $NFS_BACKEND_HOSTNAME" >> /etc/hosts
     echo "$NFS_BACKEND_HOSTNAME:$NFS_BACKEND_PATH_VOLUME" > /etc/cinder/nfsshares
     chown root:cinder /etc/cinder/nfsshares
     chmod 0640 /etc/cinder/nfsshares
@@ -113,13 +111,15 @@ data:
     glance_api_servers = http://glance:9292
     glance_api_version = 2
     scheduler_max_attempts = 100
+    enabled_backends = NFS
+    backup_driver = cinder.backup.drivers.nfs
+    backup_share = ___NFS_BACKEND_HOSTNAME___:___NFS_BACKEND_PATH_BACKUP___
+    [NFS]
     volume_driver = cinder.volume.drivers.nfs.NfsDriver
     nfs_shares_config = /etc/cinder/nfsshares
     nfs_mount_point_base = $state_path/mnt
     nfs_sparsed_volumes = true
     nfs_mount_attempts = 3
-    backup_driver = cinder.backup.drivers.nfs
-    backup_share = ___NFS_BACKEND_HOSTNAME___:___NFS_BACKEND_PATH_BACKUP___
     [BACKEND]
     [BRCD_FABRIC_EXAMPLE]
     [CISCO_FABRIC_EXAMPLE]
