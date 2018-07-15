@@ -13,7 +13,7 @@
 ./reset-galera.sh
 ./reset-galera-etcd.sh
 
-for pod in $(kubectl get all | awk '/^pod/ {print $1}'); do kubectl delete $pod --grace-period=0 --force; done
+#for pod in $(kubectl get all | awk '/^pod/ {print $1}'); do kubectl delete $pod --grace-period=0 --force; done
 
 kubectl delete configmap env-common
 kubectl delete configmap keystone-setup
