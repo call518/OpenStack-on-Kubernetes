@@ -5,7 +5,7 @@ kubectl create -f nfs-server-pvc.yaml
 
 kubectl create -f nfs-server.yaml
 
-while [ "X$(kubectl describe pod nfs-server | awk '/IP:/ {print $2}')" == "X" ]
+while [ "X$(kubectl describe pod nfs-server | awk '/^IP:/ {print $2}')" == "X" ]
 do
         echo "waiting for nfs-server pod's ip addres....."
 	sleep 3
