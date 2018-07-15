@@ -1,5 +1,13 @@
 #!/bin/bash
 
+kubectl delete pod nfs-server
+
+until ! (kubectl get pod | grep -q "^nfs-server")
+do
+	echo "waiting for terminating nfs-server pod....."
+	sleep 3
+done
+
 ## delete all pvc
 for pvc in $(kubectl get pvc | awk '/^pvc/ {print $1}'); do kubectl delete pvc $pvc; done
 

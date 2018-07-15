@@ -11,16 +11,16 @@ spec:
   capacity:
     storage: 10Gi
   #hostPath:
-  #  path: /data/pv/rabbitmq-0
+  #  path: /pv/rabbitmq-0
   volumeMode: Filesystem
   #persistentVolumeReclaimPolicy: Recycle
   persistentVolumeReclaimPolicy: Retain
   mountOptions:
     - hard
-    - nfsvers=4.1
+    - nfsvers=4
   nfs:
-    path: /data/pv/rabbitmq-0
-    server: nfs-server
+    path: /pv/rabbitmq-0
+    server: ___NFS_SERVER_IP___
 
 ---
 
@@ -37,16 +37,16 @@ spec:
   capacity:
     storage: 10Gi
   #hostPath:
-  #  path: /data/pv/rabbitmq-1
+  #  path: /pv/rabbitmq-1
   volumeMode: Filesystem
   #persistentVolumeReclaimPolicy: Recycle
   persistentVolumeReclaimPolicy: Retain
   mountOptions:
     - hard
-    - nfsvers=4.1
+    - nfsvers=4
   nfs:
-    path: /data/pv/rabbitmq-1
-    server: nfs-server
+    path: /pv/rabbitmq-1
+    server: ___NFS_SERVER_IP___
 
 ---
 
@@ -63,13 +63,13 @@ spec:
   capacity:
     storage: 10Gi
   #hostPath:
-  #  path: /data/pv/rabbitmq-2
+  #  path: /pv/rabbitmq-2
   volumeMode: Filesystem
   #persistentVolumeReclaimPolicy: Recycle
   persistentVolumeReclaimPolicy: Retain
   mountOptions:
     - hard
-    - nfsvers=4.1
+    - nfsvers=4
   nfs:
-    path: /data/pv/rabbitmq-2
-    server: nfs-server
+    path: /pv/rabbitmq-2
+    server: ___NFS_SERVER_IP___

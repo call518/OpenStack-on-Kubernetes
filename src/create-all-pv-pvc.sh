@@ -1,26 +1,28 @@
 #!/bin/bash
 
-## for PV/PVC
-mkdir -p /data/pv/galera-{0,1,2}
-mkdir -p /data/pv/mongodb-{0,1,2}
-mkdir -p /data/pv/rabbitmq-{0,1,2}
-mkdir -p /data/pv/glance-images
-mkdir -p /data/pv/zookeeper-{0,1,2}
+kubectl create -f nfs-server-pv.yaml
+kubectl create -f nfs-server-pvc.yaml
 
-## for Direct NFS
-mkdir -p /data/pv/cinder-volumes
-mkdir -p /data/pv/cinder-backups
-#chown -R 108:111 /data/pv/cinder-volumes /data/pv/cinder-backups
+kubectl create -f nfs-server.yaml
 
-kubectl create -f galera-pv.yaml 
+while [ "X$(kubectl describe pod nfs-server | awk '/IP:/ {print $2}')" == "X" ]
+do
+        echo "waiting for nfs-server pod's ip addres....."
+	sleep 3
+done
+
+NFS_SERVER_IP=$(kubectl describe pod nfs-server | awk '/IP:/ {print $2}')
+
+sed -e 's/___NFS_SERVER_IP___/'$NFS_SERVER_IP'/g' galera-pv.yaml | kubectl create -f -
+sed -e 's/___NFS_SERVER_IP___/'$NFS_SERVER_IP'/g' mongodb-pv.yaml | kubectl create -f -
+sed -e 's/___NFS_SERVER_IP___/'$NFS_SERVER_IP'/g' rabbitmq-pv.yaml | kubectl create -f -
+sed -e 's/___NFS_SERVER_IP___/'$NFS_SERVER_IP'/g' glance-pv.yaml | kubectl create -f -
+sed -e 's/___NFS_SERVER_IP___/'$NFS_SERVER_IP'/g' zookeeper-pv.yaml | kubectl create -f -
+
 kubectl create -f galera-pvc.yaml 
-kubectl create -f mongodb-pv.yaml 
 kubectl create -f mongodb-pvc.yaml 
-kubectl create -f rabbitmq-pv.yaml 
 kubectl create -f rabbitmq-pvc.yaml
-kubectl create -f glance-pv.yaml 
 kubectl create -f glance-pvc.yaml
-kubectl create -f zookeeper-pv.yaml 
 kubectl create -f zookeeper-pvc.yaml
 
 kubectl get pv

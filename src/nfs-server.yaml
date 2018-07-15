@@ -1,0 +1,61 @@
+#apiVersion: v1
+#kind: Service
+#metadata:
+#  name: nfs-server
+#  labels:
+#    app: nfs-server
+#spec:
+#  ports:
+#  - port: 111
+#    name: sunrpc
+#  - port: 2049
+#    name: nfs
+#  #sessionAffinity: ClientIP
+#  #clusterIP: None
+#  #type: NodePort # Or LoadBalancer in production w/ proper security
+#  #type: LoadBalancer
+#  selector:
+#    app: nfs-server
+#
+#---
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nfs-server
+spec:
+  nodeSelector:
+    controller: "true"
+  restartPolicy: Always
+  containers:
+  - name: nfs-server
+    image: call518/oaas-nfs-server
+    securityContext:
+      privileged: true
+    ports:
+    - containerPort: 111
+    - containerPort: 2049
+    volumeMounts:
+    - name: pvc-nfs-server
+      mountPath: /data
+    env:
+    - name: SHARED_DIRECTORY
+      value: /data
+    - name: FSID
+      value: "true"
+    command:
+      - "bash"
+      - "-c"
+      - |
+        mkdir -p /data/pv/galera-{0,1,2}
+        mkdir -p /data/pv/mongodb-{0,1,2}
+        mkdir -p /data/pv/rabbitmq-{0,1,2}
+        mkdir -p /data/pv/glance-images
+        mkdir -p /data/pv/zookeeper-{0,1,2}
+        mkdir -p /data/pv/cinder-volumes
+        mkdir -p /data/pv/cinder-backups
+        /usr/bin/nfsd.sh;
+  volumes:
+  - name: pvc-nfs-server
+    persistentVolumeClaim:
+      claimName: pvc-nfs-server

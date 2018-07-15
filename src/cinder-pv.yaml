@@ -11,13 +11,13 @@ spec:
   capacity:
     storage: 10Gi
   #hostPath:
-  #  path: /data/pv/cinder-volumes
+  #  path: /pv/cinder-volumes
   volumeMode: Filesystem
   #persistentVolumeReclaimPolicy: Recycle
   persistentVolumeReclaimPolicy: Retain
   mountOptions:
     - hard
-    - nfsvers=4.1
+    - nfsvers=4
   nfs:
-    path: /data/pv/cinder-volumes
-    server: nfs-server
+    path: /pv/cinder-volumes
+    server: ___NFS_SERVER_IP___

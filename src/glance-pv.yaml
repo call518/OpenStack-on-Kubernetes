@@ -11,13 +11,13 @@ spec:
   capacity:
     storage: 10Gi
   #hostPath:
-  #  path: /data/pv/glance-images
+  #  path: /pv/glance-images
   volumeMode: Filesystem
   #persistentVolumeReclaimPolicy: Recycle
   persistentVolumeReclaimPolicy: Retain
   mountOptions:
     - hard
-    - nfsvers=4.1
+    - nfsvers=4
   nfs:
-    path: /data/pv/glance-images
-    server: nfs-server
+    path: /pv/glance-images
+    server: ___NFS_SERVER_IP___
