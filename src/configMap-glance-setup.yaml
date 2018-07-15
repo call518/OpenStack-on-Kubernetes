@@ -51,7 +51,7 @@ data:
       if ! (openstack endpoint list --service glance -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "glance image public"); then
         openstack endpoint create --region RegionOne image public http://glance:9292
       fi
-      if ! (openstack endpoint list --service glacne -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "glance image internal"); then
+      if ! (openstack endpoint list --service glance -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "glance image internal"); then
         openstack endpoint create --region RegionOne image internal http://glance:9292
       fi
       if ! (openstack endpoint list --service glance -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "glance image admin"); then
