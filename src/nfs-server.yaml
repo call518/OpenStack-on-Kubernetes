@@ -25,7 +25,7 @@ metadata:
   name: nfs-server
 spec:
   nodeSelector:
-    controller: "true"
+    nfs-server: "true"
   restartPolicy: Always
   containers:
   - name: nfs-server
