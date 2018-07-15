@@ -47,6 +47,7 @@ spec:
       - "bash"
       - "-c"
       - |
+        rm -rf /data/*
         mkdir -p /data/pv/galera-{0,1,2}
         mkdir -p /data/pv/mongodb-{0,1,2}
         mkdir -p /data/pv/rabbitmq-{0,1,2}
