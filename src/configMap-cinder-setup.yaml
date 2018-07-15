@@ -83,8 +83,8 @@ data:
       if ! openstack endpoint list --service cinderv2 -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "cinderv2 volumev2 admin" > /dev/null; then
         openstack endpoint create --region RegionOne volumev2 admin http://cinder:8776/v2/%\(tenant_id\)s
       fi
+      su -s /bin/sh -c "cinder-manage db sync" cinder
     fi
-    su -s /bin/sh -c "cinder-manage db sync" cinder
     service cinder-volume restart
     service cinder-scheduler restart
     service cinder-backup restart
