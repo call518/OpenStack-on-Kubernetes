@@ -14,5 +14,5 @@ spec:
     path: /home/data
   volumeMode: Filesystem
   #persistentVolumeReclaimPolicy: Recycle
-  #persistentVolumeReclaimPolicy: Retain
-  persistentVolumeReclaimPolicy: Delete
+  persistentVolumeReclaimPolicy: Retain
+  #persistentVolumeReclaimPolicy: Delete
