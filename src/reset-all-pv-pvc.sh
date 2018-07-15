@@ -1,6 +1,7 @@
 #!/bin/bash
 
-kubectl delete pod nfs-server
+#kubectl delete pod nfs-server
+./reset-nfs-server.sh
 
 until ! (kubectl get pod | grep -q "^nfs-server")
 do
