@@ -8,7 +8,8 @@ data:
     set -e;
     service rsyslog restart;
     if ! (lsmod | grep -q "^openvswitch "); then
-      insmod /lib/modules/$(uname -r)/kernel/net/openvswitch/openvswitch.ko;
+      insmod /lib/modules/3.10.0-514.el7.x86_64/kernel/net/openvswitch/openvswitch.ko;
+      insmod $(find /lib/modules/ | grep "openvswitch.ko$" | tail -n 1);
     fi;
     modprobe openvswitch;
     service openvswitch-switch restart;
@@ -34,7 +35,8 @@ data:
     arp -s $K8S_DEFAULT_GW_IP $KRS_DEFAULT_GW_MAC;
     unset K8S_DEFAULT_GW_IP K8S_BRIDGE_MAC K8S_PHY_ETH0_MAC;
     if ! (lsmod | grep -q "^ebtables "); then
-      insmod /lib/modules/$(uname -r)/kernel/net/bridge/netfilter/ebtables.ko;
+      #insmod /lib/modules/$(uname -r)/kernel/net/bridge/netfilter/ebtables.ko;
+      insmod $(find /lib/modules/ | grep "ebtables.ko$" | tail -n 1);
     fi;
     modprobe ebtables;
     ovs-vsctl add-br br-ex;

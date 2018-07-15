@@ -81,7 +81,7 @@ spec:
       - "bash"
       - "-c"
       - |
-        curl -s -L "http://$DISCOVERY_SERVICE/v2/keys/$K8S_NFS_SERVER_IP_ETC_KEY" -XPUT -d value="$MY_POD_IP"
+        curl -s -L "http://$DISCOVERY_SERVICE/v2/keys/oaas/$K8S_NFS_SERVER_IP_ETC_KEY" -XPUT -d value="$MY_POD_IP"
         rm -rf /data/*
         mkdir -p /data/pv/galera-{0,1,2}
         mkdir -p /data/pv/mongodb-{0,1,2}
@@ -98,7 +98,7 @@ spec:
           - /bin/sh
           - -c
           - >
-            curl -s -L "http://$DISCOVERY_SERVICE/v2/keys/$K8S_NFS_SERVER_IP_ETC_KEY" -XDELETE
+            curl -s -L "http://$DISCOVERY_SERVICE/v2/keys/oaas/$K8S_NFS_SERVER_IP_ETC_KEY" -XDELETE
   volumes:
   - name: pvc-nfs-server
     persistentVolumeClaim:

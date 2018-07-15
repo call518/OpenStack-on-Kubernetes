@@ -5,7 +5,7 @@ metadata:
 data:
   ## Temporary Env. for NFS-Backend-Storage(Tutorial)
   env-nfs-backend: |
-    export NFS_BACKEND_HOST_IP=$(curl -s -L "http://$DISCOVERY_SERVICE/v2/keys/$K8S_NFS_SERVER_IP_ETC_KEY" -XGET | jq -r .node.value)
+    export NFS_BACKEND_HOST_IP=$(curl -s -L "http://$DISCOVERY_SERVICE/v2/keys/oaas/$K8S_NFS_SERVER_IP_ETC_KEY" -XGET | jq -r .node.value)
     export NFS_BACKEND_PATH_VOLUME="/pv/cinder-volumes"
     export NFS_BACKEND_PATH_BACKUP="/pv/cinder-backups"
 
