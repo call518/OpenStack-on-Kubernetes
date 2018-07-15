@@ -1,5 +1,9 @@
 #!/bin/bash
 
-kubectl delete service/haproxy-galera service/haproxy-stats deployment.apps/haproxy
+kubectl delete pdb/haproxy-pdb
+kubectl delete service/haproxy-galera
+kubectl delete service/haproxy-stats
+kubectl delete replicaset.apps/haproxy
+kubectl delete deployment.apps/haproxy
 
 kubectl get all -o wide

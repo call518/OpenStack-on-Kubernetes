@@ -19,7 +19,7 @@ key1="$TMP_DIR/1"
 #			;;
 #		y|Y)
 #			echo
-			kubectl delete secret $SECRET_NAME
+#			kubectl delete secret $SECRET_NAME
 #			;;
 #		*)
 #			echo
@@ -38,6 +38,9 @@ fi
 python fernet-key-generator.py > $key0
 python fernet-key-generator.py > $key1
 
+if (kubectl get secret | grep -q "$SECRET_NAME"); then
+	kubectl delete secret $SECRET_NAME
+fi
 kubectl create secret generic $SECRET_NAME --from-file=$key0 --from-file=$key1
 
 echo

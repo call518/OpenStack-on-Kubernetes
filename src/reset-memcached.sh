@@ -1,6 +1,7 @@
 #!/bin/bash
 
-kubectl delete pdb/memcached-pdb service/memcached statefulset.apps/memcached
-#kubectl delete service/memcached deployment.apps/memcached
+kubectl delete pdb/memcached-pdb
+kubectl delete service/memcached
+kubectl delete statefulset.apps/memcached
 
 kubectl get all -o wide

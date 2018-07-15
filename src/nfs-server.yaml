@@ -75,21 +75,23 @@ spec:
           fieldPath: status.podIP
     - name: SHARED_DIRECTORY
       value: /data
+    - name: SYNC
+      value: "true"
     - name: FSID
       value: "true"
     command:
       - "bash"
       - "-c"
       - |
-        curl -s -L "http://$DISCOVERY_SERVICE/v2/keys/oaas/$K8S_NFS_SERVER_IP_ETC_KEY" -XPUT -d value="$MY_POD_IP"
-        rm -rf /data/*
-        mkdir -p /data/pv/galera-{0,1,2}
-        mkdir -p /data/pv/mongodb-{0,1,2}
-        mkdir -p /data/pv/rabbitmq-{0,1,2}
-        mkdir -p /data/pv/glance-images
-        mkdir -p /data/pv/zookeeper-{0,1,2}
-        mkdir -p /data/pv/cinder-volumes
-        mkdir -p /data/pv/cinder-backups
+        curl -s -L "http://$DISCOVERY_SERVICE/v2/keys/oaas/$K8S_NFS_SERVER_IP_ETC_KEY" -XPUT -d value="$MY_POD_IP";
+        rm -rf /data/*;
+        mkdir -p /data/pv/galera-{0,1,2};
+        mkdir -p /data/pv/mongodb-{0,1,2};
+        mkdir -p /data/pv/rabbitmq-{0,1,2};
+        mkdir -p /data/pv/glance-images;
+        mkdir -p /data/pv/zookeeper-{0,1,2};
+        mkdir -p /data/pv/cinder-volumes;
+        mkdir -p /data/pv/cinder-backups;
         /usr/bin/nfsd.sh;
     lifecycle:
       preStop:
@@ -98,7 +100,7 @@ spec:
           - /bin/sh
           - -c
           - >
-            curl -s -L "http://$DISCOVERY_SERVICE/v2/keys/oaas/$K8S_NFS_SERVER_IP_ETC_KEY" -XDELETE
+            curl -s -L "http://$DISCOVERY_SERVICE/v2/keys/oaas/$K8S_NFS_SERVER_IP_ETC_KEY" -XDELETE;
   volumes:
   - name: pvc-nfs-server
     persistentVolumeClaim:

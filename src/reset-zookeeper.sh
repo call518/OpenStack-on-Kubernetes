@@ -1,5 +1,8 @@
 #!/bin/bash
 
-kubectl delete pdb/zk-pdb statefulset.apps/zk service/zk-hs service/zk-cs; rm -rf /data/pv/zookeeper-{0,1,2}/*
+kubectl delete pdb/zk-pdb
+kubectl delete service/zk-hs
+kubectl delete service/zk-cs
+kubectl delete statefulset.apps/zk
 
 kubectl get all -o wide

@@ -1,5 +1,8 @@
 #!/bin/bash
 
-kubectl delete pdb/rabbitmq-pdb service/rabbitmq service/rabbitmq-management statefulset.apps/rabbitmq; rm -rf /data/pv/rabbitmq-{0,1,2}/*
+kubectl delete pdb/rabbitmq-pdb
+kubectl delete service/rabbitmq
+kubectl delete service/rabbitmq-management
+kubectl delete statefulset.apps/rabbitmq
 
 kubectl get all -o wide

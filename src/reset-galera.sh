@@ -1,5 +1,7 @@
 #!/bin/bash
 
-kubectl delete pdb/galera-pdb service/galera statefulset.apps/galera; rm -rf /data/pv/galera-{0,1,2}/*
+kubectl delete pdb/galera-pdb
+kubectl delete service/galera
+kubectl delete statefulset.apps/galera
 
 kubectl get all -o wide
