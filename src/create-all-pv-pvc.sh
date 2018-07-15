@@ -11,13 +11,13 @@ do
 	sleep 3
 done
 
-NFS_SERVER_IP=$(kubectl describe pod nfs-server | awk '/IP:/ {print $2}')
+NFS_SERVER_IP=$(kubectl describe pod nfs-server | awk '/^IP:/ {print $2}')
 
-sed -e 's/___NFS_SERVER_IP___/'$NFS_SERVER_IP'/g' galera-pv.yaml | kubectl create -f -
-sed -e 's/___NFS_SERVER_IP___/'$NFS_SERVER_IP'/g' mongodb-pv.yaml | kubectl create -f -
-sed -e 's/___NFS_SERVER_IP___/'$NFS_SERVER_IP'/g' rabbitmq-pv.yaml | kubectl create -f -
-sed -e 's/___NFS_SERVER_IP___/'$NFS_SERVER_IP'/g' glance-pv.yaml | kubectl create -f -
-sed -e 's/___NFS_SERVER_IP___/'$NFS_SERVER_IP'/g' zookeeper-pv.yaml | kubectl create -f -
+sed -e "s|___NFS_SERVER_IP___|$NFS_SERVER_IP|g" galera-pv.yaml | kubectl create -f -
+sed -e "s|___NFS_SERVER_IP___|$NFS_SERVER_IP|g" mongodb-pv.yaml | kubectl create -f -
+sed -e "s|___NFS_SERVER_IP___|$NFS_SERVER_IP|g" rabbitmq-pv.yaml | kubectl create -f -
+sed -e "s|___NFS_SERVER_IP___|$NFS_SERVER_IP|g" glance-pv.yaml | kubectl create -f -
+sed -e "s|___NFS_SERVER_IP___|$NFS_SERVER_IP|g" zookeeper-pv.yaml | kubectl create -f -
 
 kubectl create -f galera-pvc.yaml 
 kubectl create -f mongodb-pvc.yaml 
