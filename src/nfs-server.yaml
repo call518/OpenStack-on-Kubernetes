@@ -92,6 +92,7 @@ spec:
         mkdir -p /data/pv/zookeeper-{0,1,2};
         mkdir -p /data/pv/cinder-volumes;
         mkdir -p /data/pv/cinder-backups;
+        mkdir -p /data/pv/cinder-lock_path;
         /usr/bin/nfsd.sh;
     lifecycle:
       preStop:

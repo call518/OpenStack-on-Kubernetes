@@ -85,6 +85,9 @@ data:
       fi
       su -s /bin/sh -c "cinder-manage db sync" cinder
     fi
+    mkdir -p /var/lib/cinder/lock
+    mount -t nfs4 10.244.5.92:/pv/cinder-lock_path /var/lib/cinder/lock
+    chown -R cinder:cinder /var/lib/cinder/lock
     service cinder-volume restart
     service cinder-scheduler restart
     service cinder-backup restart
@@ -146,7 +149,7 @@ data:
     password = ___K8S_KEYSTONE_USER_CINDER_PASS___
     [matchmaker_redis]
     [oslo_concurrency]
-    lock_path = /var/lib/cinder/tmp
+    lock_path = /var/lib/cinder/lock
     [oslo_messaging_amqp]
     [oslo_messaging_notifications]
     driver = messagingv2
