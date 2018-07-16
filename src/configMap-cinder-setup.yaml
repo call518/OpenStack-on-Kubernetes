@@ -89,7 +89,6 @@ data:
     service cinder-backup restart
     service cinder-api restart
     sleep 5;
-    sleep 999999;
     until (echo $VOLUME_SERVICES | grep -q "cinder-volume ${HOSTNAME}@NFS enabled") && (echo $VOLUME_SERVICES | grep -q "cinder-scheduler ${HOSTNAME} enabled") && (echo $VOLUME_SERVICES | grep -q "cinder-backup ${HOSTNAME} enabled")
     do
       echo "waiting for service response....."
