@@ -197,6 +197,15 @@ spec:
             - configMapRef:
                 name: env-common
           command: ["/scripts/nova-server-init.sh"]
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                - /bin/sh
+                - -c
+                - >
+                  umount -a -t nfs;
+          ports:
           ports:
             - containerPort: 9696
           volumeMounts:
