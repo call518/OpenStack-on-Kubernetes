@@ -119,17 +119,19 @@ data:
     service neutron-lbaasv2-agent restart
     service neutron-ovs-cleanup restart
     sleep 5;
-    neutron net-create ext-net --router:external --provider:physical_network external --provider:network_type flat
-    neutron subnet-create ext-net --name ext-net --allocation-pool start=$K8S_EXT_SUBNET_POOL_START,end=$K8S_EXT_SUBNET_POOL_END --disable-dhcp --gateway $K8S_EXT_SUBNET_GW $K8S_EXT_SUBNET_CIDR
-    neutron net-create demo-net --tenant-id `openstack project show demo -f value -c id` --provider:network_type vxlan
-    source /root/demo-openrc
-    neutron subnet-create demo-net --name private-subnet --gateway $K8S_DEMO_SUBNET_GW $K8S_DEMO_SUBNET_CIDR --dns-nameserver $K8S_DEMO_SUBNET_DNS
-    neutron router-create demo-router
-    neutron router-interface-add demo-router private-subnet
-    neutron router-gateway-set demo-router ext-net
-    source /root/admin-openrc
     until neutron ext-list; do echo "waiting for service response....."; sleep 5; done
     echo "ok~~~~ service is ready~~!!!"
+    if [ "X$exist_neutron_db" == "X" ]; then
+      neutron net-create ext-net --router:external --provider:physical_network external --provider:network_type flat
+      neutron subnet-create ext-net --name ext-net --allocation-pool start=$K8S_EXT_SUBNET_POOL_START,end=$K8S_EXT_SUBNET_POOL_END --disable-dhcp --gateway $K8S_EXT_SUBNET_GW $K8S_EXT_SUBNET_CIDR
+      neutron net-create demo-net --tenant-id `openstack project show demo -f value -c id` --provider:network_type vxlan
+      source /root/demo-openrc
+      neutron subnet-create demo-net --name private-subnet --gateway $K8S_DEMO_SUBNET_GW $K8S_DEMO_SUBNET_CIDR --dns-nameserver $K8S_DEMO_SUBNET_DNS
+      neutron router-create demo-router
+      neutron router-interface-add demo-router private-subnet
+      neutron router-gateway-set demo-router ext-net
+      source /root/admin-openrc
+    fi
     touch /.setup_completed
     tail -F /var/log/syslog /var/log/neutron/*
 

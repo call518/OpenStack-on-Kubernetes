@@ -93,6 +93,7 @@ spec:
         mkdir -p /data/pv/cinder-volumes;
         mkdir -p /data/pv/cinder-backups;
         mkdir -p /data/pv/cinder-lock_path;
+        mkdir -p /data/pv/nova-lock_path;
         /usr/bin/nfsd.sh;
     lifecycle:
       preStop:

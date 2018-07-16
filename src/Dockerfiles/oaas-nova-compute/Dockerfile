@@ -9,8 +9,8 @@ RUN cp -a /etc/apt/sources.list /etc/apt/sources.list.default \
     #&& add-apt-repository -y cloud-archive:queens \
     && add-apt-repository -y cloud-archive:newton \
     && apt-get update \
-    && apt-get install -y rsyslog mysql-client python-openstackclient python-pip neutron-server neutron-plugin-ml2 neutron-plugin-openvswitch-agent neutron-linuxbridge-agent neutron-l3-agent neutron-dhcp-agent neutron-metadata-agent neutron-lbaasv2-agent neutron-metering-agent haproxy \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y rsyslog mysql-client python-openstackclient python-pip nova-compute \
     && pip install python-memcached \
-    && apt-get install -y iputils-ping net-tools vim telnet lsof wget \
+    && apt-get install -y iputils-ping net-tools vim telnet lsof wget curl jq \
     && rm -rf /var/lib/apt/lists/*
 COPY check-init.sh /check-init.sh
