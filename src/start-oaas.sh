@@ -14,6 +14,7 @@ kubectl label nodes k8s-node05 compute=true
 ./update-configMap-glance-setup.sh
 ./update-configMap-cinder-setup.sh
 ./update-configMap-neutron-server-setup.sh
+./update-configMap-nova-server-setup.sh
 ./update-configMap-horizon-setup.sh
 
 #./update-secret-mongodb-keyfile.sh
@@ -30,5 +31,6 @@ kubectl create -f keystone.yaml
 kubectl create -f glance.yaml
 kubectl create -f cinder.yaml
 kubectl create -f neutron-server.yaml
+kubectl create -f nova-server.yaml
 kubectl create -f horizon.yaml
 #kubectl create -f zookeeper.yaml

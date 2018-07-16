@@ -2,6 +2,7 @@
 
 ./reset-zookeeper.sh
 ./reset-neutron-server.sh
+./reset-nova-server.sh
 ./reset-horizon.sh
 ./reset-cinder.sh
 ./reset-glance.sh
@@ -20,6 +21,7 @@ kubectl delete configmap keystone-setup
 kubectl delete configmap glance-setup
 kubectl delete configmap cinder-setup
 kubectl delete configmap neutron-server-setup
+kubectl delete configmap nova-server-setup
 kubectl delete configmap horizon-setup
 
 kubectl delete secret keystone-fernet-keys

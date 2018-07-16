@@ -8,7 +8,7 @@ data:
     set -e;
     service rsyslog restart;
     if ! (lsmod | grep -q "^openvswitch "); then
-      insmod /lib/modules/3.10.0-514.el7.x86_64/kernel/net/openvswitch/openvswitch.ko;
+      #insmod /lib/modules/$(uname -r)/kernel/net/openvswitch/openvswitch.ko;
       insmod $(find /lib/modules/ | grep "openvswitch.ko$" | tail -n 1);
     fi;
     modprobe openvswitch;
@@ -107,8 +107,8 @@ data:
       if ! openstack endpoint list --service neutron -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "neutron network admin" > /dev/null; then
         openstack endpoint create --region RegionOne network admin http://neutron-server:9696
       fi
+      su -s /bin/sh -c "neutron-db-manage --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head" neutron
     fi
-    su -s /bin/sh -c "neutron-db-manage --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head" neutron
     service neutron-server restart
     #service neutron-linuxbridge-agent restart
     service neutron-openvswitch-agent restart
@@ -139,7 +139,7 @@ data:
     [DEFAULT]
     core_plugin = ml2
     #service_plugins = router
-    service_plugins = neutron.services.l3_router.l3_router_plugin.L3RouterPlugin,neutron_lbaas.services.loadbalancer.plugin.LoadBalancerPluginv2
+    service_plugins = neutron.services.l3_router.l3_router_plugin.L3RouterPlugin,neutron_lbaas.services.loadbalancer.plugin.LoadBalancerPluginv2,metering
     router_distributed = false
     #l3_ha = true
     #allow_automatic_l3agent_failover = true

@@ -144,3 +144,12 @@ data:
     openstack service delete neutron
     openstack user delete neutron
     mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "DROP DATABASE IF EXISTS neutron; DELETE FROM mysql.user WHERE User='neutron'; DELETE FROM mysql.db WHERE Db='neutron' AND User='neutron'; FLUSH PRIVILEGES;"
+
+  remove-nova-server.sh: |
+    #!/bin/bash
+    source /root/admin-openrc
+    openstack endpoint delete $(openstack endpoint list --service nova -f value -c ID)
+    openstack service delete nova
+    openstack user delete nova
+    mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "DROP DATABASE IF EXISTS nova; DROP DATABASE IF EXISTS nova_api;"
+    mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "DELETE FROM mysql.user WHERE User='nova'; DELETE FROM mysql.db WHERE Db='nova' AND User='nova'; FLUSH PRIVILEGES;"
