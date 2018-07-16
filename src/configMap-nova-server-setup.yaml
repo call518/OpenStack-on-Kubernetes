@@ -73,7 +73,7 @@ data:
     service nova-conductor restart
     service nova-novncproxy restart
     sleep 5;
-    until service-list; do echo "waiting for service response....."; sleep 5; done
+    until nova service-list; do echo "waiting for service response....."; sleep 5; done
     echo "ok~~~~ service is ready~~!!!"
     touch /.setup_completed
     tail -F /var/log/syslog /var/log/nova/*

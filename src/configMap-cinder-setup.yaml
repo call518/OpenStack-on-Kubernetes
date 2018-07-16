@@ -3,17 +3,13 @@ kind: ConfigMap
 metadata:
   name: cinder-setup
 data:
-  ## Temporary Env. for NFS-Backend-Storage(Tutorial)
-  env-nfs-backend: |
-    export NFS_BACKEND_HOST_IP=$(curl -s -L "http://$DISCOVERY_SERVICE/v2/keys/oaas/$K8S_NFS_SERVER_IP_ETC_KEY" -XGET | jq -r .node.value)
-    export NFS_BACKEND_PATH_VOLUME="/pv/cinder-volumes"
-    export NFS_BACKEND_PATH_BACKUP="/pv/cinder-backups"
-
   cinder-init.sh: |
     #!/bin/bash
     set -e
     service rsyslog restart
-    source /scripts/env-nfs-backend
+    export NFS_BACKEND_HOST_IP=$(curl -s -L "http://$DISCOVERY_SERVICE/v2/keys/oaas/$K8S_NFS_SERVER_IP_ETC_KEY" -XGET | jq -r .node.value)
+    export NFS_BACKEND_PATH_VOLUME="/pv/cinder-volumes"
+    export NFS_BACKEND_PATH_BACKUP="/pv/cinder-backups"
     echo "$NFS_BACKEND_HOST_IP:$NFS_BACKEND_PATH_VOLUME" > /etc/cinder/nfsshares
     chown root:cinder /etc/cinder/nfsshares
     chmod 0640 /etc/cinder/nfsshares
@@ -86,13 +82,14 @@ data:
       su -s /bin/sh -c "cinder-manage db sync" cinder
     fi
     mkdir -p /var/lib/cinder/lock
-    mount -t nfs4 10.244.5.92:/pv/cinder-lock_path /var/lib/cinder/lock
+    mount -t nfs4 $NFS_BACKEND_HOST_IP:/pv/cinder-lock_path /var/lib/cinder/lock
     chown -R cinder:cinder /var/lib/cinder/lock
     service cinder-volume restart
     service cinder-scheduler restart
     service cinder-backup restart
     service cinder-api restart
     sleep 5;
+    sleep 999999;
     until (echo $VOLUME_SERVICES | grep -q "cinder-volume ${HOSTNAME}@NFS enabled") && (echo $VOLUME_SERVICES | grep -q "cinder-scheduler ${HOSTNAME} enabled") && (echo $VOLUME_SERVICES | grep -q "cinder-backup ${HOSTNAME} enabled")
     do
       echo "waiting for service response....."
