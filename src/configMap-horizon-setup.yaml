@@ -126,10 +126,10 @@ data:
     INSTANCE_LOG_LENGTH = 35
     DROPDOWN_MAX_ITEMS = 30
     TIME_ZONE = "Asia/Seoul"
-    AVAILABLE_THEMES = [
-        ('default', 'Default', 'themes/default'),
-        ('material', 'Material', 'themes/material'),
-    ]
+    #AVAILABLE_THEMES = [
+    #    ('default', 'Default', 'themes/default'),
+    #    ('material', 'Material', 'themes/material'),
+    #]
     LOGGING = {
         'version': 1,
         'disable_existing_loggers': False,
@@ -350,7 +350,8 @@ data:
                                   'LAUNCH_INSTANCE_DEFAULTS',
                                   'OPENSTACK_IMAGE_FORMATS']
     #DEFAULT_THEME = 'ubuntu'
-    DEFAULT_THEME = 'default'
+    #DEFAULT_THEME = 'default'
+    DEFAULT_THEME = 'material'
     WEBROOT='/horizon/'
     ALLOWED_HOSTS = ['*', ]
     COMPRESS_OFFLINE = True
