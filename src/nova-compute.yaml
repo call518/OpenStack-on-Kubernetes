@@ -1,13 +1,13 @@
-# Reference: https://blog.bluematador.com/posts/running-haproxy-docker-containers-kubernetes/
+# Reference: (N/A)
 
 apiVersion: policy/v1beta1
 kind: PodDisruptionBudget
 metadata:
-  name: nova-server-pdb
+  name: nova-compute-pdb
 spec:
   selector:
     matchLabels:
-      app: nova-server
+      app: nova-compute
   minAvailable: 1
   #maxUnavailable: 2
 
@@ -16,12 +16,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: nova-server
+  name: nova-compute
   labels:
-    app: nova-server
+    app: nova-compute
 spec:
   ports:
-  - name: nova-server-api
+  - name: nova-compute-api
     port: 9696
     targetPort: 9696
   #sessionAffinity: ClientIP
@@ -29,28 +29,28 @@ spec:
   #type: NodePort # Or LoadBalancer in production w/ proper security
   #type: LoadBalancer
   selector:
-    app: nova-server
+    app: nova-compute
 
 ---
 
 apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
-  name: nova-server
+  name: nova-compute
   labels:
-    app: nova-server
+    app: nova-compute
 spec:
-  serviceName: "nova-server"
+  serviceName: "nova-compute"
   replicas: 3
   podManagementPolicy: OrderedReady
   #podManagementPolicy: Parallel
   selector:
     matchLabels:
-      app: nova-server
+      app: nova-compute
   template:
     metadata:
       labels:
-        app: nova-server
+        app: nova-compute
     spec:
       terminationGracePeriodSeconds: 10
       affinity:
@@ -61,7 +61,7 @@ spec:
                - key: "app"
                  operator: In
                  values:
-                 - nova-server
+                 - nova-compute
              topologyKey: "kubernetes.io/hostname"
       nodeSelector:
         controller: "true"
@@ -165,13 +165,13 @@ spec:
       hostAliases:
       - ip: "127.0.0.1"
         hostnames:
-        - "nova-server"
+        - "nova-compute"
       #- ip: "192.168.0.150"
       #  hostnames:
       #  - "nfs-server"
       containers:
-        - name: nova-server
-          image: call518/oaas-nova-server
+        - name: nova-compute
+          image: call518/oaas-nova-compute
           #imagePullPolicy: Always
           imagePullPolicy: IfNotPresent
           securityContext:
@@ -196,7 +196,7 @@ spec:
           envFrom:
             - configMapRef:
                 name: env-common
-          command: ["/scripts/nova-server-init.sh"]
+          command: ["/scripts/nova-compute-init.sh"]
           lifecycle:
             preStop:
               exec:
@@ -209,7 +209,7 @@ spec:
           ports:
             - containerPort: 9696
           volumeMounts:
-          - name: nova-server-setup
+          - name: nova-compute-setup
             mountPath: /scripts
           #- name: kernel-modules
           #  mountPath: /lib/modules
@@ -233,9 +233,9 @@ spec:
           ##  initialDelaySeconds: 5
           ##  periodSeconds: 10
       volumes:
-      - name: nova-server-setup
+      - name: nova-compute-setup
         configMap:
-          name: nova-server-setup
+          name: nova-compute-setup
           defaultMode: 0755
       #- name: kernel-modules
       #  hostPath:

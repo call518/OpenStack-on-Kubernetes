@@ -1,4 +1,4 @@
-# Reference: https://blog.bluematador.com/posts/running-haproxy-docker-containers-kubernetes/
+# Reference: (N/A)
 # NFS Backend Issue(Not support snapshot/backup): https://bugzilla.redhat.com/show_bug.cgi?id=1388056
 
 apiVersion: policy/v1beta1

@@ -1,4 +1,4 @@
-# Reference: https://blog.bluematador.com/posts/running-haproxy-docker-containers-kubernetes/
+# Reference: (N/A)
 
 apiVersion: policy/v1beta1
 kind: PodDisruptionBudget
