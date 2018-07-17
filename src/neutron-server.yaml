@@ -41,8 +41,8 @@ metadata:
     app: neutron-server
 spec:
   serviceName: "neutron-server"
-  #replicas: 3
-  replicas: 1
+  replicas: 3
+  #replicas: 1
   podManagementPolicy: OrderedReady
   #podManagementPolicy: Parallel
   selector:
@@ -179,6 +179,7 @@ spec:
             privileged: true
             capabilities:
               add:
+              #- ALL
               - CAP_SYS_ADMIN
               - CAP_SYS_MODULE
           env:

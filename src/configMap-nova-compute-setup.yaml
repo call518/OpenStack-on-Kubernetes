@@ -6,17 +6,72 @@ data:
   nova-compute-init.sh: |
     #!/bin/bash
     set -e;
-    service rsyslog restart
+    service rsyslog restart;
+    export K8S_DEFAULT_GW_IP=$(ip route | awk '/default/ { print $3 }');
+    ping -c 5 -W 1 $K8S_DEFAULT_GW_IP;
+    export KRS_DEFAULT_GW_MAC=$(ip neigh | awk -v gw_ip="$K8S_DEFAULT_GW_IP" '$0~gw_ip {print $5}');
+    if ! (lsmod | grep -q "^openvswitch "); then
+      #insmod /lib/modules/$(uname -r)/kernel/net/openvswitch/openvswitch.ko;
+      #until insmod $(find /lib/modules/ | grep "openvswitch.ko$" | tail -n 1); do echo "waiting for installing openvswitch kernel model....."; sleep 1; done
+      until modprobe openvswitch;
+      do
+        echo "waiting for loading openvswitch kernel model.....";
+        sleep 1;
+      done;
+    fi;
+    echo "ok~~~~ openvswitch kernel module is ready~~!!!"
+    #modprobe openvswitch;
+    service openvswitch-switch restart;
+    until (service openvswitch-switch status);
+    do
+      echo "waiting for openvswitch-switch service.....";
+      sleep 5;
+    done
+    echo "ok~~~~ openvswitch-switch service is ready~~!!!"
+    ip link set eth0 down;
+    ip addr flush dev eth0;
+    ip link set eth0 name phy-eth0;
+    export K8S_PHY_ETH0_MAC=$(cat /sys/class/net/phy-eth0/address);
+    ovs-vsctl add-br eth0;
+    export K8S_BRIDGE_MAC=$(cat /sys/class/net/eth0/address);
+    ovs-vsctl del-br eth0;
+    ovs-vsctl add-br eth0 -- set bridge eth0 other-config:hwaddr="$K8S_PHY_ETH0_MAC";
+    ip link set dev phy-eth0 address $K8S_BRIDGE_MAC;
+    ovs-vsctl add-port eth0 phy-eth0;
+    ip link set phy-eth0 up;
+    ip link set eth0 up;
+    ip addr add $MY_POD_IP/24 dev eth0;
+    route add default gw $K8S_DEFAULT_GW_IP dev eth0;
+    route add -net $(echo $MY_POD_IP | awk -F'.' '{print $1"."$2".0.0"}') netmask 255.255.0.0 gw $K8S_DEFAULT_GW_IP dev eth0;
+    arp -s $K8S_DEFAULT_GW_IP $KRS_DEFAULT_GW_MAC;
+    unset K8S_DEFAULT_GW_IP K8S_BRIDGE_MAC K8S_PHY_ETH0_MAC;
+    if ! (lsmod | grep -q "^ebtables "); then
+      #insmod /lib/modules/$(uname -r)/kernel/net/bridge/netfilter/ebtables.ko;
+      #insmod $(find /lib/modules/ | grep "ebtables.ko$" | tail -n 1);
+      until modprobe ebtables;
+      do
+        echo "waiting for loading ebtables kernel model.....";
+        sleep 1;
+      done
+    fi;
+    echo "ok~~~~ ebtables kernel module is ready~~!!!"
     export NFS_BACKEND_HOST_IP=$(curl -s -L "http://$DISCOVERY_SERVICE/v2/keys/oaas/$K8S_NFS_SERVER_IP_ETC_KEY" -XGET | jq -r .node.value)
     cp -a /etc/nova/nova.conf /etc/nova/nova.conf.default
+    cp -a /etc/neutron /etc/neutron.default
+    cat /scripts/neutron.conf > /etc/neutron/neutron.conf
+    cat /scripts/ml2_conf.ini > /etc/neutron/plugins/ml2/ml2_conf.ini
+    cat /scripts/l3_agent.ini > /etc/neutron/l3_agent.ini
+    cat /scripts/metadata_agent.ini > /etc/neutron/metadata_agent.ini
+    cat /scripts/metering_agent.ini > /etc/neutron/metering_agent.ini
+    cat /scripts/openvswitch_agent.ini > /etc/neutron/plugins/ml2/openvswitch_agent.ini
     cat /scripts/nova.conf > /etc/nova/nova.conf
-    sed -i "s/___K8S_NOVA_DB_PASS___/$K8S_NOVA_DB_PASS/g" /etc/nova/nova.conf
-    sed -i "s/___K8S_RABBITMQ_OPENSTACK_USER___/$K8S_RABBITMQ_OPENSTACK_USER/g" /etc/nova/nova.conf
-    sed -i "s/___K8S_RABBITMQ_OPENSTACK_PASS___/$K8S_RABBITMQ_OPENSTACK_PASS/g" /etc/nova/nova.conf
-    sed -i "s/___K8S_KEYSTONE_USER_NEUTRON_PASS___/$K8S_KEYSTONE_USER_NEUTRON_PASS/g" /etc/nova/nova.conf
-    sed -i "s/___K8S_KEYSTONE_USER_NOVA_PASS___/$K8S_KEYSTONE_USER_NOVA_PASS/g" /etc/nova/nova.conf
-    sed -i "s/___K8S_METADATA_PROXY_SHARED_SECRET___/$K8S_METADATA_PROXY_SHARED_SECRET/g" /etc/nova/nova.conf
-    sed -i "s/___MY_IP___/$MY_POD_IP/g" /etc/nova/nova.conf
+    sed -i "s/___K8S_NOVA_DB_PASS___/$K8S_NOVA_DB_PASS/g" /etc/nova/nova.conf /etc/neutron/neutron.conf
+    sed -i "s/___K8S_RABBITMQ_OPENSTACK_USER___/$K8S_RABBITMQ_OPENSTACK_USER/g" /etc/nova/nova.conf /etc/neutron/neutron.conf
+    sed -i "s/___K8S_RABBITMQ_OPENSTACK_PASS___/$K8S_RABBITMQ_OPENSTACK_PASS/g" /etc/nova/nova.conf /etc/neutron/neutron.conf
+    sed -i "s/___K8S_KEYSTONE_USER_NEUTRON_PASS___/$K8S_KEYSTONE_USER_NEUTRON_PASS/g" /etc/nova/nova.conf /etc/neutron/neutron.conf
+    sed -i "s/___K8S_KEYSTONE_USER_NOVA_PASS___/$K8S_KEYSTONE_USER_NOVA_PASS/g" /etc/nova/nova.conf /etc/neutron/neutron.conf
+    sed -i "s/___K8S_METADATA_PROXY_SHARED_SECRET___/$K8S_METADATA_PROXY_SHARED_SECRET/g" /etc/nova/nova.conf /etc/neutron/neutron.conf
+    sed -i "s/___MY_IP___/$MY_POD_IP/g" /etc/nova/nova.conf /etc/neutron/neutron.conf
     cat > /root/admin-openrc << EOF
     export OS_PROJECT_DOMAIN_NAME=default
     export OS_USER_DOMAIN_NAME=default
@@ -38,53 +93,31 @@ data:
     export OS_IMAGE_API_VERSION=2
     EOF
     source /root/admin-openrc
-    exist_nova_api_db=$(mysql -s -N -q -A --connect-timeout=10 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW DATABASES LIKE 'nova_api';" 2>/dev/null)
-    if [ "X$exist_nova_api_db" == "X" ]; then
-      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS nova_api"
-      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'localhost' IDENTIFIED BY '$K8S_NOVA_DB_PASS'"
-      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'%' IDENTIFIED BY '$K8S_NOVA_DB_PASS'"
-      if ! openstack user list -f value -c Name | grep -q nova; then
-        openstack user create --domain default --password $K8S_KEYSTONE_USER_NOVA_PASS nova 2>/dev/null
-      fi
-      openstack role add --project service --user nova admin
-      if ! openstack service list -f value -c Name | grep -q "^nova$"; then
-        openstack service create --name nova --description "OpenStack Compute" compute;
-      fi
-      if ! openstack endpoint list --service nova -f value -c "Service Name" -c "Service Type" -c "Interface" | grep -q "nova compute public"; then
-        openstack endpoint create --region RegionOne compute public http://nova-compute:8774/v2.1/%\(tenant_id\)s
-      fi
-      if ! openstack endpoint list --service nova -f value -c "Service Name" -c "Service Type" -c "Interface" | grep -q "neutron network internal"; then
-        openstack endpoint create --region RegionOne compute internal http://nova-compute:8774/v2.1/%\(tenant_id\)s
-      fi
-      if ! openstack endpoint list --service nova -f value -c "Service Name" -c "Service Type" -c "Interface" | grep -q "neutron network admin"; then
-        openstack endpoint create --region RegionOne compute admin http://nova-compute:8774/v2.1/%\(tenant_id\)s
-      fi
-      su -s /bin/sh -c "nova-manage api_db sync" nova
-    fi
-    exist_nova_db=$(mysql -s -N -q -A --connect-timeout=10 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW DATABASES LIKE 'nova';" 2>/dev/null)
-    if [ "X$exist_nova_db" == "X" ]; then
-      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS nova"
-      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'localhost' IDENTIFIED BY '$K8S_NOVA_DB_PASS'"
-      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'%' IDENTIFIED BY '$K8S_NOVA_DB_PASS'"
-      su -s /bin/sh -c "nova-manage db sync" nova
-    fi
     #mkdir -p /usr/lib/python2.7/dist-packages/keys
     mkdir -p $(python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/keys
     mkdir -p /var/lib/nova/lock
-    mount -t nfs4 $NFS_BACKEND_HOST_IP:/pv/nova-lock_path /var/lib/nova/lock
+    mount -t nfs4 $NFS_BACKEND_HOST_IP:/pv/nova-compute-lock_path /var/lib/nova/lock
     chown -R nova:nova /var/lib/nova/lock
-    service nova-api restart
-    service nova-consoleauth restart
-    service nova-scheduler restart
-    service nova-conductor restart
-    service nova-novncproxy restart
+    ## Service - Neutron
+    #service neutron-server restart
+    #service neutron-linuxbridge-agent restart
+    service neutron-openvswitch-agent restart
+    #service neutron-dhcp-agent restart
+    service neutron-metadata-agent restart
+    service neutron-l3-agent restart
+    service neutron-metering-agent restart
+    #service neutron-lbaasv2-agent restart
+    service neutron-ovs-cleanup restart
+    ## Service - Nova
+    service libvirt-bin restart
+    #service nova-api restart
+    #service nova-consoleauth restart
+    #service nova-scheduler restart
+    #service nova-conductor restart
+    #service nova-novncproxy restart
+    service nova-compute restart
     sleep 5;
-    until (echo $NOVA_SERVICES | grep -q "nova-scheduler ${HOSTNAME} enabled") && (echo $NOVA_SERVICES | grep -q "nova-consoleauth ${HOSTNAME} enabled") && (echo $NOVA_SERVICES | grep -q "nova-conductor ${HOSTNAME} enabled")
-    do
-      echo "waiting for service response....."
-      NOVA_SERVICES=$(nova service-list | sed -e 's/ //g'| cut -d'|' -f 3,4,6 | grep "^nova-" | sed -e 's/|/ /g' || true)
-      sleep 5
-    done
+    until (service libvirt-bin status) && (service nova-compute status); do echo "waiting for service response....."; sleep 5; done
     echo "ok~~~~ service is ready~~!!!"
     nova service-list
     touch /.setup_completed
@@ -103,8 +136,17 @@ data:
     metadata_listen = $my_ip
     use_neutron = true
     firewall_driver = nova.virt.firewall.NoopFirewallDriver
+    instance_usage_audit = True
+    instance_usage_audit_period = hour
+    notify_on_state_change = vm_and_task_state
+    cpu_allocation_ratio = 16.0
+    ram_allocation_ratio = 1
+    instance_name_template = instance-%08x
+    allow_resize_to_same_host = True
+    block_device_allocate_retries = 300
+    block_device_allocate_retries_interval = 10
+    block_device_creation_timeout = 300
     [api_database]
-    connection = mysql+pymysql://nova:___K8S_NOVA_DB_PASS___@haproxy-galera/nova_api
     [barbican]
     [cache]
     enabled = true
@@ -113,14 +155,12 @@ data:
     memcached_servers = memcached-0.memcached:11211,memcached-1.memcached:11211,memcached-2.memcached:11211
     [cells]
     [cinder]
-    os_region_name = RegionOne
     [cloudpipe]
     [conductor]
     [cors]
     [cors.subdomain]
     [crypto]
     [database]
-    connection = mysql+pymysql://nova:___K8S_NOVA_DB_PASS___@haproxy-galera/nova
     [ephemeral_storage_encryption]
     [glance]
     api_servers = http://glance:9292
@@ -141,6 +181,19 @@ data:
     username = nova
     password = ___K8S_KEYSTONE_USER_NOVA_PASS___
     [libvirt]
+    virt_type = qemu
+    ## for CEPH
+    #images_type = rbd
+    #images_rbd_pool = vms
+    #images_rbd_ceph_conf = /etc/ceph/ceph.conf
+    #rbd_user = cinder
+    #rbd_secret_uuid = 4b5fd580-360c-4f8c-abb5-c83bb9a3f964
+    #disk_cachemodes="network=writeback"
+    #inject_password = false
+    #inject_key = false
+    #inject_partition = -2
+    #live_migration_flag="VIR_MIGRATE_UNDEFINE_SOURCE,VIR_MIGRATE_PEER2PEER,VIR_MIGRATE_LIVE,VIR_MIGRATE_PERSIST_DEST,VIR_MIGRATE_TUNNELLED"
+    #hw_disk_discard = unmap
     [matchmaker_redis]
     [metrics]
     [mks]
@@ -178,12 +231,134 @@ data:
     [upgrade_levels]
     [vmware]
     [vnc]
-    vncserver_listen = $my_ip
+    enabled = true
+    vncserver_listen = 0.0.0.0
+    #vnc_auto.html vncserver_listen = 0.0.0.0
     vncserver_proxyclient_address = $my_ip
     #novncproxy_host = $my_ip
     #novncproxy_port = 6080
-    #novncproxy_base_url = http://nova-compute:6080/vnc_auto.html
+    novncproxy_base_url = http://nova-server:6080/vnc_auto.html
     [workarounds]
     [wsgi]
     [xenserver]
     [xvp]
+
+  neutron.conf: |
+    [DEFAULT]
+    core_plugin = ml2
+    service_plugins = router
+    router_distributed = false
+    allow_overlapping_ips = true
+    transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-0.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-1.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-2.rabbitmq
+    auth_strategy = keystone
+    notify_nova_on_port_status_changes = true
+    notify_nova_on_port_data_changes = true
+    global_physnet_mtu = 1400
+    advertise_mtu = true
+    [agent]
+    root_helper = sudo /usr/bin/neutron-rootwrap /etc/neutron/rootwrap.conf
+    [cors]
+    [cors.subdomain]
+    [database]
+    connection = mysql+pymysql://neutron:___K8S_NEUTRON_DB_PASS___@haproxy-galera/neutron
+    [keystone_authtoken]
+    auth_uri = http://keystone:5000/v3
+    auth_url = http://keystone:35357/v3
+    #memcached_servers = memcached:11211
+    memcached_servers = memcached-0.memcached:11211,memcached-1.memcached:11211,memcached-2.memcached:11211
+    auth_type = password
+    project_domain_name = default
+    user_domain_name = default
+    project_name = service
+    username = neutron
+    password = ___K8S_KEYSTONE_USER_NEUTRON_PASS___
+    [matchmaker_redis]
+    [nova]
+    auth_url = http://keystone:35357
+    auth_type = password
+    project_domain_name = default
+    user_domain_name = default
+    region_name = RegionOne
+    project_name = service
+    username = nova
+    password = ___K8S_KEYSTONE_USER_NOVA_PASS___
+    [oslo_concurrency]
+    [oslo_messaging_amqp]
+    [oslo_messaging_notifications]
+    driver = messagingv2
+    transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-0.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-1.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-2.rabbitmq
+    [oslo_messaging_rabbit]
+    [oslo_messaging_zmq]
+    [oslo_middleware]
+    [oslo_policy]
+    [qos]
+    [quotas]
+    [ssl]
+
+  ml2_conf.ini: |
+    [DEFAULT]
+    [ml2]
+    #type_drivers = flat,vlan,vxlan
+    type_drivers = flat,vxlan
+    tenant_network_types = vxlan
+    #mechanism_drivers = linuxbridge,l2population
+    mechanism_drivers = openvswitch,l2population
+    extension_drivers = port_security
+    path_mtu = 1400
+    [ml2_type_flat]
+    flat_networks = external
+    [ml2_type_geneve]
+    [ml2_type_gre]
+    [ml2_type_vlan]
+    [ml2_type_vxlan]
+    vni_ranges = 1:1000
+    [securitygroup]
+    firewall_driver = iptables_hybrid
+
+#  linuxbridge_agent.ini: |
+#    [DEFAULT]
+#    [agent]
+#    [linux_bridge]
+#    physical_interface_mappings = provider:eth0
+#    [securitygroup]
+#    enable_security_group = true
+#    firewall_driver = neutron.agent.linux.iptables_firewall.IptablesFirewallDriver
+#    [vxlan]
+#    enable_vxlan = true
+#    local_ip = OVERLAY_INTERFACE_IP_ADDRESS
+#    l2_population = true
+
+  l3_agent.ini: |
+    [DEFAULT]
+    #interface_driver = neutron.agent.linux.interface.BridgeInterfaceDriver
+    interface_driver = neutron.agent.linux.interface.OVSInterfaceDriver
+    external_network_bridge  =
+    #agent_mode = dvr_snat
+    [AGENT]
+
+  metadata_agent.ini: |
+    [DEFAULT]
+    nova_metadata_ip = nova-server
+    metadata_proxy_shared_secret = __K8S_METADATA_PROXY_SHARED_SECRET__
+    [AGENT]
+    [cache]
+
+  metering_agent.ini: |
+    [DEFAULT]
+    driver = neutron.services.metering.drivers.iptables.iptables_driver.IptablesMeteringDriver
+    interface_driver = neutron.agent.linux.interface.OVSInterfaceDriver
+    measure_interval = 60
+    report_interval = 300
+
+  openvswitch_agent.ini: |
+    [DEFAULT]
+    [agent]
+    tunnel_types = vxlan
+    enable_distributed_routing = false
+    l2_population = true
+    arp_responder = true
+    [ovs]
+    local_ip = OVS_LOCAL_IP
+    bridge_mappings = external:br-ex
+    [securitygroup]
+    firewall_driver = iptables_hybrid

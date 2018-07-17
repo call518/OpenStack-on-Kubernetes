@@ -9,7 +9,8 @@ RUN cp -a /etc/apt/sources.list /etc/apt/sources.list.default \
     #&& add-apt-repository -y cloud-archive:queens \
     && add-apt-repository -y cloud-archive:newton \
     && apt-get update \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y rsyslog mysql-client python-openstackclient python-pip nova-compute \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y rsyslog mysql-client python-openstackclient python-pip nova-compute nova-api-metadata nova-novncproxy python-novaclient neutron-plugin-openvswitch-agent \
+    #&& apt-get install -y neutron-linuxbridge-agent \
     && pip install python-memcached \
     && apt-get install -y iputils-ping net-tools vim telnet lsof wget curl jq \
     && rm -rf /var/lib/apt/lists/*

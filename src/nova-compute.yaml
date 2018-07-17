@@ -22,8 +22,14 @@ metadata:
 spec:
   ports:
   - name: nova-compute-api
-    port: 9696
-    targetPort: 9696
+    port: 8774
+    targetPort: 8774
+  - name: nova-metadata-api
+    port: 8775
+    targetPort: 8775
+  - name: nova-novncproxy
+    port: 6080
+    targetPort: 6080
   #sessionAffinity: ClientIP
   clusterIP: None
   #type: NodePort # Or LoadBalancer in production w/ proper security
@@ -64,7 +70,7 @@ spec:
                  - nova-compute
              topologyKey: "kubernetes.io/hostname"
       nodeSelector:
-        controller: "true"
+        compute: "true"
       initContainers:
       - name: wait1
         #imagePullPolicy: Always
@@ -176,10 +182,11 @@ spec:
           imagePullPolicy: IfNotPresent
           securityContext:
             privileged: true
-            capabilities:
-              add:
-              - CAP_SYS_ADMIN
-              - CAP_SYS_MODULE
+            #capabilities:
+            #  add:
+            #  - ALL
+            #  #- CAP_SYS_ADMIN
+            #  #- CAP_SYS_MODULE
           env:
             #- name: MY_POD_NAME
             #  valueFrom:
@@ -207,7 +214,9 @@ spec:
                   umount -a -t nfs;
           ports:
           ports:
-            - containerPort: 9696
+            - containerPort: 8774
+            - containerPort: 8775
+            - containerPort: 6080
           volumeMounts:
           - name: nova-compute-setup
             mountPath: /scripts

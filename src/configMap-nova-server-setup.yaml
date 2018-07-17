@@ -71,7 +71,7 @@ data:
     #mkdir -p /usr/lib/python2.7/dist-packages/keys
     mkdir -p $(python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/keys
     mkdir -p /var/lib/nova/lock
-    mount -t nfs4 $NFS_BACKEND_HOST_IP:/pv/nova-lock_path /var/lib/nova/lock
+    mount -t nfs4 $NFS_BACKEND_HOST_IP:/pv/nova-server-lock_path /var/lib/nova/lock
     chown -R nova:nova /var/lib/nova/lock
     service nova-api restart
     service nova-consoleauth restart
@@ -79,10 +79,10 @@ data:
     service nova-conductor restart
     service nova-novncproxy restart
     sleep 5;
-    until (echo $NOVA_SERVICES | grep -q "nova-scheduler ${HOSTNAME} enabled") && (echo $NOVA_SERVICES | grep -q "nova-consoleauth ${HOSTNAME} enabled") && (echo $NOVA_SERVICES | grep -q "nova-conductor ${HOSTNAME} enabled")
+    until (echo $NOVA_SERVICES | grep -q "nova-scheduler ${HOSTNAME} enabled up") && (echo $NOVA_SERVICES | grep -q "nova-consoleauth ${HOSTNAME} enabled up") && (echo $NOVA_SERVICES | grep -q "nova-conductor ${HOSTNAME} enabled up")
     do
       echo "waiting for service response....."
-      NOVA_SERVICES=$(nova service-list | sed -e 's/ //g'| cut -d'|' -f 3,4,6 | grep "^nova-" | sed -e 's/|/ /g' || true)
+      NOVA_SERVICES=$(nova service-list | sed -e 's/ //g'| cut -d'|' -f 3,4,6,7 | grep "^nova-" | sed -e 's/|/ /g' || true)
       sleep 5
     done
     echo "ok~~~~ service is ready~~!!!"
@@ -100,7 +100,8 @@ data:
     #ec2_listen_port = 8773
     osapi_compute_listen = 0.0.0.0
     osapi_compute_listen_port = 8774
-    metadata_listen = $my_ip
+    metadata_listen = 0.0.0.0
+    metadata_listen_port = 8775
     use_neutron = true
     firewall_driver = nova.virt.firewall.NoopFirewallDriver
     [api_database]

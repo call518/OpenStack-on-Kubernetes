@@ -7,16 +7,27 @@ data:
     #!/bin/bash
     set -e;
     service rsyslog restart;
+    export K8S_DEFAULT_GW_IP=$(ip route | awk '/default/ { print $3 }');
+    ping -c 5 -W 1 $K8S_DEFAULT_GW_IP;
+    export KRS_DEFAULT_GW_MAC=$(ip neigh | awk -v gw_ip="$K8S_DEFAULT_GW_IP" '$0~gw_ip {print $5}');
     if ! (lsmod | grep -q "^openvswitch "); then
       #insmod /lib/modules/$(uname -r)/kernel/net/openvswitch/openvswitch.ko;
-      insmod $(find /lib/modules/ | grep "openvswitch.ko$" | tail -n 1);
+      #until insmod $(find /lib/modules/ | grep "openvswitch.ko$" | tail -n 1); do echo "waiting for installing openvswitch kernel model....."; sleep 1; done
+      until modprobe openvswitch;
+      do
+        echo "waiting for loading openvswitch kernel model.....";
+        sleep 1;
+      done;
     fi;
-    modprobe openvswitch;
+    echo "ok~~~~ openvswitch kernel module is ready~~!!!"
+    #modprobe openvswitch;
     service openvswitch-switch restart;
-    sleep 5;
-    export K8S_DEFAULT_GW_IP=$(ip route | awk '/default/ { print $3 }');
-    until ping -c 1 -W 1 $K8S_DEFAULT_GW_IP; do sleep 1; done;
-    export KRS_DEFAULT_GW_MAC=$(ip neigh | awk -v gw_ip="$K8S_DEFAULT_GW_IP" '$0~gw_ip {print $5}');
+    until (service openvswitch-switch status);
+    do
+      echo "waiting for openvswitch-switch service.....";
+      sleep 5;
+    done
+    echo "ok~~~~ openvswitch-switch service is ready~~!!!"
     ip link set eth0 down;
     ip addr flush dev eth0;
     ip link set eth0 name phy-eth0;
@@ -36,9 +47,15 @@ data:
     unset K8S_DEFAULT_GW_IP K8S_BRIDGE_MAC K8S_PHY_ETH0_MAC;
     if ! (lsmod | grep -q "^ebtables "); then
       #insmod /lib/modules/$(uname -r)/kernel/net/bridge/netfilter/ebtables.ko;
-      insmod $(find /lib/modules/ | grep "ebtables.ko$" | tail -n 1);
+      #insmod $(find /lib/modules/ | grep "ebtables.ko$" | tail -n 1);
+      until modprobe ebtables;
+      do
+        echo "waiting for loading ebtables kernel model.....";
+        sleep 1;
+      done
     fi;
-    modprobe ebtables;
+    echo "ok~~~~ ebtables kernel module is ready~~!!!"
+    #modprobe ebtables;
     ovs-vsctl add-br br-ex;
     ovs-vsctl add-port eth0 patch-br-ex -- set Interface patch-br-ex type=patch options:peer=patch-eth0;
     ovs-vsctl add-port br-ex patch-eth0 -- set Interface patch-eth0 type=patch options:peer=patch-br-ex;
@@ -46,25 +63,25 @@ data:
     sysctl -w net.ipv4.conf.default.rp_filter=0;
     sysctl -w net.ipv4.conf.all.rp_filter=0;
     sysctl -w net.ipv4.ip_forward=1;
-    cp -a /etc/neutron /etc/neutron.default
-    cat /scripts/neutron.conf > /etc/neutron/neutron.conf
-    cat /scripts/ml2_conf.ini > /etc/neutron/plugins/ml2/ml2_conf.ini
-    #cat /scripts/linuxbridge_agent.ini > /etc/neutron/plugins/ml2/linuxbridge_agent.ini
-    cat /scripts/l3_agent.ini > /etc/neutron/l3_agent.ini
-    cat /scripts/dhcp_agent.ini > /etc/neutron/dhcp_agent.ini
-    cat /scripts/metadata_agent.ini > /etc/neutron/metadata_agent.ini
-    cat /scripts/neutron_lbaas.conf > /etc/neutron/neutron_lbaas.conf
-    cat /scripts/lbaas_agent.ini > /etc/neutron/lbaas_agent.ini
-    cat /scripts/openvswitch_agent.ini > /etc/neutron/plugins/ml2/openvswitch_agent.ini
-    sed -i "s/___K8S_NEUTRON_DB_PASS___/$K8S_NEUTRON_DB_PASS/g" /etc/neutron/neutron.conf
-    sed -i "s/___K8S_RABBITMQ_OPENSTACK_USER___/$K8S_RABBITMQ_OPENSTACK_USER/g" /etc/neutron/neutron.conf
-    sed -i "s/___K8S_RABBITMQ_OPENSTACK_PASS___/$K8S_RABBITMQ_OPENSTACK_PASS/g" /etc/neutron/neutron.conf
-    sed -i "s/___K8S_KEYSTONE_USER_NEUTRON_PASS___/$K8S_KEYSTONE_USER_NEUTRON_PASS/g" /etc/neutron/neutron.conf
-    sed -i "s/___K8S_KEYSTONE_USER_NOVA_PASS___/$K8S_KEYSTONE_USER_NOVA_PASS/g" /etc/neutron/neutron.conf
-    sed -i "s/___K8S_METADATA_PROXY_SHARED_SECRET___/$K8S_METADATA_PROXY_SHARED_SECRET/g" /etc/neutron/metadata_agent.ini
-    #sed -i "s/OVERLAY_INTERFACE_IP_ADDRESS/$MY_POD_IP/g" /etc/neutron/plugins/ml2/linuxbridge_agent.ini
-    sed -i "s/OVS_LOCAL_IP/$MY_POD_IP/g" /etc/neutron/plugins/ml2/openvswitch_agent.ini
-    ln -sf /etc/neutron/plugins/ml2/ml2_conf.ini /etc/neutron/plugin.ini
+    cp -a /etc/neutron /etc/neutron.default;
+    cat /scripts/neutron.conf > /etc/neutron/neutron.conf;
+    cat /scripts/ml2_conf.ini > /etc/neutron/plugins/ml2/ml2_conf.ini;
+    #cat /scripts/linuxbridge_agent.ini > /etc/neutron/plugins/ml2/linuxbridge_agent.ini;
+    cat /scripts/l3_agent.ini > /etc/neutron/l3_agent.ini;
+    cat /scripts/dhcp_agent.ini > /etc/neutron/dhcp_agent.ini;
+    cat /scripts/metadata_agent.ini > /etc/neutron/metadata_agent.ini;
+    cat /scripts/neutron_lbaas.conf > /etc/neutron/neutron_lbaas.conf;
+    cat /scripts/lbaas_agent.ini > /etc/neutron/lbaas_agent.ini;
+    cat /scripts/openvswitch_agent.ini > /etc/neutron/plugins/ml2/openvswitch_agent.ini;
+    sed -i "s/___K8S_NEUTRON_DB_PASS___/$K8S_NEUTRON_DB_PASS/g" /etc/neutron/neutron.conf;
+    sed -i "s/___K8S_RABBITMQ_OPENSTACK_USER___/$K8S_RABBITMQ_OPENSTACK_USER/g" /etc/neutron/neutron.conf;
+    sed -i "s/___K8S_RABBITMQ_OPENSTACK_PASS___/$K8S_RABBITMQ_OPENSTACK_PASS/g" /etc/neutron/neutron.conf;
+    sed -i "s/___K8S_KEYSTONE_USER_NEUTRON_PASS___/$K8S_KEYSTONE_USER_NEUTRON_PASS/g" /etc/neutron/neutron.conf;
+    sed -i "s/___K8S_KEYSTONE_USER_NOVA_PASS___/$K8S_KEYSTONE_USER_NOVA_PASS/g" /etc/neutron/neutron.conf;
+    sed -i "s/___K8S_METADATA_PROXY_SHARED_SECRET___/$K8S_METADATA_PROXY_SHARED_SECRET/g" /etc/neutron/metadata_agent.ini;
+    #sed -i "s/OVERLAY_INTERFACE_IP_ADDRESS/$MY_POD_IP/g" /etc/neutron/plugins/ml2/linuxbridge_agent.ini;
+    sed -i "s/OVS_LOCAL_IP/$MY_POD_IP/g" /etc/neutron/plugins/ml2/openvswitch_agent.ini;
+    ln -sf /etc/neutron/plugins/ml2/ml2_conf.ini /etc/neutron/plugin.ini;
     cat > /root/admin-openrc << EOF
     export OS_PROJECT_DOMAIN_NAME=default
     export OS_USER_DOMAIN_NAME=default
@@ -119,8 +136,8 @@ data:
     service neutron-lbaasv2-agent restart
     service neutron-ovs-cleanup restart
     sleep 5;
-    until neutron ext-list; do echo "waiting for service response....."; sleep 5; done
-    echo "ok~~~~ service is ready~~!!!"
+    until neutron ext-list; do echo "(1) waiting for service response....."; sleep 5; done
+    echo "(1) ok~~~~ service is ready~~!!!"
     if [ "X$exist_neutron_db" == "X" ]; then
       neutron net-create ext-net --router:external --provider:physical_network external --provider:network_type flat
       neutron subnet-create ext-net --name ext-net --allocation-pool start=$K8S_EXT_SUBNET_POOL_START,end=$K8S_EXT_SUBNET_POOL_END --disable-dhcp --gateway $K8S_EXT_SUBNET_GW $K8S_EXT_SUBNET_CIDR
@@ -132,6 +149,15 @@ data:
       neutron router-gateway-set demo-router ext-net
       source /root/admin-openrc
     fi
+    until (echo $NEUTRON_SERVICES | grep -q "ext-net") && (echo $NEUTRON_SERVICES | grep -q "demo-net")
+    do
+      echo "(2) waiting for service response....."
+      NEUTRON_SERVICES=$(neutron net-list -f value -c "name"  || true)
+      sleep 5
+    done
+    echo "(2) ok~~~~ service is ready~~!!!"
+    neutron net-list;
+    neutron subnet-list;
     touch /.setup_completed
     tail -F /var/log/syslog /var/log/neutron/*
 
@@ -141,11 +167,11 @@ data:
     #service_plugins = router
     service_plugins = neutron.services.l3_router.l3_router_plugin.L3RouterPlugin,neutron_lbaas.services.loadbalancer.plugin.LoadBalancerPluginv2,metering
     router_distributed = false
-    #l3_ha = true
-    #allow_automatic_l3agent_failover = true
-    #max_l3_agents_per_router = 3
-    #min_l3_agents_per_router = 2
-    #dhcp_agents_per_network = 2
+    l3_ha = true
+    allow_automatic_l3agent_failover = true
+    max_l3_agents_per_router = 3
+    min_l3_agents_per_router = 1
+    dhcp_agents_per_network = 3
     allow_overlapping_ips = true
     transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-0.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-1.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-2.rabbitmq
     auth_strategy = keystone
@@ -202,6 +228,7 @@ data:
     #mechanism_drivers = linuxbridge,l2population
     mechanism_drivers = openvswitch,l2population
     extension_drivers = port_security
+    path_mtu = 1400
     [ml2_type_flat]
     flat_networks = external
     [ml2_type_geneve]
@@ -266,9 +293,9 @@ data:
     [DEFAULT]
     [agent]
     tunnel_types = vxlan
-    enable_distributed_routing = True
-    l2_population = True
-    arp_responder = True
+    enable_distributed_routing = false
+    l2_population = true
+    arp_responder = true
     [ovs]
     local_ip = OVS_LOCAL_IP
     bridge_mappings = external:br-ex

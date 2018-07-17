@@ -32,8 +32,7 @@ sleep 10
 
 ./reset-all-pv-pvc.sh
 
-kubectl label nodes k8s-node01 controller-
-kubectl label nodes k8s-node02 controller-
-kubectl label nodes k8s-node03 controller-
-kubectl label nodes k8s-node04 nfs-server- network-
-kubectl label nodes k8s-node05 compute-
+kubectl label nodes k8s-node01 controller- network-
+kubectl label nodes k8s-node02 controller- network-
+kubectl label nodes k8s-node03 controller- network-
+kubectl label nodes k8s-node04 nfs-server- compute-

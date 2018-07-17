@@ -88,10 +88,10 @@ data:
     service cinder-scheduler restart
     service cinder-backup restart
     service cinder-api restart
-    until (echo $VOLUME_SERVICES | grep -q "cinder-volume ${HOSTNAME}@NFS enabled") && (echo $VOLUME_SERVICES | grep -q "cinder-scheduler ${HOSTNAME} enabled") && (echo $VOLUME_SERVICES | grep -q "cinder-backup ${HOSTNAME} enabled")
+    until (echo $VOLUME_SERVICES | grep -q "cinder-volume ${HOSTNAME}@NFS enabled up") && (echo $VOLUME_SERVICES | grep -q "cinder-scheduler ${HOSTNAME} enabled up") && (echo $VOLUME_SERVICES | grep -q "cinder-backup ${HOSTNAME} enabled up")
     do
       echo "waiting for service response....."
-      VOLUME_SERVICES=$(openstack volume service list -f value -c "Binary" -c "Host" -c "Status" || true)
+      VOLUME_SERVICES=$(openstack volume service list -f value -c "Binary" -c "Host" -c "Status" -c "State" || true)
       sleep 5
     done
     echo "ok~~~~ service is ready~~!!!"
