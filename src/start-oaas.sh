@@ -14,6 +14,7 @@ kubectl label nodes k8s-node04 nfs-server=true compute=true
 ./update-configMap-cinder-setup.sh
 ./update-configMap-neutron-server-setup.sh
 ./update-configMap-nova-server-setup.sh
+./update-configMap-nova-compute-setup.sh
 ./update-configMap-horizon-setup.sh
 
 #./update-secret-mongodb-keyfile.sh

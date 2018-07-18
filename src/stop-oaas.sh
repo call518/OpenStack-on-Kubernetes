@@ -22,6 +22,7 @@ kubectl delete configmap glance-setup
 kubectl delete configmap cinder-setup
 kubectl delete configmap neutron-server-setup
 kubectl delete configmap nova-server-setup
+kubectl delete configmap nova-compute-setup
 kubectl delete configmap horizon-setup
 
 kubectl delete secret keystone-fernet-keys
