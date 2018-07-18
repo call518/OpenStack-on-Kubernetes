@@ -158,6 +158,7 @@ data:
       sleep 5
     done
     echo "(2) ok~~~~ service is ready~~!!!"
+    ovs-vsctl show;
     neutron net-list;
     neutron subnet-list;
     touch /.setup_completed
