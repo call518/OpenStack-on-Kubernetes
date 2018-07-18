@@ -105,31 +105,24 @@ data:
     source /root/admin-openrc
     #mkdir -p /usr/lib/python2.7/dist-packages/keys
     mkdir -p $(python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/keys
-    mkdir -p /var/lib/nova/lock
+    mkdir -p /var/lib/nova/lock /var/lib/nova/imagess /var/lib/nova/instances
     mount -t nfs4 $NFS_BACKEND_HOST_IP:/pv/nova-compute-lock_path /var/lib/nova/lock
-    chown -R nova:nova /var/lib/nova/lock
+    mount -t nfs4 $NFS_BACKEND_HOST_IP:/pv/nova-compute-imagess /var/lib/nova/imagess
+    mount -t nfs4 $NFS_BACKEND_HOST_IP:/pv/nova-compute-instances /var/lib/nova/instances
+    chown -R nova:nova /var/lib/nova/lock /var/lib/nova/imagess /var/lib/nova/instances
     ## Service - Neutron
-    #service neutron-server restart
-    #service neutron-linuxbridge-agent restart
     service neutron-openvswitch-agent restart
-    #service neutron-dhcp-agent restart
-    service neutron-metadata-agent restart
-    service neutron-l3-agent restart
-    service neutron-metering-agent restart
-    #service neutron-lbaasv2-agent restart
     service neutron-ovs-cleanup restart
     ## Service - Nova
     service libvirt-bin restart
-    #service nova-api restart
-    #service nova-consoleauth restart
-    #service nova-scheduler restart
-    #service nova-conductor restart
-    #service nova-novncproxy restart
+    service nova-api-metadata restart
     service nova-compute restart
+    service nova-novncproxy restart
     sleep 5;
-    until (service libvirt-bin status) && (service nova-compute status); do echo "waiting for service response....."; sleep 5; done
-    echo "ok~~~~ service is ready~~!!!"
-    nova service-list
+    until (service libvirt-bin status) && (service nova-compute status); do echo "(1) waiting for nova-compute service response....."; sleep 5; done
+    echo "(1) ok~~~~ nova-compute service is ready~~!!!"
+    until (nova service-list); do echo "(2) waiting for nova-server service response....." sleep 5; done
+    echo "(2) ok~~~~ nova-compute service is ready~~!!!"
     touch /.setup_completed
     tail -F /var/log/syslog /var/log/nova/*
 
@@ -139,6 +132,8 @@ data:
     transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-0.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-1.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-2.rabbitmq
     auth_strategy = keystone
     my_ip = ___MY_IP___
+    logdir=/var/log/nova
+    state_path=/var/lib/nova
     #ec2_listen = 0.0.0.0
     #ec2_listen_port = 8773
     osapi_compute_listen = 0.0.0.0

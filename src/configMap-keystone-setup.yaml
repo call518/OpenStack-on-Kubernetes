@@ -151,5 +151,9 @@ data:
     openstack endpoint delete $(openstack endpoint list --service nova -f value -c ID)
     openstack service delete nova
     openstack user delete nova
+    for id in $(nova service-list | grep nova-compute | awk '{print $2}');
+    do
+      nova service-delete $id
+    done
     mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "DROP DATABASE IF EXISTS nova; DROP DATABASE IF EXISTS nova_api;"
     mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "DELETE FROM mysql.user WHERE User='nova'; DELETE FROM mysql.db WHERE Db='nova' AND User='nova'; FLUSH PRIVILEGES;"

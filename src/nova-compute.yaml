@@ -13,31 +13,31 @@ spec:
 
 ---
 
-apiVersion: v1
-kind: Service
-metadata:
-  name: nova-compute
-  labels:
-    app: nova-compute
-spec:
-  ports:
-  - name: nova-compute-api
-    port: 8774
-    targetPort: 8774
-  - name: nova-metadata-api
-    port: 8775
-    targetPort: 8775
-  - name: nova-novncproxy
-    port: 6080
-    targetPort: 6080
-  #sessionAffinity: ClientIP
-  clusterIP: None
-  #type: NodePort # Or LoadBalancer in production w/ proper security
-  #type: LoadBalancer
-  selector:
-    app: nova-compute
-
----
+#apiVersion: v1
+#kind: Service
+#metadata:
+#  name: nova-compute
+#  labels:
+#    app: nova-compute
+#spec:
+#  ports:
+#  - name: nova-compute-api
+#    port: 8774
+#    targetPort: 8774
+#  - name: nova-metadata-api
+#    port: 8775
+#    targetPort: 8775
+#  - name: nova-novncproxy
+#    port: 6080
+#    targetPort: 6080
+#  #sessionAffinity: ClientIP
+#  clusterIP: None
+#  #type: NodePort # Or LoadBalancer in production w/ proper security
+#  #type: LoadBalancer
+#  selector:
+#    app: nova-compute
+#
+#---
 
 apiVersion: apps/v1beta1
 kind: StatefulSet
@@ -47,7 +47,8 @@ metadata:
     app: nova-compute
 spec:
   serviceName: "nova-compute"
-  replicas: 3
+  #replicas: 3
+  replicas: 1
   podManagementPolicy: OrderedReady
   #podManagementPolicy: Parallel
   selector:
