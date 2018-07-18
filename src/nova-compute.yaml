@@ -182,11 +182,11 @@ spec:
           imagePullPolicy: IfNotPresent
           securityContext:
             privileged: true
-            #capabilities:
-            #  add:
-            #  - ALL
-            #  #- CAP_SYS_ADMIN
-            #  #- CAP_SYS_MODULE
+            capabilities:
+              add:
+              - ALL
+              #- CAP_SYS_ADMIN
+              #- CAP_SYS_MODULE
           env:
             #- name: MY_POD_NAME
             #  valueFrom:
