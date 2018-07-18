@@ -32,5 +32,6 @@ kubectl create -f glance.yaml
 kubectl create -f cinder.yaml
 kubectl create -f neutron-server.yaml
 kubectl create -f nova-server.yaml
+kubectl create -f nova-compute.yaml
 kubectl create -f horizon.yaml
 #kubectl create -f zookeeper.yaml
