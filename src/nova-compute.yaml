@@ -186,8 +186,9 @@ spec:
             capabilities:
               add:
               - ALL
-              #- CAP_SYS_ADMIN
-              #- CAP_SYS_MODULE
+              - CAP_SYS_ADMIN
+              - CAP_SYS_MODULE
+              - CAP_NET_ADMIN
           env:
             #- name: MY_POD_NAME
             #  valueFrom:
@@ -221,8 +222,8 @@ spec:
           volumeMounts:
           - name: nova-compute-setup
             mountPath: /scripts
-          #- name: kernel-modules
-          #  mountPath: /lib/modules
+          - name: kernel-modules
+            mountPath: /lib/modules
           readinessProbe:
             exec:
               command:
@@ -247,7 +248,7 @@ spec:
         configMap:
           name: nova-compute-setup
           defaultMode: 0755
-      #- name: kernel-modules
-      #  hostPath:
-      #    path: /lib/modules
-      #    type: Directory
+      - name: kernel-modules
+        hostPath:
+          path: /lib/modules
+          type: Directory
