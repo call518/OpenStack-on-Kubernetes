@@ -74,7 +74,7 @@ data:
         sleep 5
       done
     fi
-    until (openstack image list -f value | grep -q Cirros); do echo "waiting for service response....."; sleep 5; done
+    until (openstack image list -f value | grep -q cirros); do echo "waiting for service response....."; sleep 5; done
     echo "ok~~~~ service is ready~~!!!"
     touch /.setup_completed
     tail -F /var/log/syslog /var/log/glance/*
