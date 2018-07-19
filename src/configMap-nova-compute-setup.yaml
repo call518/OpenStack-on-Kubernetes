@@ -123,8 +123,9 @@ data:
     sleep 5;
     until (service libvirt-bin status) && (service nova-compute status); do echo "(1) waiting for nova-compute service response....."; sleep 5; done
     echo "(1) ok~~~~ nova-compute service is ready~~!!!"
-    until (nova service-list); do echo "(2) waiting for nova-server service response....."; sleep 5; done
+    until (nova service-list | grep -q $HOSTNAME | grep -q " up "); do echo "(2) waiting for nova-server service response....."; sleep 5; done
     echo "(2) ok~~~~ nova-compute service is ready~~!!!"
+    nova service-list || true
     touch /.setup_completed
     tail -F /var/log/syslog /var/log/nova/*
 
