@@ -7,6 +7,8 @@ data:
     #!/bin/bash
     set -e;
     service rsyslog restart
+    a2dissite 000-default
+    echo "ServerName localhost" >> /etc/apache2/apache2.conf
     export NFS_BACKEND_HOST_IP=$(curl -s -L "http://$DISCOVERY_SERVICE/v2/keys/oaas/$K8S_NFS_SERVER_IP_ETC_KEY" -XGET | jq -r .node.value)
     cp -a /etc/nova/nova.conf /etc/nova/nova.conf.default
     cat /scripts/nova.conf > /etc/nova/nova.conf
@@ -104,6 +106,7 @@ data:
     service nova-scheduler restart
     service nova-conductor restart
     service nova-novncproxy restart
+    service apache2 restart
     sleep 5;
     until (echo $NOVA_SERVICES | grep -q "nova-scheduler ${HOSTNAME} enabled up") && (echo $NOVA_SERVICES | grep -q "nova-consoleauth ${HOSTNAME} enabled up") && (echo $NOVA_SERVICES | grep -q "nova-conductor ${HOSTNAME} enabled up")
     do
