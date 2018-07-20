@@ -117,7 +117,7 @@ data:
     openstack volume service list
     chown -R cinder:cinder /var/lib/cinder/mnt
     touch /.setup_completed
-    tail -F /var/log/syslog /var/log/cinder/*
+    tail -F /var/log/syslog /var/log/cinder/* /var/log/apache2/*
 
   cinder.conf: |
     [DEFAULT]

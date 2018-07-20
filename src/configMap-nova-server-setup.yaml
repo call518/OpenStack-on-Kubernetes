@@ -125,7 +125,7 @@ data:
       openstack flavor create --id 5 --ram 16384 --vcpus 6 --disk 320 m1.jumbo
     fi
     touch /.setup_completed
-    tail -F /var/log/syslog /var/log/nova/*
+    tail -F /var/log/syslog /var/log/nova/* /var/log/apache2/*
 
   nova.conf: |
     [DEFAULT]
