@@ -152,14 +152,15 @@ data:
     instance_usage_audit_period = hour
     notify_on_state_change = vm_and_task_state
     cpu_allocation_ratio = 10.0
-    ram_allocation_ratio = 2.0
-    disk_allocation_ratio = 2.0
+    ram_allocation_ratio = 1.0
+    disk_allocation_ratio = 1.0
     instance_name_template = instance-%08x
     allow_resize_to_same_host = True
     block_device_allocate_retries = 300
     block_device_allocate_retries_interval = 10
     block_device_creation_timeout = 300
     [api_database]
+    #connection = mysql+pymysql://nova:___K8S_NOVA_DB_PASS___@haproxy-galera/nova_api
     [barbican]
     [cache]
     enabled = true
@@ -167,6 +168,7 @@ data:
     #memcached_servers = memcached:11211
     memcached_servers = memcached-0.memcached:11211,memcached-1.memcached:11211,memcached-2.memcached:11211
     [cells]
+    #enable=false
     [cinder]
     [cloudpipe]
     [conductor]
@@ -245,6 +247,7 @@ data:
     username = placement
     password = ___K8S_KEYSTONE_USER_PLACEMENT_PASS___
     [placement_database]
+    #connection = mysql+pymysql://nova:___K8S_NOVA_DB_PASS___@haproxy-galera/nova_api
     [rdp]
     [remote_debug]
     [serial_console]

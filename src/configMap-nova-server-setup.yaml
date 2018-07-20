@@ -81,13 +81,13 @@ data:
         openstack service create --name placement --description "Placement API" placement;
       fi
       if ! openstack endpoint list --service placement -f value -c "Service Name" -c "Service Type" -c "Interface" | grep -q "placement placement public"; then
-        openstack endpoint create --region RegionOne placement public http://nova-server:8778/v2.1
+        openstack endpoint create --region RegionOne placement public http://nova-server:8778
       fi
       if ! openstack endpoint list --service placement -f value -c "Service Name" -c "Service Type" -c "Interface" | grep -q "placement placement internal"; then
-        openstack endpoint create --region RegionOne placement internal http://nova-server:8778/v2.1
+        openstack endpoint create --region RegionOne placement internal http://nova-server:8778
       fi
       if ! openstack endpoint list --service placement -f value -c "Service Name" -c "Service Type" -c "Interface" | grep -q "placement placement admin"; then
-        openstack endpoint create --region RegionOne placement admin http://nova-server:8774/v2.1
+        openstack endpoint create --region RegionOne placement admin http://nova-server:8778
       fi
       # DB Sync
       su -s /bin/sh -c "nova-manage api_db sync" nova
@@ -151,6 +151,7 @@ data:
     #memcached_servers = memcached:11211
     memcached_servers = memcached-0.memcached:11211,memcached-1.memcached:11211,memcached-2.memcached:11211
     [cells]
+    #enable=false
     [cinder]
     os_region_name = RegionOne
     [cloudpipe]
@@ -216,6 +217,7 @@ data:
     username = placement
     password = ___K8S_KEYSTONE_USER_PLACEMENT_PASS___
     [placement_database]
+    #connection = mysql+pymysql://nova:___K8S_NOVA_DB_PASS___@haproxy-galera/nova_api
     [rdp]
     [remote_debug]
     [scheduler]
