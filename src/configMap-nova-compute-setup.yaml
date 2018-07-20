@@ -151,8 +151,9 @@ data:
     instance_usage_audit = True
     instance_usage_audit_period = hour
     notify_on_state_change = vm_and_task_state
-    cpu_allocation_ratio = 16.0
-    ram_allocation_ratio = 1
+    cpu_allocation_ratio = 10.0
+    ram_allocation_ratio = 2.0
+    disk_allocation_ratio = 2.0
     instance_name_template = instance-%08x
     allow_resize_to_same_host = True
     block_device_allocate_retries = 300
