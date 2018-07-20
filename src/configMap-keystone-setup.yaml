@@ -151,7 +151,9 @@ data:
     #!/bin/bash
     source /root/admin-openrc
     openstack endpoint delete $(openstack endpoint list --service nova -f value -c ID)
+    openstack endpoint delete $(openstack endpoint list --service placement -f value -c ID)
     openstack service delete nova
+    openstack service delete placement
     openstack user delete nova
     for id in $(nova service-list | grep nova-compute | awk '{print $2}');
     do
