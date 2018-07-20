@@ -15,6 +15,7 @@ data:
     sed -i "s/___K8S_RABBITMQ_OPENSTACK_PASS___/$K8S_RABBITMQ_OPENSTACK_PASS/g" /etc/nova/nova.conf
     sed -i "s/___K8S_KEYSTONE_USER_NEUTRON_PASS___/$K8S_KEYSTONE_USER_NEUTRON_PASS/g" /etc/nova/nova.conf
     sed -i "s/___K8S_KEYSTONE_USER_NOVA_PASS___/$K8S_KEYSTONE_USER_NOVA_PASS/g" /etc/nova/nova.conf
+    sed -i "s/___K8S_KEYSTONE_USER_PLACEMENT_PASS___/$K8S_KEYSTONE_USER_PLACEMENT_PASS/g" /etc/nova/nova.conf
     sed -i "s/___K8S_METADATA_PROXY_SHARED_SECRET___/$K8S_METADATA_PROXY_SHARED_SECRET/g" /etc/nova/nova.conf
     sed -i "s/___MY_IP___/$MY_POD_IP/g" /etc/nova/nova.conf
     cat > /root/admin-openrc << EOF
@@ -38,11 +39,18 @@ data:
     export OS_IMAGE_API_VERSION=2
     EOF
     source /root/admin-openrc
-    exist_nova_api_db=$(mysql -s -N -q -A --connect-timeout=10 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW DATABASES LIKE 'nova_api';" 2>/dev/null)
-    if [ "X$exist_nova_api_db" == "X" ]; then
+    exist_nova_db=$(mysql -s -N -q -A --connect-timeout=10 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW DATABASES LIKE 'nova';" 2>/dev/null)
+    if [ "X$exist_nova_db" == "X" ]; then
       mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS nova_api"
       mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'localhost' IDENTIFIED BY '$K8S_NOVA_DB_PASS'"
       mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'%' IDENTIFIED BY '$K8S_NOVA_DB_PASS'"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS nova"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'localhost' IDENTIFIED BY '$K8S_NOVA_DB_PASS'"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'%' IDENTIFIED BY '$K8S_NOVA_DB_PASS'"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS nova_cell0"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON nova_cell0.* TO 'nova'@'localhost' IDENTIFIED BY '$K8S_NOVA_DB_PASS'"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON nova_cell0.* TO 'nova'@'%' IDENTIFIED BY '$K8S_NOVA_DB_PASS'"
+      ## Nova API Service
       if ! openstack user list -f value -c Name | grep -q nova; then
         openstack user create --domain default --password $K8S_KEYSTONE_USER_NOVA_PASS nova 2>/dev/null
       fi
@@ -51,22 +59,40 @@ data:
         openstack service create --name nova --description "OpenStack Compute" compute;
       fi
       if ! openstack endpoint list --service nova -f value -c "Service Name" -c "Service Type" -c "Interface" | grep -q "nova compute public"; then
-        openstack endpoint create --region RegionOne compute public http://nova-server:8774/v2.1/%\(tenant_id\)s
+        #openstack endpoint create --region RegionOne compute public http://nova-server:8774/v2.1/%\(tenant_id\)s
+        openstack endpoint create --region RegionOne compute public http://nova-server:8774/v2.1
       fi
       if ! openstack endpoint list --service nova -f value -c "Service Name" -c "Service Type" -c "Interface" | grep -q "neutron network internal"; then
-        openstack endpoint create --region RegionOne compute internal http://nova-server:8774/v2.1/%\(tenant_id\)s
+        #openstack endpoint create --region RegionOne compute internal http://nova-server:8774/v2.1/%\(tenant_id\)s
+        openstack endpoint create --region RegionOne compute internal http://nova-server:8774/v2.1
       fi
       if ! openstack endpoint list --service nova -f value -c "Service Name" -c "Service Type" -c "Interface" | grep -q "neutron network admin"; then
-        openstack endpoint create --region RegionOne compute admin http://nova-server:8774/v2.1/%\(tenant_id\)s
+        #openstack endpoint create --region RegionOne compute admin http://nova-server:8774/v2.1/%\(tenant_id\)s
+        openstack endpoint create --region RegionOne compute admin http://nova-server:8774/v2.1
       fi
+      ## Placement API Service
+      if ! openstack user list -f value -c Name | grep -q placement; then
+        openstack user create --domain default --password $K8S_KEYSTONE_USER_PLACEMENT_PASS placement 2>/dev/null
+      fi
+      openstack role add --project service --user placement admin
+      if ! openstack service list -f value -c Name | grep -q "^placement$"; then
+        openstack service create --name placement --description "Placement API" placement;
+      fi
+      if ! openstack endpoint list --service placement -f value -c "Service Name" -c "Service Type" -c "Interface" | grep -q "placement placement public"; then
+        openstack endpoint create --region RegionOne placement public http://nova-server:8778/v2.1
+      fi
+      if ! openstack endpoint list --service placement -f value -c "Service Name" -c "Service Type" -c "Interface" | grep -q "placement placement internal"; then
+        openstack endpoint create --region RegionOne placement internal http://nova-server:8778/v2.1
+      fi
+      if ! openstack endpoint list --service placement -f value -c "Service Name" -c "Service Type" -c "Interface" | grep -q "placement placement admin"; then
+        openstack endpoint create --region RegionOne placement admin http://nova-server:8774/v2.1
+      fi
+      # DB Sync
       su -s /bin/sh -c "nova-manage api_db sync" nova
-    fi
-    exist_nova_db=$(mysql -s -N -q -A --connect-timeout=10 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW DATABASES LIKE 'nova';" 2>/dev/null)
-    if [ "X$exist_nova_db" == "X" ]; then
-      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS nova"
-      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'localhost' IDENTIFIED BY '$K8S_NOVA_DB_PASS'"
-      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'%' IDENTIFIED BY '$K8S_NOVA_DB_PASS'"
+      su -s /bin/sh -c "nova-manage cell_v2 map_cell0" nova
+      su -s /bin/sh -c "nova-manage cell_v2 create_cell --name=cell1 --verbose" nova
       su -s /bin/sh -c "nova-manage db sync" nova
+      nova-manage cell_v2 list_cells
     fi
     #mkdir -p /usr/lib/python2.7/dist-packages/keys
     mkdir -p $(python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/keys
@@ -177,9 +203,19 @@ data:
     [oslo_middleware]
     [oslo_policy]
     [placement]
+    os_region_name = RegionOne
+    project_domain_name = Default
+    project_name = service
+    auth_type = password
+    user_domain_name = Default
+    auth_url = http://keystone:35357/v3
+    username = placement
+    password = ___K8S_KEYSTONE_USER_PLACEMENT_PASS___
     [placement_database]
     [rdp]
     [remote_debug]
+    [scheduler]
+    discover_hosts_in_cells_interval = 60
     [serial_console]
     [spice]
     [ssl]
@@ -187,6 +223,7 @@ data:
     [upgrade_levels]
     [vmware]
     [vnc]
+    enabled = true
     vncserver_listen = $my_ip
     vncserver_proxyclient_address = $my_ip
     #novncproxy_host = $my_ip

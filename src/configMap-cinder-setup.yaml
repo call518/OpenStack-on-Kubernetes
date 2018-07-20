@@ -7,6 +7,8 @@ data:
     #!/bin/bash
     set -e
     service rsyslog restart
+    a2dissite 000-default
+    echo "ServerName localhost" >> /etc/apache2/apache2.conf
     export NFS_BACKEND_HOST_IP=$(curl -s -L "http://$DISCOVERY_SERVICE/v2/keys/oaas/$K8S_NFS_SERVER_IP_ETC_KEY" -XGET | jq -r .node.value)
     export NFS_BACKEND_PATH_VOLUME="/pv/cinder-volumes"
     export NFS_BACKEND_PATH_BACKUP="/pv/cinder-backups"
@@ -54,31 +56,47 @@ data:
       if ! openstack user list -f value -c Name | grep cinder > /dev/null; then
         openstack user create --domain default --password $K8S_KEYSTONE_USER_CINDER_PASS cinder 2>/dev/null
       fi
+      ## version v1
       openstack role add --project service --user cinder admin
       if ! openstack service list -f value -c Name | grep "^cinder$" > /dev/null; then
         openstack service create --name cinder --description "OpenStack Block Storage" volume;
       fi
+      if ! openstack endpoint list --service cinder -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "cinder volume public" > /dev/null; then
+        openstack endpoint create --region RegionOne volume public http://cinder:8776/v1/%\(project_id\)s
+      fi
+      if ! openstack endpoint list --service cinder -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "cinder volume internal" > /dev/null; then
+        openstack endpoint create --region RegionOne volume internal http://cinder:8776/v1/%\(project_id\)s
+      fi
+      if ! openstack endpoint list --service cinder -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "cinder volume admin" > /dev/null; then
+        openstack endpoint create --region RegionOne volume admin http://cinder:8776/v1/%\(project_id\)s
+      fi
+      ## version v2
       if ! openstack service list -f value -c Name | grep "^cinderv2$" > /dev/null; then
         openstack service create --name cinderv2 --description "OpenStack Block Storage" volumev2;
       fi
-      if ! openstack endpoint list --service cinder -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "cinder volume public" > /dev/null; then
-        openstack endpoint create --region RegionOne volume public http://cinder:8776/v1/%\(tenant_id\)s
-      fi
-      if ! openstack endpoint list --service cinder -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "cinder volume internal" > /dev/null; then
-        openstack endpoint create --region RegionOne volume internal http://cinder:8776/v1/%\(tenant_id\)s
-      fi
-      if ! openstack endpoint list --service cinder -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "cinder volume admin" > /dev/null; then
-        openstack endpoint create --region RegionOne volume admin http://cinder:8776/v1/%\(tenant_id\)s
-      fi
       if ! openstack endpoint list --service cinderv2 -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "cinderv2 volumev2 public" > /dev/null; then
-        openstack endpoint create --region RegionOne volumev2 public http://cinder:8776/v2/%\(tenant_id\)s
+        openstack endpoint create --region RegionOne volumev2 public http://cinder:8776/v2/%\(project_id\)s
       fi
       if ! openstack endpoint list --service cinderv2 -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "cinderv2 volumev2 internal" > /dev/null; then
-        openstack endpoint create --region RegionOne volumev2 internal http://cinder:8776/v2/%\(tenant_id\)s
+        openstack endpoint create --region RegionOne volumev2 internal http://cinder:8776/v2/%\(project_id\)s
       fi
       if ! openstack endpoint list --service cinderv2 -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "cinderv2 volumev2 admin" > /dev/null; then
-        openstack endpoint create --region RegionOne volumev2 admin http://cinder:8776/v2/%\(tenant_id\)s
+        openstack endpoint create --region RegionOne volumev2 admin http://cinder:8776/v2/%\(project_id\)s
       fi
+      ## version v3
+      if ! openstack service list -f value -c Name | grep "^cinderv3$" > /dev/null; then
+        openstack service create --name cinderv3 --description "OpenStack Block Storage" volumev3;
+      fi
+      if ! openstack endpoint list --service cinderv3 -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "cinderv3 volumev3 public" > /dev/null; then
+        openstack endpoint create --region RegionOne volumev3 public http://cinder:8776/v3/%\(project_id\)s
+      fi
+      if ! openstack endpoint list --service cinderv3 -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "cinderv3 volumev3 internal" > /dev/null; then
+        openstack endpoint create --region RegionOne volumev3 internal http://cinder:8776/v3/%\(project_id\)s
+      fi
+      if ! openstack endpoint list --service cinderv3 -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "cinderv3 volumev3 admin" > /dev/null; then
+        openstack endpoint create --region RegionOne volumev3 admin http://cinder:8776/v3/%\(project_id\)s
+      fi
+      ## DB Sync
       su -s /bin/sh -c "cinder-manage db sync" cinder
     fi
     mkdir -p /var/lib/cinder/lock
@@ -87,7 +105,8 @@ data:
     service cinder-volume restart
     service cinder-scheduler restart
     service cinder-backup restart
-    service cinder-api restart
+    #service cinder-api restart
+    service apache2 restart
     until (echo $VOLUME_SERVICES | grep -q "cinder-volume ${HOSTNAME}@NFS enabled up") && (echo $VOLUME_SERVICES | grep -q "cinder-scheduler ${HOSTNAME} enabled up") && (echo $VOLUME_SERVICES | grep -q "cinder-backup ${HOSTNAME} enabled up")
     do
       echo "waiting for service response....."

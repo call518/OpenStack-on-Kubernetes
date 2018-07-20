@@ -10,7 +10,7 @@ RUN cp -a /etc/apt/sources.list /etc/apt/sources.list.default \
     #&& add-apt-repository -y cloud-archive:newton \
     && add-apt-repository -y cloud-archive:ocata \
     && apt-get update \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y rsyslog mysql-client python-openstackclient python-pip nova-compute nova-api-metadata nova-novncproxy python-novaclient neutron-plugin-openvswitch-agent nfs-common libguestfs-tools \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y rsyslog mysql-client python-openstackclient python-pip nova-compute nova-api-metadata nova-novncproxy nova-placement-api python-novaclient neutron-plugin-openvswitch-agent nfs-common libguestfs-tools \
     #&& apt-get install -y neutron-linuxbridge-agent \
     && pip install python-memcached \
     && apt-get install -y iputils-ping net-tools vim telnet lsof wget curl jq \

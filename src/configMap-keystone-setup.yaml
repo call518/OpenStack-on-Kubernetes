@@ -132,8 +132,10 @@ data:
     source /root/admin-openrc
     openstack endpoint delete $(openstack endpoint list --service cinder -f value -c ID)
     openstack endpoint delete $(openstack endpoint list --service cinderv2 -f value -c ID)
+    openstack endpoint delete $(openstack endpoint list --service cinderv3 -f value -c ID)
     openstack service delete cinder
     openstack service delete cinderv2
+    openstack service delete cinderv3
     openstack user delete cinder
     mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "DROP DATABASE IF EXISTS cinder; DELETE FROM mysql.user WHERE User='cinder'; DELETE FROM mysql.db WHERE Db='cinder' AND User='cinder'; FLUSH PRIVILEGES;"
 
@@ -155,5 +157,5 @@ data:
     do
       nova service-delete $id
     done
-    mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "DROP DATABASE IF EXISTS nova; DROP DATABASE IF EXISTS nova_api;"
+    mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "DROP DATABASE IF EXISTS nova; DROP DATABASE IF EXISTS nova_api; DROP DATABASE IF EXISTS nova_cell0;"
     mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "DELETE FROM mysql.user WHERE User='nova'; DELETE FROM mysql.db WHERE Db='nova' AND User='nova'; FLUSH PRIVILEGES;"
