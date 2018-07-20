@@ -207,10 +207,10 @@ data:
     [oslo_policy]
     [placement]
     os_region_name = RegionOne
-    project_domain_name = Default
+    project_domain_name = default
     project_name = service
     auth_type = password
-    user_domain_name = Default
+    user_domain_name = default
     auth_url = http://keystone:35357/v3
     username = placement
     password = ___K8S_KEYSTONE_USER_PLACEMENT_PASS___
