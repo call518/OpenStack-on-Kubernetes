@@ -7,8 +7,8 @@ RUN cp -a /etc/apt/sources.list /etc/apt/sources.list.default \
     && apt-get update \
     && apt-get -y install software-properties-common apt-utils \
     #&& add-apt-repository -y cloud-archive:queens \
-    #&& add-apt-repository -y cloud-archive:ocata \
-    && add-apt-repository -y cloud-archive:newton \
+    #&& add-apt-repository -y cloud-archive:newton \
+    && add-apt-repository -y cloud-archive:ocata \
     && apt-get update \
     && apt-get install -y rsyslog mysql-client openstack-dashboard python-openstackclient python-pip \
     && pip install python-memcached \

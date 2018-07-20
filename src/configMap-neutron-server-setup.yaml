@@ -136,7 +136,7 @@ data:
     service neutron-l3-agent restart
     service neutron-metering-agent restart
     service neutron-lbaasv2-agent restart
-    service neutron-ovs-cleanup restart
+    #service neutron-ovs-cleanup restart
     sleep 5;
     until neutron ext-list; do echo "(1) waiting for service response....."; sleep 5; done
     echo "(1) ok~~~~ service is ready~~!!!"

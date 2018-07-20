@@ -7,7 +7,8 @@ RUN cp -a /etc/apt/sources.list /etc/apt/sources.list.default \
     && apt-get update \
     && apt-get -y install software-properties-common apt-utils \
     #&& add-apt-repository -y cloud-archive:queens \
-    && add-apt-repository -y cloud-archive:newton \
+    #&& add-apt-repository -y cloud-archive:newton \
+    && add-apt-repository -y cloud-archive:ocata \
     && apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y rsyslog mysql-client python-openstackclient python-pip nova-compute nova-api-metadata nova-novncproxy python-novaclient neutron-plugin-openvswitch-agent nfs-common libguestfs-tools \
     #&& apt-get install -y neutron-linuxbridge-agent \

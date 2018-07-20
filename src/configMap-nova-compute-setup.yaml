@@ -114,7 +114,7 @@ data:
     systemd-machine-id-setup
     ## Service - Neutron
     service neutron-openvswitch-agent restart
-    service neutron-ovs-cleanup restart
+    #service neutron-ovs-cleanup restart
     ## Service - Nova
     service libvirt-bin restart
     service nova-api-metadata restart
