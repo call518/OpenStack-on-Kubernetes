@@ -18,7 +18,7 @@ data:
       #until insmod $(find /lib/modules/ | grep "openvswitch.ko$" | tail -n 1); do echo "waiting for installing openvswitch kernel model....."; sleep 1; done
       until modprobe openvswitch;
       do
-        echo "waiting for loading openvswitch kernel model.....";
+        echo "waiting for loading openvswitch kernel module.....";
         sleep 1;
       done;
     fi;
@@ -53,12 +53,23 @@ data:
       #insmod $(find /lib/modules/ | grep "ebtables.ko$" | tail -n 1);
       until modprobe ebtables;
       do
-        echo "waiting for loading ebtables kernel model.....";
+        echo "waiting for loading ebtables kernel module.....";
         sleep 1;
       done
     fi;
     echo "ok~~~~ ebtables kernel module is ready~~!!!"
     #modprobe ebtables;
+    if ! (lsmod | grep -q "^bridge "); then
+      #insmod /lib/modules/$(uname -r)/kernel/net/bridge/bridge.ko
+      #insmod $(find /lib/modules/ | grep "bridge.ko$" | tail -n 1);
+      until modprobe bridge;
+      do
+        echo "waiting for loading bridge kernel module.....";
+        sleep 1;
+      done
+    fi;
+    echo "ok~~~~ bridge kernel module is ready~~!!!"
+    #modprobe bridge;
     ovs-vsctl add-br br-ex;
     ovs-vsctl add-port eth0 patch-br-ex -- set Interface patch-br-ex type=patch options:peer=patch-eth0;
     ovs-vsctl add-port br-ex patch-eth0 -- set Interface patch-eth0 type=patch options:peer=patch-br-ex;
