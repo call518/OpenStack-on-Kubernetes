@@ -1,0 +1,260 @@
+# Reference: (N/A)
+# NFS Backend Issue(Not support snapshot/backup): https://bugzilla.redhat.com/show_bug.cgi?id=1388056
+
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: cinder-pdb
+spec:
+  selector:
+    matchLabels:
+      app: cinder
+  minAvailable: 1
+  #maxUnavailable: 2
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: cinder
+  labels:
+    app: cinder
+spec:
+  ports:
+  - name: cinder-api
+    port: 8776
+    targetPort: 8776
+  #sessionAffinity: ClientIP
+  clusterIP: None
+  #type: NodePort # Or LoadBalancer in production w/ proper security
+  #type: LoadBalancer
+  selector:
+    app: cinder
+
+---
+
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: cinder
+  labels:
+    app: cinder
+spec:
+  serviceName: "cinder"
+  replicas: 3
+  podManagementPolicy: OrderedReady
+  #podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: cinder
+  template:
+    metadata:
+      labels:
+        app: cinder
+    spec:
+      terminationGracePeriodSeconds: 10
+      affinity:
+         podAntiAffinity:
+           requiredDuringSchedulingIgnoredDuringExecution:
+           - labelSelector:
+               matchExpressions:
+               - key: "app"
+                 operator: In
+                 values:
+                 - cinder
+             topologyKey: "kubernetes.io/hostname"
+      nodeSelector:
+        controller: "true"
+      initContainers:
+      - name: wait1
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        image: call518/oaas-init-container
+        envFrom:
+          - configMapRef:
+              name: env-common
+        command:
+          - /bin/bash
+          - -c
+          - >
+            until [ "`curl --connect-timeout 3 -s -L 'http://$DISCOVERY_SERVICE/v2/keys/oaas/$K8S_NFS_SERVER_IP_ETC_KEY' -XGET | jq -r .node.value`" != "null" ];
+            do
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` nfs-server is not ready..... waiting...";
+              sleep 5;
+            done;
+            echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ nfs-server is ready~~";
+      - name: wait2
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        image: call518/oaas-init-container
+        envFrom:
+          - configMapRef:
+              name: env-common
+        command:
+          - /bin/bash
+          - -c
+          - >
+            QUERY_WSREP_READY="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_READY';";
+            QUERY_WSREP_CLUSTER_SIZE="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_CLUSTER_SIZE';";
+            QUERY_WSREP_CLUSTER_STATUS="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_CLUSTER_STATUS';";
+            QUERY_WSREP_LOCAL_STATE_COMMENT="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_LOCAL_STATE_COMMENT';";
+            until [ "$WSREP_READY" == "ON" ] && [ "$WSREP_CLUSTER_SIZE" == "3" ] && [ "$WSREP_CLUSTER_STATUS" == "Primary" ] && [ "$WSREP_LOCAL_STATE_COMMENT" == "Synced" ];
+            do
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` haproxy-galera is not ready..... waiting...";
+              WSREP_READY=$(mysql --connect-timeout=3 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_READY" 2>1 2> /dev/null;);
+              WSREP_CLUSTER_SIZE=$(mysql --connect-timeout=3 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_SIZE" 2>1 2> /dev/null;);
+              WSREP_CLUSTER_STATUS=$(mysql --connect-timeout=3 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_STATUS" 2>1 2> /dev/null;);
+              WSREP_LOCAL_STATE_COMMENT=$(mysql --connect-timeout=3 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_LOCAL_STATE_COMMENT" 2>1 2> /dev/null;);
+              sleep 5;
+            done;
+            echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ haproxy-galera is ready~~";
+      - name: wait3
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        image: call518/oaas-init-container
+        envFrom:
+          - configMapRef:
+              name: env-common
+        command:
+          - /bin/bash
+          - -c
+          - >
+            RETURN=1;
+            CURRENT_CONNECTIONS=-1;
+            until [ $RETURN -eq 0 ];
+            do
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` memcached is not ready..... waiting...";
+              CURRENT_CONNECTIONS=$((echo stats ; echo quit) | nc memcached 11211 | awk '/curr_connections/ {print $3}' | tr -d '\015');
+              RETURN=$?;
+              sleep 5;
+            done;
+            UPTIME=$((echo stats ; echo quit) | nc memcached 11211 | awk '/uptime/ {print $3}' | tr -d '\015');
+            until [ $CURRENT_CONNECTIONS -gt 0 ] && [ $UPTIME -gt 0 ];
+            do
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` memcached is not ready..... waiting...";
+              sleep 5;
+            done;
+            echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ memcached is ready~~";
+      - name: wait4
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        image: call518/oaas-init-container
+        envFrom:
+          - configMapRef:
+              name: env-common
+        command:
+          - /bin/bash
+          - -c
+          - >
+            until [ "$R0_ALIVENESS" == "{\"status\":\"ok\"}" ] && [ "$R1_ALIVENESS" == "{\"status\":\"ok\"}" ] && [ "$R2_ALIVENESS" == "{\"status\":\"ok\"}" ];
+            do
+              R0_ALIVENESS=$(curl --connect-timeout 3 -s -u $K8S_RABBITMQ_ADMIN_USER:$K8S_RABBITMQ_ADMIN_PASS "http://rabbitmq-0.rabbitmq:15672/api/aliveness-test/%2F");
+              R1_ALIVENESS=$(curl --connect-timeout 3 -s -u $K8S_RABBITMQ_ADMIN_USER:$K8S_RABBITMQ_ADMIN_PASS "http://rabbitmq-1.rabbitmq:15672/api/aliveness-test/%2F");
+              R2_ALIVENESS=$(curl --connect-timeout 3 -s -u $K8S_RABBITMQ_ADMIN_USER:$K8S_RABBITMQ_ADMIN_PASS "http://rabbitmq-2.rabbitmq:15672/api/aliveness-test/%2F");
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` rabbitmq is not ready..... waiting...";
+              sleep 5;
+            done;
+            echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ rabbitmq is ready~~";
+      - name: wait5
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        image: call518/oaas-init-container
+        envFrom:
+          - configMapRef:
+              name: env-common
+        command:
+          - /bin/bash
+          - -c
+          - >
+            until [ "$API_35357" == "\"stable\"" ] && [ "$API_5000" == "\"stable\"" ];
+            do
+              ping -c 1 -W 1 keystone 2>&1 >/dev/null
+              API_35357=$(curl --connect-timeout 3 -s "http://keystone:35357" | jq ".versions.values[0].status");
+              API_5000=$(curl --connect-timeout 3 -s "http://keystone:5000" | jq ".versions.values[0].status");
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` keystone is not ready..... waiting...";
+              sleep 5;
+            done;
+            echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ keystone is ready~~";
+      - name: wait6
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        image: call518/oaas-init-container
+        envFrom:
+          - configMapRef:
+              name: env-common
+        command:
+          - /bin/bash
+          - -c
+          - >
+            until [ "$API_9292" == "\"CURRENT\"" ];
+            do
+              ping -c 1 -W 1 keystone 2>&1 >/dev/null
+              API_9292=$(curl --connect-timeout 3 -s "http://glance:9292" | jq ".versions[0].status");
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` glance is not ready..... waiting...";
+              sleep 5;
+            done;
+            echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ glance is ready~~";
+      hostAliases:
+      - ip: "127.0.0.1"
+        hostnames:
+        - "cinder"
+      #- ip: "192.168.0.150"
+      #  hostnames:
+      #  - "nfs-server"
+      containers:
+        - name: cinder
+          image: call518/oaas-newton
+          #imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
+            capabilities:
+              add:
+              - CAP_SYS_ADMIN
+          envFrom:
+            - configMapRef:
+                name: env-common
+          command: ["/scripts/cinder-init.sh"]
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                - /bin/sh
+                - -c
+                - >
+                  umount -a -t nfs;
+          ports:
+            - containerPort: 8776
+          volumeMounts:
+          - name: cinder-setup
+            mountPath: /scripts
+#          - name: pvc-cinder-volumes
+#            mountPath: /cinder-nfs-data
+          readinessProbe:
+            exec:
+              command:
+              - /check-init.sh
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            #timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 1
+          #livenessProbe:
+          #  exec:
+          #    command:
+          #    - /healthcheck.sh
+          #    - --liveness
+          ##livenessProbe:
+          ##  tcpSocket:
+          ##    port: 35357
+          ##  initialDelaySeconds: 5
+          ##  periodSeconds: 10
+      volumes:
+      - name: cinder-setup
+        configMap:
+          name: cinder-setup
+          defaultMode: 0755
+#      - name: pvc-cinder-volumes
+#        persistentVolumeClaim:
+#          claimName: pvc-cinder-volumes

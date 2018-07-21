@@ -13,7 +13,7 @@ OpenStack on Kubernetes (OaaS)
 
 # 레이아웃
 
-![Diagram](temp/OaaS-Introduce.png)
+![Diagram](README/OaaS-Introduce.png)
 
 # 특징
 

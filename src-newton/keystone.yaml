@@ -1,0 +1,195 @@
+# Reference: (N/A)
+
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: keystone-pdb
+spec:
+  selector:
+    matchLabels:
+      app: keystone
+  minAvailable: 1
+  #maxUnavailable: 2
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: keystone
+  labels:
+    app: keystone
+spec:
+  ports:
+  - name: keystone-5000
+    port: 5000
+    targetPort: 5000
+  - name: keystone-35357
+    port: 35357
+    targetPort: 35357
+  #sessionAffinity: ClientIP
+  clusterIP: None
+  #type: NodePort # Or LoadBalancer in production w/ proper security
+  #type: LoadBalancer
+  selector:
+    app: keystone
+
+---
+
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: keystone
+  labels:
+    app: keystone
+spec:
+  serviceName: "keystone"
+  replicas: 3
+  podManagementPolicy: OrderedReady
+  #podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: keystone
+  template:
+    metadata:
+      labels:
+        app: keystone
+    spec:
+      terminationGracePeriodSeconds: 10
+      affinity:
+         podAntiAffinity:
+           requiredDuringSchedulingIgnoredDuringExecution:
+           - labelSelector:
+               matchExpressions:
+               - key: "app"
+                 operator: In
+                 values:
+                 - keystone
+             topologyKey: "kubernetes.io/hostname"
+      nodeSelector:
+        controller: "true"
+      initContainers:
+      - name: wait1
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        image: call518/oaas-init-container
+        envFrom:
+          - configMapRef:
+              name: env-common
+        command:
+          - /bin/bash
+          - -c
+          - >
+            QUERY_WSREP_READY="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_READY';";
+            QUERY_WSREP_CLUSTER_SIZE="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_CLUSTER_SIZE';";
+            QUERY_WSREP_CLUSTER_STATUS="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_CLUSTER_STATUS';";
+            QUERY_WSREP_LOCAL_STATE_COMMENT="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_LOCAL_STATE_COMMENT';";
+            until [ "$WSREP_READY" == "ON" ] && [ "$WSREP_CLUSTER_SIZE" == "3" ] && [ "$WSREP_CLUSTER_STATUS" == "Primary" ] && [ "$WSREP_LOCAL_STATE_COMMENT" == "Synced" ];
+            do
+              ping -c 1 -W 1 haproxy-galera 2>&1 >/dev/null;
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` haproxy-galera is not ready..... waiting...";
+              WSREP_READY=$(mysql --connect-timeout=3 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_READY" 2>1 2> /dev/null;);
+              WSREP_CLUSTER_SIZE=$(mysql --connect-timeout=3 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_SIZE" 2>1 2> /dev/null;);
+              WSREP_CLUSTER_STATUS=$(mysql --connect-timeout=3 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_STATUS" 2>1 2> /dev/null;);
+              WSREP_LOCAL_STATE_COMMENT=$(mysql --connect-timeout=3 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_LOCAL_STATE_COMMENT" 2>1 2> /dev/null;);
+              sleep 5;
+            done;
+            echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ haproxy-galera is ready~~";
+      - name: wait2
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        image: call518/oaas-init-container
+        envFrom:
+          - configMapRef:
+              name: env-common
+        command:
+          - /bin/bash
+          - -c
+          - >
+            RETURN=1;
+            CURRENT_CONNECTIONS=-1;
+            until [ $RETURN -eq 0 ];
+            do
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` memcached is not ready..... waiting...";
+              CURRENT_CONNECTIONS=$((echo stats ; echo quit) | nc memcached 11211 | awk '/curr_connections/ {print $3}' | tr -d '\015');
+              RETURN=$?;
+              sleep 5;
+            done;
+            UPTIME=$((echo stats ; echo quit) | nc memcached 11211 | awk '/uptime/ {print $3}' | tr -d '\015');
+            until [ $CURRENT_CONNECTIONS -gt 0 ] && [ $UPTIME -gt 0 ];
+            do
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` memcached is not ready..... waiting...";
+              sleep 5;
+            done;
+            echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ memcached is ready~~";
+      - name: wait3
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        image: call518/oaas-init-container
+        envFrom:
+          - configMapRef:
+              name: env-common
+        command:
+          - /bin/bash
+          - -c
+          - >
+            R0_ALIVENESS=$(curl --connect-timeout 3 -s -u $K8S_RABBITMQ_ADMIN_USER:$K8S_RABBITMQ_ADMIN_PASS "http://rabbitmq-0.rabbitmq:15672/api/aliveness-test/%2F");
+            R1_ALIVENESS=$(curl --connect-timeout 3 -s -u $K8S_RABBITMQ_ADMIN_USER:$K8S_RABBITMQ_ADMIN_PASS "http://rabbitmq-1.rabbitmq:15672/api/aliveness-test/%2F");
+            R2_ALIVENESS=$(curl --connect-timeout 3 -s -u $K8S_RABBITMQ_ADMIN_USER:$K8S_RABBITMQ_ADMIN_PASS "http://rabbitmq-2.rabbitmq:15672/api/aliveness-test/%2F");
+            until [ "$R0_ALIVENESS" == "{\"status\":\"ok\"}" ] && [ "$R1_ALIVENESS" == "{\"status\":\"ok\"}" ] && [ "$R2_ALIVENESS" == "{\"status\":\"ok\"}" ];
+            do
+              ping -c 1 -W 1 rabbitmq 2>&1 >/dev/null
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` rabbitmq is not ready..... waiting...";
+              sleep 5;
+            done;
+            echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ rabbitmq is ready~~";
+      hostAliases:
+      - ip: "127.0.0.1"
+        hostnames:
+        - "keystone"
+      containers:
+        - name: keystone
+          image: call518/oaas-newton
+          #imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef:
+                name: env-common
+          command: ["/scripts/keystone-init.sh"]
+          ports:
+            - containerPort: 5000
+          ports:
+            - containerPort: 35357
+          volumeMounts:
+          - name: keystone-setup
+            mountPath: /scripts
+          - name: keystone-fernet-keys
+            readOnly: true
+            mountPath: /keystone-fernet-keys
+          readinessProbe:
+            exec:
+              command:
+              - /check-init.sh
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            #timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 1
+          #livenessProbe:
+          #  exec:
+          #    command:
+          #    - /healthcheck.sh
+          #    - --liveness
+          ##livenessProbe:
+          ##  tcpSocket:
+          ##    port: 35357
+          ##  initialDelaySeconds: 5
+          ##  periodSeconds: 10
+      volumes:
+      - name: keystone-setup
+        configMap:
+          name: keystone-setup
+          defaultMode: 0755
+      - name: keystone-fernet-keys
+        secret:
+          secretName: keystone-fernet-keys

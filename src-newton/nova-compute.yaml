@@ -1,0 +1,269 @@
+# Reference: (N/A)
+
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: nova-compute-pdb
+spec:
+  selector:
+    matchLabels:
+      app: nova-compute
+  minAvailable: 1
+  #maxUnavailable: 2
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: nova-compute
+  labels:
+    app: nova-compute
+spec:
+  ports:
+  - name: nova-compute-api
+    port: 8774
+    targetPort: 8774
+  - name: nova-metadata-api
+    port: 8775
+    targetPort: 8775
+  - name: nova-novncproxy
+    port: 6080
+    targetPort: 6080
+  #sessionAffinity: ClientIP
+  clusterIP: None
+  #type: NodePort # Or LoadBalancer in production w/ proper security
+  #type: LoadBalancer
+  selector:
+    app: nova-compute
+
+---
+
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: nova-compute
+  labels:
+    app: nova-compute
+spec:
+  serviceName: "nova-compute"
+  #replicas: 3
+  replicas: 1
+  podManagementPolicy: OrderedReady
+  #podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: nova-compute
+  template:
+    metadata:
+      labels:
+        app: nova-compute
+    spec:
+      terminationGracePeriodSeconds: 10
+      affinity:
+         podAntiAffinity:
+           requiredDuringSchedulingIgnoredDuringExecution:
+           - labelSelector:
+               matchExpressions:
+               - key: "app"
+                 operator: In
+                 values:
+                 - nova-compute
+             topologyKey: "kubernetes.io/hostname"
+      nodeSelector:
+        compute: "true"
+      initContainers:
+      - name: wait1
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        image: call518/oaas-init-container
+        envFrom:
+          - configMapRef:
+              name: env-common
+        command:
+          - /bin/bash
+          - -c
+          - >
+            QUERY_WSREP_READY="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_READY';";
+            QUERY_WSREP_CLUSTER_SIZE="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_CLUSTER_SIZE';";
+            QUERY_WSREP_CLUSTER_STATUS="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_CLUSTER_STATUS';";
+            QUERY_WSREP_LOCAL_STATE_COMMENT="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_LOCAL_STATE_COMMENT';";
+            until [ "$WSREP_READY" == "ON" ] && [ "$WSREP_CLUSTER_SIZE" == "3" ] && [ "$WSREP_CLUSTER_STATUS" == "Primary" ] && [ "$WSREP_LOCAL_STATE_COMMENT" == "Synced" ];
+            do
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` haproxy-galera is not ready..... waiting...";
+              WSREP_READY=$(mysql --connect-timeout=3 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_READY" 2>1 2> /dev/null;);
+              WSREP_CLUSTER_SIZE=$(mysql --connect-timeout=3 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_SIZE" 2>1 2> /dev/null;);
+              WSREP_CLUSTER_STATUS=$(mysql --connect-timeout=3 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_STATUS" 2>1 2> /dev/null;);
+              WSREP_LOCAL_STATE_COMMENT=$(mysql --connect-timeout=3 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_LOCAL_STATE_COMMENT" 2>1 2> /dev/null;);
+              sleep 5;
+            done;
+            echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ haproxy-galera is ready~~";
+      - name: wait2
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        image: call518/oaas-init-container
+        envFrom:
+          - configMapRef:
+              name: env-common
+        command:
+          - /bin/bash
+          - -c
+          - >
+            RETURN=1;
+            CURRENT_CONNECTIONS=-1;
+            until [ $RETURN -eq 0 ];
+            do
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` memcached is not ready..... waiting...";
+              CURRENT_CONNECTIONS=$((echo stats ; echo quit) | nc memcached 11211 | awk '/curr_connections/ {print $3}' | tr -d '\015');
+              RETURN=$?;
+              sleep 5;
+            done;
+            UPTIME=$((echo stats ; echo quit) | nc memcached 11211 | awk '/uptime/ {print $3}' | tr -d '\015');
+            until [ $CURRENT_CONNECTIONS -gt 0 ] && [ $UPTIME -gt 0 ];
+            do
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` memcached is not ready..... waiting...";
+              sleep 5;
+            done;
+            echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ memcached is ready~~";
+      - name: wait3
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        image: call518/oaas-init-container
+        envFrom:
+          - configMapRef:
+              name: env-common
+        command:
+          - /bin/bash
+          - -c
+          - >
+            until [ "$R0_ALIVENESS" == "{\"status\":\"ok\"}" ] && [ "$R1_ALIVENESS" == "{\"status\":\"ok\"}" ] && [ "$R2_ALIVENESS" == "{\"status\":\"ok\"}" ];
+            do
+              R0_ALIVENESS=$(curl --connect-timeout 3 -s -u $K8S_RABBITMQ_ADMIN_USER:$K8S_RABBITMQ_ADMIN_PASS "http://rabbitmq-0.rabbitmq:15672/api/aliveness-test/%2F");
+              R1_ALIVENESS=$(curl --connect-timeout 3 -s -u $K8S_RABBITMQ_ADMIN_USER:$K8S_RABBITMQ_ADMIN_PASS "http://rabbitmq-1.rabbitmq:15672/api/aliveness-test/%2F");
+              R2_ALIVENESS=$(curl --connect-timeout 3 -s -u $K8S_RABBITMQ_ADMIN_USER:$K8S_RABBITMQ_ADMIN_PASS "http://rabbitmq-2.rabbitmq:15672/api/aliveness-test/%2F");
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` rabbitmq is not ready..... waiting...";
+              sleep 5;
+            done;
+            echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ rabbitmq is ready~~";
+      - name: wait4
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        image: call518/oaas-init-container
+        envFrom:
+          - configMapRef:
+              name: env-common
+        command:
+          - /bin/bash
+          - -c
+          - >
+            until [ "$API_35357" == "\"stable\"" ] && [ "$API_5000" == "\"stable\"" ];
+            do
+              ping -c 1 -W 1 keystone 2>&1 >/dev/null
+              API_35357=$(curl --connect-timeout 3 -s "http://keystone:35357" | jq ".versions.values[0].status");
+              API_5000=$(curl --connect-timeout 3 -s "http://keystone:5000" | jq ".versions.values[0].status");
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` keystone is not ready..... waiting...";
+              sleep 5;
+            done;
+            echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ keystone is ready~~";
+      - name: wait5
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        image: call518/oaas-init-container
+        envFrom:
+          - configMapRef:
+              name: env-common
+        command:
+          - /bin/bash
+          - -c
+          - >
+            until [ "$NS0_API_8774" == "SUPPORTED" ];
+            do
+              ping -c 1 -W 1 keystone 2>&1 >/dev/null;
+              NS0_API_8774=$(curl --connect-timeout 3 -s "http://nova-server-0.nova-server:8774" | jq -r ".versions[0].status");
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` nova-server is not ready..... waiting...";
+              sleep 5;
+            done;
+            echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ nova-server is ready~~";
+      hostAliases:
+      - ip: "127.0.0.1"
+        hostnames:
+        - "nova-compute"
+      #- ip: "192.168.0.150"
+      #  hostnames:
+      #  - "nfs-server"
+      containers:
+        - name: nova-compute
+          image: call518/oaas-newton
+          #imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
+            capabilities:
+              add:
+              - ALL
+              - CAP_SYS_ADMIN
+              - CAP_SYS_MODULE
+              - CAP_NET_ADMIN
+          env:
+            #- name: MY_POD_NAME
+            #  valueFrom:
+            #    fieldRef:
+            #      fieldPath: metadata.name
+            #- name: MY_POD_NAMESPACE
+            #  valueFrom:
+            #    fieldRef:
+            #      fieldPath: metadata.namespace
+            - name: MY_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          envFrom:
+            - configMapRef:
+                name: env-common
+          command: ["/scripts/nova-compute-init.sh"]
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                - /bin/sh
+                - -c
+                - >
+                  umount -a -t nfs;
+          ports:
+          ports:
+            - containerPort: 8774
+            - containerPort: 8775
+            - containerPort: 6080
+          volumeMounts:
+          - name: nova-compute-setup
+            mountPath: /scripts
+          - name: kernel-modules
+            mountPath: /lib/modules
+          readinessProbe:
+            exec:
+              command:
+              - /check-init.sh
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            #timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 1
+          #livenessProbe:
+          #  exec:
+          #    command:
+          #    - /healthcheck.sh
+          #    - --liveness
+          ##livenessProbe:
+          ##  tcpSocket:
+          ##    port: 35357
+          ##  initialDelaySeconds: 5
+          ##  periodSeconds: 10
+      volumes:
+      - name: nova-compute-setup
+        configMap:
+          name: nova-compute-setup
+          defaultMode: 0755
+      - name: kernel-modules
+        hostPath:
+          path: /lib/modules
+          type: Directory
