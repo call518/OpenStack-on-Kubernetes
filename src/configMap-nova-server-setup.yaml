@@ -39,10 +39,18 @@ data:
     EOF
     source /root/admin-openrc
     exist_nova_api_db=$(mysql -s -N -q -A --connect-timeout=10 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW DATABASES LIKE 'nova_api';" 2>/dev/null)
-    if [ "X$exist_nova_api_db" == "X" ]; then
+    exist_nova_db=$(mysql -s -N -q -A --connect-timeout=10 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW DATABASES LIKE 'nova';" 2>/dev/null)
+    if [ "X$exist_nova_api_db" == "X" ] || [ "X$exist_nova_db" == "X" ]; then
+      ## Reset DB
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "DROP DATABASE IF EXISTS nova; DROP DATABASE IF EXISTS nova_api;" || true
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "DELETE FROM mysql.user WHERE User='nova'; DELETE FROM mysql.db WHERE Db='nova' AND User='nova'; FLUSH PRIVILEGES;" || true
+      ## Init DB
       mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS nova_api"
       mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'localhost' IDENTIFIED BY '$K8S_NOVA_DB_PASS'"
       mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'%' IDENTIFIED BY '$K8S_NOVA_DB_PASS'"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS nova"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'localhost' IDENTIFIED BY '$K8S_NOVA_DB_PASS'"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'%' IDENTIFIED BY '$K8S_NOVA_DB_PASS'"
       if ! openstack user list -f value -c Name | grep -q nova; then
         openstack user create --domain default --password $K8S_KEYSTONE_USER_NOVA_PASS nova 2>/dev/null
       fi
@@ -60,12 +68,6 @@ data:
         openstack endpoint create --region RegionOne compute admin http://nova-server:8774/v2.1/%\(tenant_id\)s
       fi
       su -s /bin/sh -c "nova-manage api_db sync" nova
-    fi
-    exist_nova_db=$(mysql -s -N -q -A --connect-timeout=10 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW DATABASES LIKE 'nova';" 2>/dev/null)
-    if [ "X$exist_nova_db" == "X" ]; then
-      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS nova"
-      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'localhost' IDENTIFIED BY '$K8S_NOVA_DB_PASS'"
-      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'%' IDENTIFIED BY '$K8S_NOVA_DB_PASS'"
       su -s /bin/sh -c "nova-manage db sync" nova
     fi
     #mkdir -p /usr/lib/python2.7/dist-packages/keys
@@ -87,7 +89,7 @@ data:
     done
     echo "ok~~~~ service is ready~~!!!"
     nova service-list
-    if [ "X$exist_nova_db" == "X" ]; then
+    if [ "X$exist_nova_db" == "X" ] || [ "X$exist_nova_db" == "X" ]; then
       openstack flavor create --id 0 --ram 512   --vcpus 1 --disk 10  m1.tiny
       openstack flavor create --id 1 --ram 1024  --vcpus 1 --disk 20  m1.small
       openstack flavor create --id 2 --ram 2048  --vcpus 2 --disk 40  m1.medium
