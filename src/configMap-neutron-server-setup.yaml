@@ -276,7 +276,7 @@ data:
   metadata_agent.ini: |
     [DEFAULT]
     nova_metadata_ip = nova-server
-    metadata_proxy_shared_secret = __K8S_METADATA_PROXY_SHARED_SECRET__
+    metadata_proxy_shared_secret = ___K8S_METADATA_PROXY_SHARED_SECRET___
     [AGENT]
     [cache]
 
