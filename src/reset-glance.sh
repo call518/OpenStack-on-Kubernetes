@@ -7,4 +7,5 @@ kubectl exec -it galera-0 -- mysql -uroot -ppassw0rd -e "SHOW DATABASES;"
 kubectl exec -it nfs-server -- rm -rf /data/pv/glance-images
 kubectl exec -it nfs-server -- mkdir -p /data/pv/glance-images
 
+
 kubectl get all -o wide

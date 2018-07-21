@@ -3,6 +3,10 @@ kind: ConfigMap
 metadata:
   name: env-common
 data:
+  #OPENSTACK_RELEASE: "queens"
+  #OPENSTACK_RELEASE: "pike"
+  #OPENSTACK_RELEASE: "ocata"
+  OPENSTACK_RELEASE: "newton"
   MYSQL_ROOT_PASSWORD: "passw0rd"
   DISCOVERY_SERVICE: "etcd-client:2379"
   XTRABACKUP_PASSWORD: "passw0rd"
@@ -23,7 +27,6 @@ data:
   K8S_KEYSTONE_USER_CINDER_PASS: "passw0rd"
   K8S_KEYSTONE_USER_NEUTRON_PASS: "passw0rd"
   K8S_KEYSTONE_USER_NOVA_PASS: "passw0rd"
-  K8S_KEYSTONE_USER_PLACEMENT_PASS: "passw0rd"
   K8S_HAPROXY_STATS_USERNAME: "admin"
   K8S_HAPROXY_STATS_PASSWORD: "passw0rd"
   K8S_RABBITMQ_ADMIN_USER: "admin"

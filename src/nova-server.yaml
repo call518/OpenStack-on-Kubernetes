@@ -24,9 +24,6 @@ spec:
   - name: nova-server-api
     port: 8774
     targetPort: 8774
-  - name: nova-placement-api
-    port: 8778
-    targetPort: 8778
   - name: nova-metadata-api
     port: 8775
     targetPort: 8775
@@ -216,8 +213,8 @@ spec:
                 - >
                   umount -a -t nfs;
           ports:
+          ports:
             - containerPort: 8774
-            - containerPort: 8778
             - containerPort: 8775
             - containerPort: 6080
           volumeMounts:
