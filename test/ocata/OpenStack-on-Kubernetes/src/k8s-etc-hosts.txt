@@ -1,0 +1,7 @@
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
+::1         localhost localhost.localdomain localhost6 localhost6.localdomain6
+
+192.168.0.150   k8s-master nfs-server
+192.168.0.151   k8s-node01
+192.168.0.152   k8s-node02
+192.168.0.153   k8s-node03

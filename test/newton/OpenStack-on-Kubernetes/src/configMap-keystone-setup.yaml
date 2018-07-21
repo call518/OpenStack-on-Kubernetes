@@ -1,0 +1,159 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keystone-setup
+data:
+  keystone-init.sh: |
+    #!/bin/bash
+    set -e
+    service rsyslog restart
+    a2dissite 000-default
+    echo "ServerName localhost" >> /etc/apache2/apache2.conf
+    cp -a /etc/keystone/keystone.conf /etc/keystone/keystone.conf.default
+    cat /scripts/keystone.conf > /etc/keystone/keystone.conf
+    sed -i "s/___K8S_KEYSTONE_DB_PASS___/$K8S_KEYSTONE_DB_PASS/g" /etc/keystone/keystone.conf
+    sed -i "s/___K8S_RABBITMQ_OPENSTACK_USER___/$K8S_RABBITMQ_OPENSTACK_USER/g" /etc/keystone/keystone.conf
+    sed -i "s/___K8S_RABBITMQ_OPENSTACK_PASS___/$K8S_RABBITMQ_OPENSTACK_PASS/g" /etc/keystone/keystone.conf
+    service apache2 restart
+    cat > /root/admin-openrc << EOF
+    export OS_PROJECT_DOMAIN_NAME=default
+    export OS_USER_DOMAIN_NAME=default
+    export OS_PROJECT_NAME=admin
+    export OS_USERNAME=admin
+    export OS_PASSWORD=$K8S_KEYSTONE_USER_ADMIN_PASS
+    export OS_AUTH_URL=http://keystone:35357/v3
+    export OS_IDENTITY_API_VERSION=3
+    export OS_IMAGE_API_VERSION=2
+    EOF
+    cat > /root/demo-openrc << EOF
+    export OS_PROJECT_DOMAIN_NAME=Default
+    export OS_USER_DOMAIN_NAME=Default
+    export OS_PROJECT_NAME=demo
+    export OS_USERNAME=demo
+    export OS_PASSWORD=$K8S_KEYSTONE_USER_DEMO_PASS
+    export OS_AUTH_URL=http://keystone:5000/v3
+    export OS_IDENTITY_API_VERSION=3
+    export OS_IMAGE_API_VERSION=2
+    EOF
+    source /root/admin-openrc
+    exist_keyston_db=$(mysql -s -N -q -A --connect-timeout=10 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW DATABASES LIKE 'keystone';" 2>/dev/null)
+    if [ "X$exist_keyston_db" == "X" ]; then
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS keystone"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'localhost' IDENTIFIED BY '$K8S_KEYSTONE_DB_PASS'"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON keystone.* TO 'keystone'@'%' IDENTIFIED BY '$K8S_KEYSTONE_DB_PASS'"
+      su -s /bin/sh -c "keystone-manage db_sync" keystone
+    fi
+    keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
+    cat /keystone-fernet-keys/0 | tr -d '\n' > /etc/keystone/fernet-keys/0
+    cat /keystone-fernet-keys/1 | tr -d '\n' > /etc/keystone/fernet-keys/1
+    keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
+    if [ "X$exist_keyston_db" == "X" ]; then
+      keystone-manage bootstrap --bootstrap-password $K8S_KEYSTONE_USER_ADMIN_PASS \
+        --bootstrap-admin-url http://keystone:35357/v3/ \
+        --bootstrap-internal-url http://keystone:35357/v3/ \
+        --bootstrap-public-url http://keystone:5000/v3/ \
+        --bootstrap-region-id RegionOne
+      #openstack domain create --description "Default Domain" default
+      openstack project create --domain default --description "Service Project" service
+      openstack project create --domain default --description "Demo Project" demo
+      openstack user create --domain default --password $K8S_KEYSTONE_USER_DEMO_PASS demo
+      openstack role create user
+      openstack role add --project demo --user demo user
+    fi
+    service apache2 restart
+    until openstack user list -f value | grep demo; do echo "waiting for service response....."; sleep 5; done
+    echo "ok~~~~ service is ready~~!!!"
+    touch /.setup_completed
+    tail -F /var/log/syslog /var/log/apache2/*
+
+  keystone.conf: |
+    [DEFAULT]
+    [assignment]
+    [auth]
+    [cache]
+    [catalog]
+    #driver = keystone.catalog.backends.sql.Catalog
+    [cors]
+    [cors.subdomain]
+    [credential]
+    [database]
+    connection = mysql+pymysql://keystone:___K8S_KEYSTONE_DB_PASS___@haproxy-galera/keystone
+    [domain_config]
+    [endpoint_filter]
+    [endpoint_policy]
+    [eventlet_server]
+    [federation]
+    [fernet_tokens]
+    [identity]
+    #driver = keystone.identity.backends.sql.Identity
+    [identity_mapping]
+    [kvs]
+    [ldap]
+    [matchmaker_redis]
+    [memcache]
+    #servers = memcached:11211
+    servers = memcached-0.memcached:11211,memcached-1.memcached:11211,memcached-2.memcached:11211
+    [oauth1]
+    [os_inherit]
+    [oslo_messaging_amqp]
+    [oslo_messaging_notifications]
+    driver = messagingv2
+    #transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq
+    transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-0.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-1.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-2.rabbitmq
+    [oslo_messaging_rabbit]
+    [oslo_messaging_zmq]
+    [oslo_middleware]
+    [oslo_policy]
+    [paste_deploy]
+    [policy]
+    [profiler]
+    [resource]
+    [revoke]
+    [role]
+    [saml]
+    [security_compliance]
+    [shadow_users]
+    [signing]
+    [token]
+    provider = fernet
+    [tokenless_auth]
+    [trust]
+
+  remove-glance.sh: |
+    #!/bin/bash
+    source /root/admin-openrc
+    openstack endpoint delete $(openstack endpoint list --service glance -f value -c ID)
+    openstack service delete glance
+    openstack user delete glance
+    mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "DROP DATABASE IF EXISTS glance; DELETE FROM mysql.user WHERE User='glance'; DELETE FROM mysql.db WHERE Db='glance' AND User='glance'; FLUSH PRIVILEGES;"
+
+  remove-cinder.sh: |
+    #!/bin/bash
+    source /root/admin-openrc
+    openstack endpoint delete $(openstack endpoint list --service cinder -f value -c ID)
+    openstack endpoint delete $(openstack endpoint list --service cinderv2 -f value -c ID)
+    openstack service delete cinder
+    openstack service delete cinderv2
+    openstack user delete cinder
+    mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "DROP DATABASE IF EXISTS cinder; DELETE FROM mysql.user WHERE User='cinder'; DELETE FROM mysql.db WHERE Db='cinder' AND User='cinder'; FLUSH PRIVILEGES;"
+
+  remove-neutron-server.sh: |
+    #!/bin/bash
+    source /root/admin-openrc
+    openstack endpoint delete $(openstack endpoint list --service neutron -f value -c ID)
+    openstack service delete neutron
+    openstack user delete neutron
+    mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "DROP DATABASE IF EXISTS neutron; DELETE FROM mysql.user WHERE User='neutron'; DELETE FROM mysql.db WHERE Db='neutron' AND User='neutron'; FLUSH PRIVILEGES;"
+
+  remove-nova-server.sh: |
+    #!/bin/bash
+    source /root/admin-openrc
+    openstack endpoint delete $(openstack endpoint list --service nova -f value -c ID)
+    openstack service delete nova
+    openstack user delete nova
+    for id in $(nova service-list | grep nova-compute | awk '{print $2}');
+    do
+      nova service-delete $id
+    done
+    mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "DROP DATABASE IF EXISTS nova; DROP DATABASE IF EXISTS nova_api;"
+    mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "DELETE FROM mysql.user WHERE User='nova'; DELETE FROM mysql.db WHERE Db='nova' AND User='nova'; FLUSH PRIVILEGES;"

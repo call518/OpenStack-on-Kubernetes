@@ -1,0 +1,112 @@
+#apiVersion: v1
+#kind: Service
+#metadata:
+#  name: nfs-server
+#  labels:
+#    app: nfs-server
+#spec:
+#  ports:
+#  - port: 111
+#    protocol: TCP
+#    name: nfs-111-tcp
+#  - port: 111
+#    protocol: UDP
+#    name: nfs-111-udp
+#  - port: 2049
+#    protocol: TCP
+#    name: nfs-2049-tcp
+#  #sessionAffinity: ClientIP
+#  #clusterIP: None
+#  #type: NodePort # Or LoadBalancer in production w/ proper security
+#  #type: LoadBalancer
+#  selector:
+#    app: nfs-server
+#
+#---
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nfs-server
+spec:
+  nodeSelector:
+    nfs-server: "true"
+  restartPolicy: Always
+  initContainers:
+  - name: wait1
+    #imagePullPolicy: Always
+    imagePullPolicy: IfNotPresent
+    image: call518/oaas-init-container
+    envFrom:
+      - configMapRef:
+          name: env-common
+    command:
+      - /bin/bash
+      - -c
+      - >
+        until [ "`curl --connect-timeout 3 -s -L \"http://$DISCOVERY_SERVICE/health\"`" == "{\"health\":\"true\"}" ];
+        do
+          echo "`date +"[%Y-%m-%d %H:%M:%S]"` etcd is not ready..... waiting...";
+          sleep 5;
+        done;
+        echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ etcd is ready~~";
+  containers:
+  - name: nfs-server
+    image: call518/oaas-nfs-server
+    securityContext:
+      privileged: true
+    ports:
+    - containerPort: 111
+      protocol: TCP
+    - containerPort: 111
+      protocol: UDP
+    - containerPort: 2049
+      protocol: TCP
+    volumeMounts:
+    - name: pvc-nfs-server
+      mountPath: /data
+    envFrom:
+      - configMapRef:
+          name: env-common
+    env:
+    - name: MY_POD_IP
+      valueFrom:
+        fieldRef:
+          fieldPath: status.podIP
+    - name: SHARED_DIRECTORY
+      value: /data
+    - name: SYNC
+      value: "true"
+    - name: FSID
+      value: "true"
+    command:
+      - "bash"
+      - "-c"
+      - |
+        curl -s -L "http://$DISCOVERY_SERVICE/v2/keys/oaas/$K8S_NFS_SERVER_IP_ETC_KEY" -XPUT -d value="$MY_POD_IP";
+        rm -rf /data/*;
+        mkdir -p /data/pv/galera-{0,1,2};
+        mkdir -p /data/pv/mongodb-{0,1,2};
+        mkdir -p /data/pv/rabbitmq-{0,1,2};
+        mkdir -p /data/pv/glance-images;
+        mkdir -p /data/pv/zookeeper-{0,1,2};
+        mkdir -p /data/pv/cinder-volumes;
+        mkdir -p /data/pv/cinder-backups;
+        mkdir -p /data/pv/cinder-lock_path;
+        mkdir -p /data/pv/nova-server-lock_path;
+        mkdir -p /data/pv/nova-compute-lock_path;
+        mkdir -p /data/pv/nova-compute-images;
+        mkdir -p /data/pv/nova-compute-instances;
+        /usr/bin/nfsd.sh;
+    lifecycle:
+      preStop:
+        exec:
+          command:
+          - /bin/sh
+          - -c
+          - >
+            curl -s -L "http://$DISCOVERY_SERVICE/v2/keys/oaas/$K8S_NFS_SERVER_IP_ETC_KEY" -XDELETE;
+  volumes:
+  - name: pvc-nfs-server
+    persistentVolumeClaim:
+      claimName: pvc-nfs-server

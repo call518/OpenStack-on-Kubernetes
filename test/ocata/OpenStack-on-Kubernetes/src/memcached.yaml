@@ -1,0 +1,94 @@
+## Ref: None 
+
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: memcached-pdb
+spec:
+  selector:
+    matchLabels:
+      app: memcached
+  minAvailable: 1
+  #maxUnavailable: 2
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: memcached
+  labels:
+    app: memcached
+spec:
+  ports:
+  - port: 11211
+    targetPort: 11211
+  #sessionAffinity: ClientIP
+  clusterIP: None
+  #type: NodePort # Or LoadBalancer in production w/ proper security
+  #type: LoadBalancer
+  selector:
+    app: memcached
+
+---
+
+apiVersion: apps/v1beta1
+kind: StatefulSet
+#apiVersion: apps/v1beta1
+#kind: Deployment
+metadata:
+  name: memcached
+spec:
+  serviceName: "memcached"
+  replicas: 3
+  #podManagementPolicy: OrderedReady
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: memcached
+  template:
+    metadata:
+      labels:
+        app: memcached
+    spec:
+      terminationGracePeriodSeconds: 10
+      affinity:
+         podAntiAffinity:
+           requiredDuringSchedulingIgnoredDuringExecution:
+           - labelSelector:
+               matchExpressions:
+               - key: "app"
+                 operator: In
+                 values:
+                 - memcached
+             topologyKey: "kubernetes.io/hostname"
+      nodeSelector:
+        controller: "true"
+      containers:
+        - name: memcached
+          image: call518/oaas-memcached
+          #imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
+          #envFrom:
+          #  - configMapRef:
+          #      name: env-common
+          env:
+          - name: MAXCONN
+            value: "1024"
+          - name: CACHESIZE
+            value: "64"
+          command:
+            - "bash"
+            - "-c"
+            - |
+              cp -a /etc/memcached.conf /etc/memcached.conf.default \
+              && sed -i "s/^-l 127.0.0.1/-l 0.0.0.0/g" /etc/memcached.conf \
+              && service memcached start \
+              && tail -F /var/log/memcached.log
+          ports:
+            - containerPort: 11211
+          livenessProbe:
+            tcpSocket:
+              port: 11211
+            initialDelaySeconds: 5
+            periodSeconds: 10

@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Pod
+metadata:
+ name: sample-pod-1
+spec:
+ #hostNetwork: true
+ containers:
+ - name: sample-pod-1
+   #image: call518/oaas-init-container
+   image: call518/oaas-neutron-server
+   securityContext:
+     privileged: true
+#   ports:
+#   - containerPort: 3306
+   command:
+     - "bash"
+     - "-c"
+     - |
+       #sleep 10;
+       export KRS_DEFAULT_GW_IP=$(ip route | awk '/default/ { print $3 }');
+       until ping -c 1 -W 1 $KRS_DEFAULT_GW_IP; do sleep 1; done;
+       export KRS_DEFAULT_GW_MAC=$(ip neigh | awk -v gw_ip="$KRS_DEFAULT_GW_IP" '$0~gw_ip {print $5}');
+       ip link set eth0 down;
+       ip addr flush dev eth0;
+       ip link set eth0 name phy-eth0;
+       ip link add br-pod type bridge;
+       ip link set phy-eth0 master br-pod;
+       ip link add veth-br-pod type veth peer name eth0;
+       ip link set veth-br-pod master br-pod;
+       export K8S_ETH0_MAC=$(cat /sys/class/net/eth0/address)
+       export K8S_PHY_ETH0_MAC=$(cat /sys/class/net/phy-eth0/address)
+       ip link set dev eth0 address $K8S_PHY_ETH0_MAC;
+       ip link set dev phy-eth0 address $K8S_ETH0_MAC;
+       ip link set phy-eth0 up;
+       ip link set br-pod up;
+       ip link set veth-br-pod up;
+       ip link set eth0 up;
+       ip addr add $MY_POD_IP/24 dev eth0;
+       route add default gw $(echo $MY_POD_IP | awk -F'.' '{print $1"."$2"."$3".1"}') dev eth0;
+       route add -net $(echo $MY_POD_IP | awk -F'.' '{print $1"."$2".0.0"}') netmask 255.255.0.0 gw $KRS_DEFAULT_GW_IP dev eth0;
+       arp -s $KRS_DEFAULT_GW_IP $KRS_DEFAULT_GW_MAC;
+       unset KRS_DEFAULT_GW_IP K8S_ETH0_MAC K8S_PHY_ETH0_MAC;
+       tail -F /var/log/messages;
+   env:
+#     - name: MY_POD_NAME
+#       valueFrom:
+#         fieldRef:
+#           fieldPath: metadata.name
+#     - name: MY_POD_NAMESPACE
+#       valueFrom:
+#         fieldRef:
+#           fieldPath: metadata.namespace
+     - name: MY_POD_IP
+       valueFrom:
+         fieldRef:
+           fieldPath: status.podIP

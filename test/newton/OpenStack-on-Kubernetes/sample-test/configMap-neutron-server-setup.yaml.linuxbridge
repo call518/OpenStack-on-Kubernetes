@@ -1,0 +1,199 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: neutron-server-setup
+data:
+  neutron-server-init.sh: |
+    #!/bin/bash
+    set -e
+    export KRS_DEFAULT_GW_IP=$(ip route | awk '/default/ { print $3 }')
+    until ping -c 1 -W 1 $KRS_DEFAULT_GW_IP; do sleep 1; done
+    export KRS_DEFAULT_GW_MAC=$(ip neigh | awk -v gw_ip="$KRS_DEFAULT_GW_IP" '$0~gw_ip {print $5}')
+    ip link set eth0 down;
+    ip addr flush dev eth0;
+    ip link set eth0 name phy-eth0;
+    ip link add br-pod type bridge;
+    ip link set phy-eth0 master br-pod;
+    ip link add veth-br-pod type veth peer name eth0;
+    ip link set veth-br-pod master br-pod;
+    export K8S_ETH0_MAC=$(cat /sys/class/net/eth0/address)
+    export K8S_PHY_ETH0_MAC=$(cat /sys/class/net/phy-eth0/address)
+    ip link set dev eth0 address $K8S_PHY_ETH0_MAC
+    ip link set dev phy-eth0 address $K8S_ETH0_MAC
+    ip link set phy-eth0 up;
+    ip link set br-pod up;
+    ip link set veth-br-pod up;
+    ip link set eth0 up;
+    ip addr add $MY_POD_IP/24 dev eth0;
+    route add default gw $(echo $MY_POD_IP | awk -F'.' '{print $1"."$2"."$3".1"}') dev eth0;
+    route add -net $(echo $MY_POD_IP | awk -F'.' '{print $1"."$2".0.0"}') netmask 255.255.0.0 gw $KRS_DEFAULT_GW_IP dev eth0;
+    echo "arp -s $KRS_DEFAULT_GW_IP $KRS_DEFAULT_GW_MAC"
+    arp -s $KRS_DEFAULT_GW_IP $KRS_DEFAULT_GW_MAC
+    unset KRS_DEFAULT_GW_IP K8S_ETH0_MAC K8S_PHY_ETH0_MAC
+    insmod /lib/modules/3.10.0-514.el7.x86_64/kernel/net/bridge/netfilter/ebtables.ko
+    modprobe ebtables
+    service rsyslog restart
+    cp -a /etc/neutron /etc/neutron.default
+    cat /scripts/neutron.conf > /etc/neutron/neutron.conf
+    cat /scripts/ml2_conf.ini > /etc/neutron/plugins/ml2/ml2_conf.ini
+    cat /scripts/linuxbridge_agent.ini > /etc/neutron/plugins/ml2/linuxbridge_agent.ini
+    cat /scripts/l3_agent.ini > /etc/neutron/l3_agent.ini
+    cat /scripts/dhcp_agent.ini > /etc/neutron/dhcp_agent.ini
+    cat /scripts/metadata_agent.ini > /etc/neutron/metadata_agent.ini
+    sed -i "s/___K8S_NEUTRON_DB_PASS___/$K8S_NEUTRON_DB_PASS/g" /etc/neutron/neutron.conf
+    sed -i "s/___K8S_RABBITMQ_OPENSTACK_USER___/$K8S_RABBITMQ_OPENSTACK_USER/g" /etc/neutron/neutron.conf
+    sed -i "s/___K8S_RABBITMQ_OPENSTACK_PASS___/$K8S_RABBITMQ_OPENSTACK_PASS/g" /etc/neutron/neutron.conf
+    sed -i "s/___K8S_KEYSTONE_USER_NEUTRON_PASS___/$K8S_KEYSTONE_USER_NEUTRON_PASS/g" /etc/neutron/neutron.conf
+    sed -i "s/___K8S_KEYSTONE_USER_NOVA_PASS___/$K8S_KEYSTONE_USER_NOVA_PASS/g" /etc/neutron/neutron.conf
+    sed -i "s/___K8S_METADATA_PROXY_SHARED_SECRET___/$K8S_METADATA_PROXY_SHARED_SECRET/g" /etc/neutron/metadata_agent.ini
+    sed -i "s/OVERLAY_INTERFACE_IP_ADDRESS/$MY_POD_IP/g" /etc/neutron/plugins/ml2/linuxbridge_agent.ini
+    cat > /root/admin-openrc << EOF
+    export OS_PROJECT_DOMAIN_NAME=default
+    export OS_USER_DOMAIN_NAME=default
+    export OS_PROJECT_NAME=admin
+    export OS_USERNAME=admin
+    export OS_PASSWORD=$K8S_KEYSTONE_USER_ADMIN_PASS
+    export OS_AUTH_URL=http://keystone:35357/v3
+    export OS_IDENTITY_API_VERSION=3
+    export OS_IMAGE_API_VERSION=2
+    EOF
+    cat > /root/demo-openrc << EOF
+    export OS_PROJECT_DOMAIN_NAME=Default
+    export OS_USER_DOMAIN_NAME=Default
+    export OS_PROJECT_NAME=demo
+    export OS_USERNAME=demo
+    export OS_PASSWORD=$K8S_KEYSTONE_USER_DEMO_PASS
+    export OS_AUTH_URL=http://keystone:5000/v3
+    export OS_IDENTITY_API_VERSION=3
+    export OS_IMAGE_API_VERSION=2
+    EOF
+    source /root/admin-openrc
+    exist_neutron_db=$(mysql -s -N -q -A --connect-timeout=10 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW DATABASES LIKE 'neutron';" 2>/dev/null)
+    if [ "X$exist_neutron_db" == "X" ]; then
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS neutron"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON neutron.* TO 'neutron'@'localhost' IDENTIFIED BY '$K8S_NEUTRON_DB_PASS'"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON neutron.* TO 'neutron'@'%' IDENTIFIED BY '$K8S_NEUTRON_DB_PASS'"
+      if ! openstack user list -f value -c Name | grep neutron > /dev/null; then
+        openstack user create --domain default --password $K8S_KEYSTONE_USER_NEUTRON_PASS neutron 2>/dev/null
+      fi
+      openstack role add --project service --user neutron admin
+      if ! openstack service list -f value -c Name | grep "^neutron$" > /dev/null; then
+        openstack service create --name neutron --description "OpenStack Networking" network;
+      fi
+      if ! openstack endpoint list --service neutron -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "neutron network public" > /dev/null; then
+        openstack endpoint create --region RegionOne network public http://neutron-server:9696
+      fi
+      if ! openstack endpoint list --service neutron -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "neutron network internal" > /dev/null; then
+        openstack endpoint create --region RegionOne network internal http://neutron-server:9696
+      fi
+      if ! openstack endpoint list --service neutron -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "neutron network admin" > /dev/null; then
+        openstack endpoint create --region RegionOne network admin http://neutron-server:9696
+      fi
+    fi
+    su -s /bin/sh -c "neutron-db-manage --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head" neutron
+    service neutron-server restart
+    service neutron-linuxbridge-agent restart
+    service neutron-dhcp-agent restart
+    service neutron-metadata-agent restart
+    service neutron-l3-agent restart
+    sleep 5;
+    until neutron ext-list; do echo "waiting for service response....."; sleep 5; done
+    echo "ok~~~~ service is ready~~!!!"
+    touch /.setup_completed
+    tail -F /var/log/syslog /var/log/neutron/*
+
+  neutron.conf: |
+    [DEFAULT]
+    core_plugin = ml2
+    service_plugins = router
+    allow_overlapping_ips = true
+    transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-0.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-1.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-2.rabbitmq
+    auth_strategy = keystone
+    notify_nova_on_port_status_changes = true
+    notify_nova_on_port_data_changes = true
+    [agent]
+    root_helper = sudo /usr/bin/neutron-rootwrap /etc/neutron/rootwrap.conf
+    [cors]
+    [cors.subdomain]
+    [database]
+    connection = mysql+pymysql://neutron:___K8S_NEUTRON_DB_PASS___@haproxy-galera/neutron
+    [keystone_authtoken]
+    auth_uri = http://keystone:5000/v3
+    auth_url = http://keystone:35357/v3
+    #memcached_servers = memcached:11211
+    memcached_servers = memcached-0.memcached:11211,memcached-1.memcached:11211,memcached-2.memcached:11211
+    auth_type = password
+    project_domain_name = default
+    user_domain_name = default
+    project_name = service
+    username = neutron
+    password = ___K8S_KEYSTONE_USER_NEUTRON_PASS___
+    [matchmaker_redis]
+    [nova]
+    auth_url = http://keystone:35357
+    auth_type = password
+    project_domain_name = default
+    user_domain_name = default
+    region_name = RegionOne
+    project_name = service
+    username = nova
+    password = ___K8S_KEYSTONE_USER_NOVA_PASS___
+    [oslo_concurrency]
+    [oslo_messaging_amqp]
+    [oslo_messaging_notifications]
+    [oslo_messaging_rabbit]
+    [oslo_messaging_zmq]
+    [oslo_middleware]
+    [oslo_policy]
+    [qos]
+    [quotas]
+    [ssl]
+
+  ml2_conf.ini: |
+    [DEFAULT]
+    [ml2]
+    type_drivers = flat,vlan,vxlan
+    tenant_network_types = vxlan
+    mechanism_drivers = linuxbridge,l2population
+    extension_drivers = port_security
+    [ml2_type_flat]
+    flat_networks = provider
+    [ml2_type_geneve]
+    [ml2_type_gre]
+    [ml2_type_vlan]
+    [ml2_type_vxlan]
+    vni_ranges = 1:1000
+    [securitygroup]
+    enable_ipset = true
+
+  linuxbridge_agent.ini: |
+    [DEFAULT]
+    [agent]
+    [linux_bridge]
+    physical_interface_mappings = provider:eth0
+    [securitygroup]
+    enable_security_group = true
+    firewall_driver = neutron.agent.linux.iptables_firewall.IptablesFirewallDriver
+    [vxlan]
+    enable_vxlan = true
+    local_ip = OVERLAY_INTERFACE_IP_ADDRESS
+    l2_population = true
+
+  l3_agent.ini: |
+    [DEFAULT]
+    interface_driver = neutron.agent.linux.interface.BridgeInterfaceDriver
+    [AGENT]
+
+  dhcp_agent.ini: |
+    [DEFAULT]
+    interface_driver = neutron.agent.linux.interface.BridgeInterfaceDriver
+    dhcp_driver = neutron.agent.linux.dhcp.Dnsmasq
+    enable_isolated_metadata = true
+    [AGENT]
+
+  metadata_agent.ini: |
+    [DEFAULT]
+    nova_metadata_ip = controller
+    metadata_proxy_shared_secret = __K8S_METADATA_PROXY_SHARED_SECRET__
+    [AGENT]
+    [cache]

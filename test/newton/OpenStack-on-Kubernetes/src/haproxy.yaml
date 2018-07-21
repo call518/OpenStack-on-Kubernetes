@@ -1,0 +1,141 @@
+# Reference: https://blog.bluematador.com/posts/running-haproxy-docker-containers-kubernetes/
+
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: haproxy-pdb
+spec:
+  selector:
+    matchLabels:
+      app: haproxy
+  minAvailable: 1
+  #maxUnavailable: 2
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: haproxy-galera
+  labels:
+    app: haproxy-galera
+spec:
+  ports:
+  - port: 3306
+    targetPort: 3306
+  #sessionAffinity: ClientIP
+  clusterIP: None
+  #type: NodePort # Or LoadBalancer in production w/ proper security
+  #type: LoadBalancer
+  selector:
+    app: haproxy
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: haproxy-stats
+  labels:
+    app: haproxy
+spec:
+  ports:
+  - port: 9000
+    targetPort: 9000
+  #sessionAffinity: ClientIP
+  #clusterIP: None
+  #type: NodePort # Or LoadBalancer in production w/ proper security
+  #type: LoadBalancer
+  selector:
+    app: haproxy
+
+---
+
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: haproxy
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: haproxy
+  template:
+    metadata:
+      labels:
+        app: haproxy
+    spec:
+      terminationGracePeriodSeconds: 10
+      affinity:
+         podAntiAffinity:
+           requiredDuringSchedulingIgnoredDuringExecution:
+           - labelSelector:
+               matchExpressions:
+               - key: "app"
+                 operator: In
+                 values:
+                 - haproxy
+             topologyKey: "kubernetes.io/hostname"
+      nodeSelector:
+        controller: "true"
+      initContainers:
+      - name: wait1
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        image: call518/oaas-init-container
+        envFrom:
+          - configMapRef:
+              name: env-common
+        command:
+          - /bin/bash
+          - -c
+          - >
+            QUERY_WSREP_READY="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_READY';";
+            QUERY_WSREP_CLUSTER_SIZE="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_CLUSTER_SIZE';";
+            QUERY_WSREP_CLUSTER_STATUS="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_CLUSTER_STATUS';";
+            QUERY_WSREP_LOCAL_STATE_COMMENT="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_LOCAL_STATE_COMMENT';";
+            until [ "$G0_WSREP_READY" == "ON" ] && [ "$G1_WSREP_READY" == "ON" ] && [ "$G2_WSREP_READY" == "ON" ] && [ "$G0_WSREP_CLUSTER_SIZE" == "3" ] && [ "$G1_WSREP_CLUSTER_SIZE" == "3" ] && [ "$G2_WSREP_CLUSTER_SIZE" == "3" ] && [ "$G0_WSREP_CLUSTER_STATUS" == "Primary" ] && [ "$G1_WSREP_CLUSTER_STATUS" == "Primary" ] && [ "$G2_WSREP_CLUSTER_STATUS" == "Primary" ] && [ "$G0_WSREP_LOCAL_STATE_COMMENT" == "Synced" ] && [ "$G1_WSREP_LOCAL_STATE_COMMENT" == "Synced" ] && [ "$G2_WSREP_LOCAL_STATE_COMMENT" == "Synced" ];
+            do
+              ping -c 1 -W 1 galera 2>&1 >/dev/null;
+              echo "`date +"[%Y-%m-%d %H:%M:%S]"` galera is not ready..... waiting...";
+              G0_WSREP_READY=$(mysql --connect-timeout=3 -hgalera-0.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_READY" 2>1 2> /dev/null;);
+              G1_WSREP_READY=$(mysql --connect-timeout=3 -hgalera-1.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_READY" 2>1 2> /dev/null;);
+              G2_WSREP_READY=$(mysql --connect-timeout=3 -hgalera-2.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_READY" 2>1 2> /dev/null;);
+              G0_WSREP_CLUSTER_SIZE=$(mysql --connect-timeout=3 -hgalera-0.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_SIZE" 2>1 2> /dev/null;);
+              G1_WSREP_CLUSTER_SIZE=$(mysql --connect-timeout=3 -hgalera-1.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_SIZE" 2>1 2> /dev/null;);
+              G2_WSREP_CLUSTER_SIZE=$(mysql --connect-timeout=3 -hgalera-2.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_SIZE" 2>1 2> /dev/null;);
+              G0_WSREP_CLUSTER_STATUS=$(mysql --connect-timeout=3 -hgalera-0.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_STATUS" 2>1 2> /dev/null;);
+              G1_WSREP_CLUSTER_STATUS=$(mysql --connect-timeout=3 -hgalera-1.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_STATUS" 2>1 2> /dev/null;);
+              G2_WSREP_CLUSTER_STATUS=$(mysql --connect-timeout=3 -hgalera-2.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_STATUS" 2>1 2> /dev/null;);
+              G0_WSREP_LOCAL_STATE_COMMENT=$(mysql --connect-timeout=3 -hgalera-0.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_LOCAL_STATE_COMMENT" 2>1 2> /dev/null;);
+              G1_WSREP_LOCAL_STATE_COMMENT=$(mysql --connect-timeout=3 -hgalera-1.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_LOCAL_STATE_COMMENT" 2>1 2> /dev/null;);
+              G2_WSREP_LOCAL_STATE_COMMENT=$(mysql --connect-timeout=3 -hgalera-2.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_LOCAL_STATE_COMMENT" 2>1 2> /dev/null;);
+              sleep 5;
+            done;
+            echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ galera is ready~~";
+      containers:
+      - name: haproxy
+        image: call518/oaas-haproxy
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        envFrom:
+          - configMapRef:
+              name: env-common
+        command:
+          - bash
+          - -c
+          - >
+            sed -i "s/@@STATS_USERNAME@@/$K8S_HAPROXY_STATS_USERNAME/g" /etc/haproxy/haproxy.cfg;
+            sed -i "s/@@STATS_PASSWORD@@/$K8S_HAPROXY_STATS_PASSWORD/g" /etc/haproxy/haproxy.cfg;
+            service rsyslog start;
+            haproxy -f /etc/haproxy/haproxy.cfg;
+            tail -F /var/log/messages;
+        ports:
+          - containerPort: 3306
+        ports:
+          - containerPort: 9000
+        livenessProbe:
+          tcpSocket:
+            port: 3306
+          initialDelaySeconds: 5
+          periodSeconds: 10
