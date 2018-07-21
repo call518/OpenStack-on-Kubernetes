@@ -152,12 +152,10 @@ spec:
           - /bin/bash
           - -c
           - >
-            until [ "$G0_API_9292" == "\"CURRENT\"" ] && [ "$G1_API_9292" == "\"CURRENT\"" ] && [ "$G2_API_9292" == "\"CURRENT\"" ];
+            until [ "$API_9292" == "\"CURRENT\"" ];
             do
               ping -c 1 -W 1 keystone 2>&1 >/dev/null
-              G0_API_9292=$(curl --connect-timeout 3 -s "http://glance-0.glance:9292" | jq ".versions[0].status");
-              G1_API_9292=$(curl --connect-timeout 3 -s "http://glance-1.glance:9292" | jq ".versions[0].status");
-              G2_API_9292=$(curl --connect-timeout 3 -s "http://glance-2.glance:9292" | jq ".versions[0].status");
+              API_9292=$(curl --connect-timeout 3 -s "http://glance:9292" | jq ".versions[0].status");
               echo "`date +"[%Y-%m-%d %H:%M:%S]"` glance is not ready..... waiting...";
               sleep 5;
             done;
