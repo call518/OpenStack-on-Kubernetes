@@ -3,8 +3,9 @@
 if [ "$1" != "--force" ]; then
 
     ./reset-zookeeper.sh
-    ./reset-neutron-server.sh
+    ./reset-nova-compute.sh
     ./reset-nova-server.sh
+    ./reset-neutron-server.sh
     ./reset-horizon.sh
     ./reset-cinder.sh
     ./reset-glance.sh

@@ -84,7 +84,8 @@ spec:
       - name: rabbitmq
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
-        image: rabbitmq:3.6.6-management-alpine
+        #image: rabbitmq:3.6.6-management-alpine
+        image: call518/oaas-rabbitmq
         envFrom:
           - configMapRef:
               name: env-common

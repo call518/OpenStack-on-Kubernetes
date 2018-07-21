@@ -10,7 +10,7 @@ data:
     sleep 10;
     #export K8S_DEFAULT_GW_IP=$(ip route | awk '/default/ { print $3 }');
     export K8S_DEFAULT_GW_IP=$(ip route show 0.0.0.0/0 dev eth0 | awk '{print $3}');
-    ping -c 5 -W 1 $K8S_DEFAULT_GW_IP;
+    until ping -c 1 -W 1 $K8S_DEFAULT_GW_IP; do echo "gateway ping testing....."; sleep 1; done
     #export KRS_DEFAULT_GW_MAC=$(ip neigh | awk -v gw_ip="$K8S_DEFAULT_GW_IP" '$0~gw_ip {print $5}');
     export KRS_DEFAULT_GW_MAC=$(arp -n | grep "^$K8S_DEFAULT_GW_IP " | awk '{print $3}');
     if ! (lsmod | grep -q "^openvswitch "); then

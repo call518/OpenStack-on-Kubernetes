@@ -59,7 +59,8 @@ spec:
     - new
     #imagePullPolicy: Always
     imagePullPolicy: IfNotPresent
-    image: quay.io/coreos/etcd:latest
+    #image: quay.io/coreos/etcd:latest
+    image: call518/oaas-etcd
     name: etcd0
     ports:
     - containerPort: 2379
@@ -137,7 +138,8 @@ spec:
     - --initial-cluster-state
     - new
     imagePullPolicy: Always
-    image: quay.io/coreos/etcd:latest
+    #image: quay.io/coreos/etcd:latest
+    image: call518/oaas-etcd
     name: etcd1
     ports:
     - containerPort: 2379
@@ -215,7 +217,8 @@ spec:
     - --initial-cluster-state
     - new
     imagePullPolicy: Always
-    image: quay.io/coreos/etcd:latest
+    #image: quay.io/coreos/etcd:latest
+    image: call518/oaas-etcd
     name: etcd2
     ports:
     - containerPort: 2379

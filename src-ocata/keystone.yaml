@@ -149,7 +149,7 @@ spec:
         - "keystone"
       containers:
         - name: keystone
-          image: call518/oaas-keystone
+          image: call518/oaas-ocata
           #imagePullPolicy: Always
           imagePullPolicy: IfNotPresent
           envFrom:

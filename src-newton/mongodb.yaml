@@ -67,7 +67,8 @@ spec:
       containers:
         - name: mongodb
           #image: pkdone/mongo-ent:3.4
-          image: mongo
+          #image: mongo
+          image: call518/oaas-mongodb
           #imagePullPolicy: Always
           imagePullPolicy: IfNotPresent
           env:

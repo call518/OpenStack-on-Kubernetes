@@ -172,7 +172,8 @@ spec:
         - "horizon"
       containers:
         - name: horizon
-          image: call518/oaas-horizon
+          #image: call518/oaas-horizon
+          image: call518/oaas-ocata
           #imagePullPolicy: Always
           imagePullPolicy: IfNotPresent
           envFrom:
