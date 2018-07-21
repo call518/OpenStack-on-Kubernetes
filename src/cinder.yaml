@@ -167,15 +167,11 @@ spec:
           - /bin/bash
           - -c
           - >
-            until [ "$K0_API_35357" == "\"stable\"" ] && [ "$K1_API_35357" == "\"stable\"" ] && [ "$K2_API_35357" == "\"stable\"" ] && [ "$K0_API_5000" == "\"stable\"" ] && [ "$K1_API_5000" == "\"stable\"" ] && [ "$K2_API_5000" == "\"stable\"" ];
+            until [ "$API_35357" == "\"stable\"" ] && [ "$API_5000" == "\"stable\"" ];
             do
               ping -c 1 -W 1 keystone 2>&1 >/dev/null
-              K0_API_35357=$(curl --connect-timeout 3 -s "http://keystone-0.keystone:35357" | jq ".versions.values[0].status");
-              K1_API_35357=$(curl --connect-timeout 3 -s "http://keystone-1.keystone:35357" | jq ".versions.values[0].status");
-              K2_API_35357=$(curl --connect-timeout 3 -s "http://keystone-2.keystone:35357" | jq ".versions.values[0].status");
-              K0_API_5000=$(curl --connect-timeout 3 -s "http://keystone-0.keystone:5000" | jq ".versions.values[0].status");
-              K1_API_5000=$(curl --connect-timeout 3 -s "http://keystone-1.keystone:5000" | jq ".versions.values[0].status");
-              K2_API_5000=$(curl --connect-timeout 3 -s "http://keystone-2.keystone:5000" | jq ".versions.values[0].status");
+              API_35357=$(curl --connect-timeout 3 -s "http://keystone:35357" | jq ".versions.values[0].status");
+              API_5000=$(curl --connect-timeout 3 -s "http://keystone:5000" | jq ".versions.values[0].status");
               echo "`date +"[%Y-%m-%d %H:%M:%S]"` keystone is not ready..... waiting...";
               sleep 5;
             done;
@@ -191,12 +187,10 @@ spec:
           - /bin/bash
           - -c
           - >
-            until [ "$G0_API_9292" == "\"CURRENT\"" ] && [ "$G1_API_9292" == "\"CURRENT\"" ] && [ "$G2_API_9292" == "\"CURRENT\"" ];
+            until [ "$API_9292" == "\"CURRENT\"" ];
             do
               ping -c 1 -W 1 keystone 2>&1 >/dev/null
-              G0_API_9292=$(curl --connect-timeout 3 -s "http://glance-0.glance:9292" | jq ".versions[0].status");
-              G1_API_9292=$(curl --connect-timeout 3 -s "http://glance-1.glance:9292" | jq ".versions[0].status");
-              G2_API_9292=$(curl --connect-timeout 3 -s "http://glance-2.glance:9292" | jq ".versions[0].status");
+              API_9292=$(curl --connect-timeout 3 -s "http://glance:9292" | jq ".versions[0].status");
               echo "`date +"[%Y-%m-%d %H:%M:%S]"` glance is not ready..... waiting...";
               sleep 5;
             done;

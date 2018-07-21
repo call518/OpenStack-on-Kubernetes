@@ -94,22 +94,14 @@ spec:
             QUERY_WSREP_CLUSTER_SIZE="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_CLUSTER_SIZE';";
             QUERY_WSREP_CLUSTER_STATUS="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_CLUSTER_STATUS';";
             QUERY_WSREP_LOCAL_STATE_COMMENT="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_LOCAL_STATE_COMMENT';";
-            until [ "$G0_WSREP_READY" == "ON" ] && [ "$G1_WSREP_READY" == "ON" ] && [ "$G2_WSREP_READY" == "ON" ] && [ "$G0_WSREP_CLUSTER_SIZE" == "3" ] && [ "$G1_WSREP_CLUSTER_SIZE" == "3" ] && [ "$G2_WSREP_CLUSTER_SIZE" == "3" ] && [ "$G0_WSREP_CLUSTER_STATUS" == "Primary" ] && [ "$G1_WSREP_CLUSTER_STATUS" == "Primary" ] && [ "$G2_WSREP_CLUSTER_STATUS" == "Primary" ] && [ "$G0_WSREP_LOCAL_STATE_COMMENT" == "Synced" ] && [ "$G1_WSREP_LOCAL_STATE_COMMENT" == "Synced" ] && [ "$G2_WSREP_LOCAL_STATE_COMMENT" == "Synced" ];
+            until [ "$WSREP_READY" == "ON" ] && [ "$WSREP_CLUSTER_SIZE" == "3" ] && [ "$WSREP_CLUSTER_STATUS" == "Primary" ] && [ "$WSREP_LOCAL_STATE_COMMENT" == "Synced" ];
             do
               ping -c 1 -W 1 galera 2>&1 >/dev/null;
               echo "`date +"[%Y-%m-%d %H:%M:%S]"` galera is not ready..... waiting...";
-              G0_WSREP_READY=$(mysql --connect-timeout=3 -hgalera-0.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_READY" 2>1 2> /dev/null;);
-              G1_WSREP_READY=$(mysql --connect-timeout=3 -hgalera-1.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_READY" 2>1 2> /dev/null;);
-              G2_WSREP_READY=$(mysql --connect-timeout=3 -hgalera-2.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_READY" 2>1 2> /dev/null;);
-              G0_WSREP_CLUSTER_SIZE=$(mysql --connect-timeout=3 -hgalera-0.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_SIZE" 2>1 2> /dev/null;);
-              G1_WSREP_CLUSTER_SIZE=$(mysql --connect-timeout=3 -hgalera-1.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_SIZE" 2>1 2> /dev/null;);
-              G2_WSREP_CLUSTER_SIZE=$(mysql --connect-timeout=3 -hgalera-2.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_SIZE" 2>1 2> /dev/null;);
-              G0_WSREP_CLUSTER_STATUS=$(mysql --connect-timeout=3 -hgalera-0.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_STATUS" 2>1 2> /dev/null;);
-              G1_WSREP_CLUSTER_STATUS=$(mysql --connect-timeout=3 -hgalera-1.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_STATUS" 2>1 2> /dev/null;);
-              G2_WSREP_CLUSTER_STATUS=$(mysql --connect-timeout=3 -hgalera-2.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_STATUS" 2>1 2> /dev/null;);
-              G0_WSREP_LOCAL_STATE_COMMENT=$(mysql --connect-timeout=3 -hgalera-0.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_LOCAL_STATE_COMMENT" 2>1 2> /dev/null;);
-              G1_WSREP_LOCAL_STATE_COMMENT=$(mysql --connect-timeout=3 -hgalera-1.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_LOCAL_STATE_COMMENT" 2>1 2> /dev/null;);
-              G2_WSREP_LOCAL_STATE_COMMENT=$(mysql --connect-timeout=3 -hgalera-2.galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_LOCAL_STATE_COMMENT" 2>1 2> /dev/null;);
+              WSREP_READY=$(mysql --connect-timeout=3 -hgalera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_READY" 2>1 2> /dev/null;);
+              WSREP_CLUSTER_SIZE=$(mysql --connect-timeout=3 -hgalera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_SIZE" 2>1 2> /dev/null;);
+              WSREP_CLUSTER_STATUS=$(mysql --connect-timeout=3 -hgalera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_STATUS" 2>1 2> /dev/null;);
+              WSREP_LOCAL_STATE_COMMENT=$(mysql --connect-timeout=3 -hgalera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_LOCAL_STATE_COMMENT" 2>1 2> /dev/null;);
               sleep 5;
             done;
             echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ galera is ready~~";
