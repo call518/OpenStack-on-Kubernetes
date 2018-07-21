@@ -124,6 +124,7 @@ data:
     ## Service - Nova
     #service libvirt-bin restart
     service libvirtd restart
+    service virtlogd restart
     service nova-api-metadata restart
     service nova-compute restart
     service nova-novncproxy restart
