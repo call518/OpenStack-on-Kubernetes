@@ -166,7 +166,7 @@ data:
     username = neutron
     password = ___K8S_KEYSTONE_USER_NEUTRON_PASS___
     service_metadata_proxy = true
-    metadata_proxy_shared_secret = __K8S_METADATA_PROXY_SHARED_SECRET__
+    metadata_proxy_shared_secret = ___K8S_METADATA_PROXY_SHARED_SECRET___
     [osapi_v21]
     [oslo_concurrency]
     lock_path = /var/lib/nova/lock
