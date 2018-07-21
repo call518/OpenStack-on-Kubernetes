@@ -149,7 +149,8 @@ data:
     enabled = true
     backend = oslo_cache.memcache_pool
     #memcached_servers = memcached:11211
-    memcached_servers = memcached-0.memcached:11211,memcached-1.memcached:11211,memcached-2.memcached:11211
+    #memcached_servers = memcached-0.memcached:11211,memcached-1.memcached:11211,memcached-2.memcached:11211
+    memcache_servers = memcached-0.memcached:11211,memcached-1.memcached:11211,memcached-2.memcached:11211
     [cells]
     #enable=false
     [cinder]
