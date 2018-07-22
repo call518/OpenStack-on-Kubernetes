@@ -43,6 +43,17 @@ Intro
 Tutorial
 ================================
 
+# System Architecture
+
+(TODO)
+
+# Networking
+
+(TODO)
+
 
 TODO
 ================================
+
+* Re-Configuration Flat-IP Ranbe for EXT-NET.
+* Simplify initContainer Check-Processing.
