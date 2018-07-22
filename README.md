@@ -23,20 +23,20 @@ Intro
 
 ### Current Status
 
-* memcached (Completed)
-* rabbitmq (Completed)
-* mongodb (Completed)
-* etcd (Need for supplement)
-* galera (Completed)
-* haproxy (Completed)
-* keystone (Completed)
-* glance (Completed)
-* nova (Completed)
-* neutron (Completed)
-* cinder (Completed)
+* **memcached** (Completed)
+* **rabbitmq** (Completed)
+* **mongodb** (Completed)
+* etcd (Completed)
+* **galera** (Completed)
+* **haproxy** (Completed)
+* **keystone** (Completed)
+* **glance** (Completed)
+* **nova** (Completed)
+* **neutron** (Completed)
+* **cinder** (Completed)
 * heat (TODO)
 * ceilometer (TODO)
-* horizon (Completed)
+* **horizon** (Completed)
 
 
 Tutorial
