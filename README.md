@@ -12,10 +12,11 @@ Intro
 
 ### Features
 
-* Based on Kubernetes(k8s).
+* Auto-Provisioning Based on Kubernetes(k8s).
 * Micro-Service for Scalable LB/HA.
-* Simple Provisioning.
-* Support Many OpenStack Releases.
+* Support Many OpenStack Releases. (Newton/Ocata/Pike/Queens/...)
+* Simple and Dynamic Configuration.
+* Auto Failover/Failback.
 
 ### Components Diagram
 
