@@ -26,7 +26,7 @@ Intro
 * **memcached** (Completed)
 * **rabbitmq** (Completed)
 * **mongodb** (Completed)
-* etcd (Completed)
+* **etcd** (Completed)
 * **galera** (Completed)
 * **haproxy** (Completed)
 * **keystone** (Completed)
