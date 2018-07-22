@@ -6,7 +6,7 @@ OpenStack on Kubernetes (OaaS)
 
 # Intro
 
-* **OaaS** is "OpenStack as a Service".
+* **OaaS** is "**OpenStack as a Service**".
 
 ## Features
 
@@ -22,7 +22,7 @@ OpenStack on Kubernetes (OaaS)
 # Current Status
 
 <pre>
-- memcached (Completed)
+- **memcached** (Completed)
 - rabbitmq (Completed)
 - mongodb (Completed)
 - etcd (Need for supplement)
