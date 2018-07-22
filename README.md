@@ -57,3 +57,4 @@ TODO
 
 * Re-Configuration Flat-IP Ranbe for EXT-NET.
 * Simplify initContainer Check-Processing.
+* Integration of All of Provision Source. /w Template and ETc...
