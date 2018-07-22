@@ -23,10 +23,10 @@ data:
     fi;
     echo "ok~~~~ openvswitch kernel module is ready~~!!!"
     #modprobe openvswitch;
-    service openvswitch-switch restart;
     until (service openvswitch-switch status);
     do
       echo "waiting for openvswitch-switch service.....";
+      service openvswitch-switch restart;
       sleep 5;
     done
     echo "ok~~~~ openvswitch-switch service is ready~~!!!"
