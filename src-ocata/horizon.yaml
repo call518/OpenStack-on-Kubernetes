@@ -25,8 +25,8 @@ spec:
     port: 80
     targetPort: 80
   #sessionAffinity: ClientIP
-  clusterIP: None
-  #type: NodePort # Or LoadBalancer in production w/ proper security
+  #clusterIP: None
+  type: NodePort # Or LoadBalancer in production w/ proper security
   #type: LoadBalancer
   selector:
     app: horizon

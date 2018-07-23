@@ -161,3 +161,13 @@ data:
     done
     mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "DROP DATABASE IF EXISTS nova; DROP DATABASE IF EXISTS nova_api; DROP DATABASE IF EXISTS nova_cell0;"
     mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "DELETE FROM mysql.user WHERE User='nova'; DELETE FROM mysql.db WHERE Db='nova' AND User='nova'; FLUSH PRIVILEGES;"
+
+  remove-nova-compute.sh: |
+    #!/bin/bash
+    source /root/admin-openrc
+    until [ "X$(openstack server list --all -f value -c ID)" == "X" ];
+    do
+      echo "waiting for deleting all instances........"
+      openstack server delete $(openstack server list --all -f value -c ID)
+      sleep 5;
+    done

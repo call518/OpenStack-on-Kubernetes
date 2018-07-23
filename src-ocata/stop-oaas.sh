@@ -87,7 +87,8 @@ else
     done
 fi
 
-kubectl label nodes k8s-node01 controller- network-
+kubectl label nodes k8s-node01 controller- network- nfs-server-
 kubectl label nodes k8s-node02 controller- network-
 kubectl label nodes k8s-node03 controller- network-
-kubectl label nodes k8s-node04 nfs-server- compute-
+kubectl label nodes k8s-node04 compute-
+kubectl label nodes k8s-node05 compute-
