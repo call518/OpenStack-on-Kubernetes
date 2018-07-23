@@ -25,6 +25,7 @@ spec:
     port: 80
     targetPort: 80
     nodePort: 80
+    protocol: TCP
   #sessionAffinity: ClientIP
   #clusterIP: None
   type: NodePort # Or LoadBalancer in production w/ proper security
