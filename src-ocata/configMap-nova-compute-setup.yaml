@@ -64,7 +64,7 @@ data:
     ovs-vsctl add-br br-ex;
     ovs-vsctl add-port eth0 patch-br-ex -- set Interface patch-br-ex type=patch options:peer=patch-eth0;
     ovs-vsctl add-port br-ex patch-eth0 -- set Interface patch-eth0 type=patch options:peer=patch-br-ex;
-    ip link set br-ex up;
+    ip link set br-ex up mtu 1350;
     sysctl -w net.ipv4.conf.default.rp_filter=0;
     sysctl -w net.ipv4.conf.all.rp_filter=0;
     sysctl -w net.ipv4.ip_forward=1;
