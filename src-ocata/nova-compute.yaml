@@ -49,8 +49,8 @@ spec:
   serviceName: "nova-compute"
   #replicas: 3
   replicas: 2
-  podManagementPolicy: OrderedReady
-  #podManagementPolicy: Parallel
+  #podManagementPolicy: OrderedReady
+  podManagementPolicy: Parallel
   selector:
     matchLabels:
       app: nova-compute
