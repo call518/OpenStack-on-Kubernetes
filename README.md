@@ -114,9 +114,11 @@ k8s-node05   Ready     <none>    18h       v1.11.1
 ### Requirements
 
 * Quorum PODs (Replica is  have to **2n+1**)
-  * galera-etc
-  * galera
-  * rabbitmq
+ * galera-etc
+ * galera
+ * rabbitmq
+
+### Initiate Deploying OpenStack
 
 ```bash
 [k8s-master]# git clone [here]
