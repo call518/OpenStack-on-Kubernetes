@@ -111,6 +111,13 @@ k8s-node05   Ready     <none>    18h       v1.11.1
 
 > (Note) Now, OpenStack Release is separated. but soon all will be integrated by yaml template.
 
+### Requirements
+
+* Quorum PODs (Replica is  have to **2n+1**)
+  * galera-etc
+  * galera
+  * rabbitmq
+
 ```bash
 [k8s-master]# git clone [here]
 
