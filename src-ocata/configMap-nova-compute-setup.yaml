@@ -127,7 +127,7 @@ data:
     service virtlogd restart
     service nova-api-metadata restart
     service nova-compute restart
-    service nova-novncproxy restart
+    #service nova-novncproxy restart
     sleep 5;
     #until (service libvirt-bin status) && (service nova-compute status); do echo "(1) waiting for nova-compute service response....."; sleep 5; done
     until (service libvirtd status) && (service nova-compute status); do echo "(1) waiting for nova-compute service response....."; sleep 5; done

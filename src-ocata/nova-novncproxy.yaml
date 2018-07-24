@@ -27,26 +27,28 @@ spec:
     nodePort: 30068
     protocol: TCP
   #sessionAffinity: ClientIP
-  clusterIP: None
-  #type: NodePort # Or LoadBalancer in production w/ proper security
+  #clusterIP: None
+  type: NodePort # Or LoadBalancer in production w/ proper security
   #type: LoadBalancer
   selector:
     app: nova-novncproxy
 
 ---
 
+#apiVersion: apps/v1beta1
+#kind: StatefulSet
 apiVersion: apps/v1beta1
-kind: StatefulSet
+kind: Deployment
 metadata:
   name: nova-novncproxy
   labels:
     app: nova-novncproxy
 spec:
-  serviceName: "nova-novncproxy"
+  #serviceName: "nova-novncproxy"
   #replicas: 3
   replicas: 1
   #podManagementPolicy: OrderedReady
-  podManagementPolicy: Parallel
+  #podManagementPolicy: Parallel
   selector:
     matchLabels:
       app: nova-novncproxy
