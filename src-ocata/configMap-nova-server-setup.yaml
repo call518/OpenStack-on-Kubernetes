@@ -105,7 +105,7 @@ data:
     service nova-consoleauth restart
     service nova-scheduler restart
     service nova-conductor restart
-    #service nova-novncproxy restart
+    service nova-novncproxy restart
     service apache2 restart
     sleep 5;
     until (echo $NOVA_SERVICES | grep -q "nova-scheduler ${HOSTNAME} enabled up") && (echo $NOVA_SERVICES | grep -q "nova-consoleauth ${HOSTNAME} enabled up") && (echo $NOVA_SERVICES | grep -q "nova-conductor ${HOSTNAME} enabled up")

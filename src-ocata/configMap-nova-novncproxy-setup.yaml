@@ -8,17 +8,8 @@ data:
     set -e;
     cp -a /etc/nova/nova.conf /etc/nova/nova.conf.default
     cat /scripts/nova.conf > /etc/nova/nova.conf
-    sed -i "s/___MY_IP___/$MY_POD_IP/g" /etc/nova/nova.conf
     service nova-novncproxy restart
     sleep 5;
-    #until (echo $NOVNCPROXY_SERVICES | grep -q "nova-scheduler ${HOSTNAME} enabled up") && (echo $NOVNCPROXY_SERVICES | grep -q "nova-consoleauth ${HOSTNAME} enabled up") && (echo $NOVNCPROXY_SERVICES | grep -q "nova-conductor ${HOSTNAME} enabled up")
-    #do
-    #  echo "waiting for service response....."
-    #  NOVNCPROXY_SERVICES=$(nova service-list | sed -e 's/ //g'| cut -d'|' -f 3,4,6,7 | grep "^nova-" | sed -e 's/|/ /g' || true)
-    #  sleep 5
-    #done
-    #echo "ok~~~~ service is ready~~!!!"
-    #nova service-list
     touch /.setup_completed
     tail -F /var/log/syslog /var/log/nova/*
 

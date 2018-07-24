@@ -27,9 +27,9 @@ spec:
   - name: nova-metadata-api
     port: 8775
     targetPort: 8775
-  #- name: nova-novncproxy
-  #  port: 6080
-  #  targetPort: 6080
+  - name: nova-novncproxy
+    port: 6080
+    targetPort: 6080
   #sessionAffinity: ClientIP
   clusterIP: None
   #type: NodePort # Or LoadBalancer in production w/ proper security
@@ -233,7 +233,7 @@ spec:
           ports:
             - containerPort: 8774
             - containerPort: 8775
-            #- containerPort: 6080
+            - containerPort: 6080
           volumeMounts:
           - name: nova-compute-setup
             mountPath: /scripts
