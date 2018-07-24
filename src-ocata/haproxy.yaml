@@ -41,8 +41,8 @@ metadata:
 spec:
   ports:
   - port: 9000
-    targetPort: 9000
-    nodePort: 39000
+    targetPort: 30090
+    nodePort: 30090
     protocol: TCP
   #sessionAffinity: ClientIP
   #clusterIP: None
