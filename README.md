@@ -129,11 +129,11 @@ pod/cinder-1                   1/1       Running             0          1m      
 pod/etcd0                      1/1       Running             0          1m        10.244.3.16     k8s-node03
 pod/etcd1                      1/1       Running             0          1m        10.244.2.16     k8s-node02
 pod/etcd2                      1/1       Running             0          1m        10.244.1.18     k8s-node01
-pod/galera-0                   1/1	 Running             0          1m        10.244.3.20     k8s-node03
-pod/galera-1                   1/1	 Running             0          1m        10.244.3.20     k8s-node01
-pod/galera-2                   1/1	 Running             0          1m        10.244.3.20     k8s-node02
-pod/glance-0                   1/1	 Running             0          1m        10.244.2.20     k8s-node02
-pod/glance-1                   1/1	 Running             0          1m        10.244.2.20     k8s-node01
+pod/galera-0                   1/1       Running             0          1m        10.244.3.20     k8s-node03
+pod/galera-1                   1/1       Running             0          1m        10.244.3.20     k8s-node01
+pod/galera-2                   1/1       Running             0          1m        10.244.3.20     k8s-node02
+pod/glance-0                   1/1       Running             0          1m        10.244.2.20     k8s-node02
+pod/glance-1                   1/1       Running             0          1m        10.244.2.20     k8s-node01
 pod/haproxy-6c79f76c5f-9fxlj   1/1       Running             0          1m        10.244.2.17     k8s-node02
 pod/horizon-8595cdb556-ln5db   1/1       Running             0          1m        10.244.2.19     k8s-node02
 pod/keystone-0                 1/1       Running             0          1m        10.244.1.20     k8s-node01
