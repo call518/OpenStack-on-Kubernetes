@@ -55,7 +55,7 @@ Tutorial
 
 ### Env.
 
-> (Note) I'm now testing/developing with 6 VMs on VirtualBox Env. If u want, any env is possible. (eg. physical machines)
+> (Note) We are now testing/developing with 6 VMs on VirtualBox Env. If u want, any env is possible. (eg. physical machines)
 
 #### Spec. of each VM
 
@@ -270,6 +270,17 @@ statefulset.apps/rabbitmq         3         3         1m        rabbitmq        
 
 #### Network Topology
 ![OaaS Login](README/screenshot-horizon-network-topology.png)
+
+
+
+Limitation
+================================
+
+* Not support "volume snapshot", "volume backup"
+ * because, in nfs-backend mode, cinder can not support it.
+* Currently, we can not access to floating-ips from external.
+ * we are trying to solve this...
+
 
 TODO
 ================================
