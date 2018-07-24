@@ -33,9 +33,10 @@ spec:
   - name: nova-novncproxy
     port: 6080
     targetPort: 6080
+    nodePort: 30068
   #sessionAffinity: ClientIP
-  clusterIP: None
-  #type: NodePort # Or LoadBalancer in production w/ proper security
+  #clusterIP: None
+  type: NodePort # Or LoadBalancer in production w/ proper security
   #type: LoadBalancer
   selector:
     app: nova-server
@@ -216,7 +217,7 @@ spec:
             - containerPort: 8778
             - containerPort: 8775
             - containerPort: 6080
-            #  hostPort: 6080
+              #hostPort: 6080
           volumeMounts:
           - name: nova-server-setup
             mountPath: /scripts
