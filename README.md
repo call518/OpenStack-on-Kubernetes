@@ -236,7 +236,7 @@ deployment.apps/horizon   1         1         1            0           1m       
 
 NAME                                 DESIRED   CURRENT   READY     AGE       CONTAINERS   IMAGES                 SELECTOR
 replicaset.apps/haproxy-6c79f76c5f   1         1         0         1m        haproxy      call518/oaas-haproxy   app=haproxy,pod-template-hash=2735932719
-replicaset.apps/horizon-8595cdb556   1         1         0	   1m        horizon      call518/oaas-ocata     app=horizon,pod-template-hash=4151786112
+replicaset.apps/horizon-8595cdb556   1         1         0         1m        horizon      call518/oaas-ocata     app=horizon,pod-template-hash=4151786112
 
 NAME                              DESIRED   CURRENT   AGE	CONTAINERS	 IMAGES
 statefulset.apps/cinder           2         2         1m        cinder           call518/oaas-ocata
@@ -257,6 +257,12 @@ statefulset.apps/rabbitmq         3         3         1m        rabbitmq        
 
 #### Overview
 ![OaaS Login](README/screenshot-horizon-overview.png)
+
+#### Instances
+![OaaS Login](README/screenshot-horizon-instances.png)
+
+#### Network Topology
+![OaaS Login](README/screenshot-horizon-network-topology.png)
 
 TODO
 ================================
