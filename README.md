@@ -110,6 +110,7 @@ k8s-node05   Ready     <none>    18h       v1.11.1
 ## Deploy Tutorial
 
 > (Note) Now, OpenStack Release is separated. but soon all will be integrated by yaml template.
+> (Do not use src-newton, it will be removed....)
 
 #### Requirements
 
@@ -245,7 +246,7 @@ statefulset.apps/keystone         2         2         1m        keystone        
 statefulset.apps/memcached        3         3         1m        memcached        call518/oaas-memcached
 statefulset.apps/neutron-server   2         2         1m        neutron-server   call518/oaas-ocata
 statefulset.apps/nova-compute     2         2         1m        nova-compute     call518/oaas-ocata
-statefulset.apps/nova-server      2         2         1m        nova-server	 call518/oaas-ocata
+statefulset.apps/nova-server      2         2         1m        nova-server      call518/oaas-ocata
 statefulset.apps/rabbitmq         3         3         1m        rabbitmq         call518/oaas-rabbitmq
 ```
 
