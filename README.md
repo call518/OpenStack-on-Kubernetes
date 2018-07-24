@@ -56,6 +56,7 @@ Tutorial
 ### Env.
 
 > (Note) We are now testing/developing with 6 VMs on VirtualBox Env. If u want, any env is possible. (eg. physical machines)
+
 > (Note) We use NFS for cinder backend storage for simple tutorial, but soon we will change to ceph back-end storage.
 
 #### Spec. of each VM
