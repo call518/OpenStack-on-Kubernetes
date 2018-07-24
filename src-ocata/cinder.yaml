@@ -78,7 +78,7 @@ spec:
           - /bin/bash
           - -c
           - >
-            until [ "`curl --connect-timeout 3 -s -L 'http://$DISCOVERY_SERVICE/v2/keys/oaas/$K8S_NFS_SERVER_IP_ETC_KEY' -XGET | jq -r .node.value`" != "null" ];
+            until [ "`curl --connect-timeout 3 -s -L \"http://$DISCOVERY_SERVICE/v2/keys/oaas/$K8S_NFS_SERVER_IP_ETC_KEY\" -XGET | jq -r .node.value`" != "null" ];
             do
               echo "`date +"[%Y-%m-%d %H:%M:%S]"` nfs-server is not ready..... waiting...";
               sleep 5;

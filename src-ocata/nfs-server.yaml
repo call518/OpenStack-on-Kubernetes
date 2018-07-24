@@ -83,7 +83,14 @@ spec:
       - "bash"
       - "-c"
       - |
-        curl -s -L "http://$DISCOVERY_SERVICE/v2/keys/oaas/$K8S_NFS_SERVER_IP_ETC_KEY" -XPUT -d value="$MY_POD_IP";
+        until [ "$CHECK_ETCD_NFS_SERVER_IP" == "$MY_POD_IP" ];
+        do
+          echo "`date +"[%Y-%m-%d %H:%M:%S]"` Putting nfs-server to etcd....... waiting...";
+          curl -s -L "http://$DISCOVERY_SERVICE/v2/keys/oaas/$K8S_NFS_SERVER_IP_ETC_KEY" -XPUT -d value="$MY_POD_IP";
+          CHECK_ETCD_NFS_SERVER_IP=$(curl --connect-timeout 3 -s -L "http://$DISCOVERY_SERVICE/v2/keys/oaas/$K8S_NFS_SERVER_IP_ETC_KEY" -XGET | jq -r .node.value)
+          sleep 5;
+        done;
+        echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ etcd for nfs-server is ready~~ (etcd's nfs-server IP: $CHECK_ETCD_NFS_SERVER_IP)";
         rm -rf /data/*;
         mkdir -p /data/pv/galera-{0,1,2};
         mkdir -p /data/pv/mongodb-{0,1,2};
