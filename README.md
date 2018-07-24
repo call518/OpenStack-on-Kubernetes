@@ -120,7 +120,7 @@ k8s-node05   Ready     <none>    18h       v1.11.1
 
 #### default configs (eg. password)
 
-> edit configMap-env-common.yaml
+edit, src-ocata/configMap-env-common.yaml
 
 ```yaml
 apiVersion: v1
