@@ -166,6 +166,7 @@ spec:
       #- ip: "192.168.0.150"
       #  hostnames:
       #  - "nfs-server"
+      hostNetwork: true
       containers:
         - name: neutron-server
           image: call518/oaas-ocata
