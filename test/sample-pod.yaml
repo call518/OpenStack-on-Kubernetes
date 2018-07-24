@@ -7,7 +7,7 @@ spec:
  containers:
  - name: sample-pod
    #image: call518/oaas-init-container
-   image: call518/oaas-${OPENSTACK_RELEASE}
+   image: call518/oaas-ocata
    securityContext:
      privileged: true
 #   ports:

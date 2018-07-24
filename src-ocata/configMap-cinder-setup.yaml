@@ -138,6 +138,8 @@ data:
     nfs_sparsed_volumes = true
     nfs_mount_attempts = 3
     nfs_mount_options = v4
+    nfs_snapshot_support = true
+    nfs_qcow2_volumes = true
     [BACKEND]
     [BRCD_FABRIC_EXAMPLE]
     [CISCO_FABRIC_EXAMPLE]
