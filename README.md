@@ -153,23 +153,24 @@ pod/rabbitmq-1                 1/1       Running             0          1m      
 pod/rabbitmq-2                 1/1       Running             0          1m        <none>          k8s-node01
 
 NAME                          TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                               AGE       SELECTOR
-service/cinder                ClusterIP   None            <none>        8776/TCP                              1m        app=cinder
-service/etcd-client           ClusterIP   10.97.40.50     <none>        2379/TCP                              1m        app=etcd
-service/etcd0                 ClusterIP   10.107.183.24   <none>        2379/TCP,2380/TCP                     1m        etcd_node=etcd0
-service/etcd1                 ClusterIP   10.109.207.44   <none>        2379/TCP,2380/TCP                     1m        etcd_node=etcd1
-service/etcd2                 ClusterIP   10.109.28.128   <none>        2379/TCP,2380/TCP                     1m        etcd_node=etcd2
-service/galera                ClusterIP   None            <none>        3306/TCP                              1m        app=galera
-service/glance                ClusterIP   None            <none>        9292/TCP,9191/TCP                     1m        app=glance
-service/haproxy-galera        ClusterIP   None            <none>        3306/TCP                              1m        app=haproxy
-service/horizon               NodePort    10.98.77.59     <none>        80:30080/TCP                          1m        app=horizon
-service/keystone              ClusterIP   None            <none>        5000/TCP,35357/TCP                    1m        app=keystone
-service/kubernetes            ClusterIP   10.96.0.1       <none>        443/TCP                               19h       <none>
-service/memcached             ClusterIP   None            <none>        11211/TCP                             1m        app=memcached
-service/neutron-server        ClusterIP   None            <none>        9696/TCP                              1m        app=neutron-server
-service/nova-compute          ClusterIP   None            <none>        8774/TCP,8775/TCP,6080/TCP            1m        app=nova-compute
-service/nova-server           ClusterIP   None            <none>        8774/TCP,8778/TCP,8775/TCP,6080/TCP   1m        app=nova-server
-service/rabbitmq              ClusterIP   None            <none>        5672/TCP,4369/TCP,25672/TCP           1m        app=rabbitmq
-service/rabbitmq-management   ClusterIP   None            <none>        15672/TCP                             1m        app=rabbitmq
+service/cinder                ClusterIP   None             <none>        8776/TCP                              3m        app=cinder
+service/etcd-client           ClusterIP   10.110.131.251   <none>        2379/TCP                              3m        app=etcd
+service/etcd0                 ClusterIP   10.102.216.231   <none>        2379/TCP,2380/TCP                     3m        etcd_node=etcd0
+service/etcd1                 ClusterIP   10.105.13.88     <none>        2379/TCP,2380/TCP                     3m        etcd_node=etcd1
+service/etcd2                 ClusterIP   10.102.221.20    <none>        2379/TCP,2380/TCP                     3m        etcd_node=etcd2
+service/galera                ClusterIP   None             <none>        3306/TCP                              3m        app=galera
+service/glance                ClusterIP   None             <none>        9292/TCP,9191/TCP                     3m        app=glance
+service/haproxy-galera        ClusterIP   None             <none>        3306/TCP                              3m        app=haproxy
+service/haproxy-stats         NodePort    10.104.13.149    <none>        9000:30090/TCP                        3m        app=haproxy
+service/horizon               NodePort    10.96.152.72     <none>        80:30080/TCP                          3m        app=horizon
+service/keystone              ClusterIP   None             <none>        5000/TCP,35357/TCP                    3m        app=keystone
+service/kubernetes            ClusterIP   10.96.0.1        <none>        443/TCP                               21h       <none>
+service/memcached             ClusterIP   None             <none>        11211/TCP                             3m        app=memcached
+service/neutron-server        ClusterIP   None             <none>        9696/TCP                              3m        app=neutron-server
+service/nova-compute          ClusterIP   None             <none>        8774/TCP,8775/TCP,6080/TCP            3m        app=nova-compute
+service/nova-server           ClusterIP   None             <none>        8774/TCP,8778/TCP,8775/TCP,6080/TCP   3m        app=nova-server
+service/rabbitmq              ClusterIP   None             <none>        5672/TCP,4369/TCP,25672/TCP           3m        app=rabbitmq
+service/rabbitmq-management   ClusterIP   None             <none>        15672/TCP                             3m        app=rabbitmq
 
 NAME                      DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE       CONTAINERS   IMAGES                 SELECTOR
 deployment.apps/haproxy   1         1         1            0           1m        haproxy      call518/oaas-haproxy   app=haproxy
