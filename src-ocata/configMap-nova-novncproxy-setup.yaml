@@ -1,0 +1,117 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nova-novncproxy-setup
+data:
+  nova-novncproxy-init.sh: |
+    #!/bin/bash
+    set -e;
+    echo "ServerName localhost" >> /etc/apache2/apache2.conf
+    export NFS_BACKEND_HOST_IP=$(curl -s -L "http://$DISCOVERY_SERVICE/v2/keys/oaas/$K8S_NFS_SERVER_IP_ETC_KEY" -XGET | jq -r .node.value)
+    cp -a /etc/nova/nova.conf /etc/nova/nova.conf.default
+    cat /scripts/nova.conf > /etc/nova/nova.conf
+    sed -i "s/___K8S_NOVA_DB_PASS___/$K8S_NOVA_DB_PASS/g" /etc/nova/nova.conf
+    sed -i "s/___K8S_RABBITMQ_OPENSTACK_USER___/$K8S_RABBITMQ_OPENSTACK_USER/g" /etc/nova/nova.conf
+    sed -i "s/___K8S_RABBITMQ_OPENSTACK_PASS___/$K8S_RABBITMQ_OPENSTACK_PASS/g" /etc/nova/nova.conf
+    sed -i "s/___K8S_KEYSTONE_USER_NEUTRON_PASS___/$K8S_KEYSTONE_USER_NEUTRON_PASS/g" /etc/nova/nova.conf
+    sed -i "s/___K8S_KEYSTONE_USER_NOVA_PASS___/$K8S_KEYSTONE_USER_NOVA_PASS/g" /etc/nova/nova.conf
+    sed -i "s/___K8S_KEYSTONE_USER_PLACEMENT_PASS___/$K8S_KEYSTONE_USER_PLACEMENT_PASS/g" /etc/nova/nova.conf
+    sed -i "s/___K8S_METADATA_PROXY_SHARED_SECRET___/$K8S_METADATA_PROXY_SHARED_SECRET/g" /etc/nova/nova.conf
+    sed -i "s/___MY_IP___/$MY_POD_IP/g" /etc/nova/nova.conf
+    cat > /root/admin-openrc << EOF
+    export OS_PROJECT_DOMAIN_NAME=default
+    export OS_USER_DOMAIN_NAME=default
+    export OS_PROJECT_NAME=admin
+    export OS_USERNAME=admin
+    export OS_PASSWORD=$K8S_KEYSTONE_USER_ADMIN_PASS
+    export OS_AUTH_URL=http://keystone:35357/v3
+    export OS_IDENTITY_API_VERSION=3
+    export OS_IMAGE_API_VERSION=2
+    EOF
+    cat > /root/demo-openrc << EOF
+    export OS_PROJECT_DOMAIN_NAME=Default
+    export OS_USER_DOMAIN_NAME=Default
+    export OS_PROJECT_NAME=demo
+    export OS_USERNAME=demo
+    export OS_PASSWORD=$K8S_KEYSTONE_USER_DEMO_PASS
+    export OS_AUTH_URL=http://keystone:5000/v3
+    export OS_IDENTITY_API_VERSION=3
+    export OS_IMAGE_API_VERSION=2
+    EOF
+    source /root/admin-openrc
+    service nova-novncproxy restart
+    sleep 5;
+    until (echo $NOVA_SERVICES | grep -q "nova-scheduler ${HOSTNAME} enabled up") && (echo $NOVA_SERVICES | grep -q "nova-consoleauth ${HOSTNAME} enabled up") && (echo $NOVA_SERVICES | grep -q "nova-conductor ${HOSTNAME} enabled up")
+    do
+      echo "waiting for service response....."
+      NOVA_SERVICES=$(nova service-list | sed -e 's/ //g'| cut -d'|' -f 3,4,6,7 | grep "^nova-" | sed -e 's/|/ /g' || true)
+      sleep 5
+    done
+    echo "ok~~~~ service is ready~~!!!"
+    nova service-list
+    touch /.setup_completed
+    tail -F /var/log/syslog /var/log/nova/*
+
+  nova.conf: |
+    [DEFAULT]
+    daemon = false
+    novncproxy_host = 0.0.0.0
+    novncproxy_port = 6080
+    record = false
+    source_is_ipv6 = false
+    ssl_only = false
+    [api_database]
+    [barbican]
+    [cache]
+    [cells]
+    [cinder]
+    [cloudpipe]
+    [conductor]
+    [cors]
+    [cors.subdomain]
+    [crypto]
+    [database]
+    [ephemeral_storage_encryption]
+    [glance]
+    [guestfs]
+    [hyperv]
+    [image_file_url]
+    [ironic]
+    [key_manager]
+    [keystone_authtoken]
+    [libvirt]
+    [matchmaker_redis]
+    [metrics]
+    [mks]
+    [neutron]
+    [osapi_v21]
+    [oslo_concurrency]
+    [oslo_messaging_amqp]
+    [oslo_messaging_notifications]
+    [oslo_messaging_rabbit]
+    [oslo_messaging_zmq]
+    [oslo_middleware]
+    [oslo_policy]
+    [placement]
+    [placement_database]
+    [rdp]
+    [remote_debug]
+    [scheduler]
+    [serial_console]
+    [spice]
+    [ssl]
+    [trusted_computing]
+    [upgrade_levels]
+    [vmware]
+    [vnc]
+    enabled = true
+    vncserver_listen = 0.0.0.0
+    vnc_auto.html vncserver_listen = 0.0.0.0
+    vncserver_proxyclient_address = $my_ip
+    novncproxy_host = $my_ip
+    novncproxy_port = 6080
+    novncproxy_base_url = http://192.168.0.151:30068/vnc_auto.html
+    [workarounds]
+    [wsgi]
+    [xenserver]
+    [xvp]

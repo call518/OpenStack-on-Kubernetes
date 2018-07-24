@@ -114,6 +114,9 @@ k8s-node05   Ready     <none>    18h       v1.11.1
 
 #### Requirements
 
+* All k8s Worker nodes have to sync Time (e.g. chrony, ntp)
+* k8s worker nodes for neutron-server/nova-compute need to load openvswitch and ebtables kernel module.
+ * run contents of **host_kernel_modules_for_oaas.sh** on all woker nodes.
 * Quorum PODs (Replica is  have to **2n+1**)
  * galera-etc
  * galera
@@ -249,6 +252,10 @@ statefulset.apps/nova-compute     2         2         1m        nova-compute    
 statefulset.apps/nova-server      2         2         1m        nova-server      call518/oaas-ocata
 statefulset.apps/rabbitmq         3         3         1m        rabbitmq         call518/oaas-rabbitmq
 ```
+
+### Open Horizon Dashboard
+
+> In browser, **http://[One_of_worker_nodes]:30080**
 
 ### ScreenShots
 
