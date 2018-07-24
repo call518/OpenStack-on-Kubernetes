@@ -260,17 +260,19 @@ statefulset.apps/rabbitmq         3         3         1m        rabbitmq        
 ### ScreenShots
 
 #### Login
-![OaaS Login](README/screenshot-horizon-login.png)
+![Horizon Login](README/screenshot-horizon-login.png)
 
 #### Overview
-![OaaS Login](README/screenshot-horizon-overview.png)
+![Horizon Overview](README/screenshot-horizon-overview.png)
 
 #### Instances
-![OaaS Login](README/screenshot-horizon-instances.png)
+![Horizon Instances](README/screenshot-horizon-instances.png)
 
 #### Network Topology
-![OaaS Login](README/screenshot-horizon-network-topology.png)
+![Horizon Network Topology](README/screenshot-horizon-network-topology.png)
 
+#### Instance Web Console
+![Horizon VM Console](README/screenshot-horizon-vm-console.png)
 
 
 Limitation
