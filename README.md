@@ -2,7 +2,7 @@ OpenStack on Kubernetes (OaaS)
 ================================
 
 * MAINTAINER: Jung-In.Jung (call518@gmail.com)
-* Term: 2018-06-20 ~ (ongoing...)
+* 2018-06-20 ~ Now
 
 
 Intro
@@ -125,6 +125,7 @@ k8s-node05   Ready     <none>    18h       v1.11.1
 #### default configs (eg. password)
 
 edit, src-ocata/configMap-env-common.yaml
+(Note) **K8S_VNC_PROXY_SERVICE_IP** must be edited. It can be one of woker nodes's ip address.
 
 ```yaml
 apiVersion: v1
