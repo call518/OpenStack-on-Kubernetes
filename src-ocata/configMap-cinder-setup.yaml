@@ -115,7 +115,8 @@ data:
     done
     echo "ok~~~~ service is ready~~!!!"
     openstack volume service list
-    chown -R cinder:cinder /var/lib/cinder/mnt
+    #chown -R cinder:cinder /var/lib/cinder/mnt
+    #chmod 777 /var/lib/cinder/mnt/*
     touch /.setup_completed
     tail -F /var/log/syslog /var/log/cinder/* /var/log/apache2/*
 
@@ -139,7 +140,9 @@ data:
     nfs_mount_attempts = 3
     nfs_mount_options = v4
     nfs_qcow2_volumes = true
-    #nfs_snapshot_support = true
+    nfs_snapshot_support = true
+    nas_secure_file_permissions = false
+    nas_secure_file_operations = false
     [BACKEND]
     [BRCD_FABRIC_EXAMPLE]
     [CISCO_FABRIC_EXAMPLE]

@@ -98,6 +98,7 @@ spec:
         mkdir -p /data/pv/nova-compute-lock_path;
         mkdir -p /data/pv/nova-compute-images;
         mkdir -p /data/pv/nova-compute-instances;
+        chmod 777 /data/pv/cinder-*
         /usr/bin/nfsd.sh;
     lifecycle:
       preStop:

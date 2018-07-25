@@ -178,7 +178,7 @@ data:
 ```bash
 [k8s-master]# git clone [here]
 
-[k8s-master]# OpenStack-on-Kubernetes/src-ocata
+[k8s-master]# cd OpenStack-on-Kubernetes/src-ocata
 
 [k8s-master]# ./start-oaas.sh
 ```

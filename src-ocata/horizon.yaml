@@ -114,6 +114,28 @@ spec:
         - name: init-container-scripts
           mountPath: /init-container-scripts
         command: ["/bin/bash","-c","/init-container-scripts/init-check-glance.sh"]
+      - name: wait5
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        image: call518/oaas-init-container
+        envFrom:
+          - configMapRef:
+              name: env-common
+        volumeMounts:
+        - name: init-container-scripts
+          mountPath: /init-container-scripts
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-cinder.sh"]
+      - name: wait6
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        image: call518/oaas-init-container
+        envFrom:
+          - configMapRef:
+              name: env-common
+        volumeMounts:
+        - name: init-container-scripts
+          mountPath: /init-container-scripts
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-nova-server.sh"]
       hostAliases:
       - ip: "127.0.0.1"
         hostnames:
