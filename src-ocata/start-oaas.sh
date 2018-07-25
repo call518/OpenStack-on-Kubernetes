@@ -7,6 +7,7 @@ kubectl label nodes k8s-node04 compute=true
 kubectl label nodes k8s-node05 compute=true
 
 ./update-configMap-env-common.sh
+./update-configMap-init-container-scripts.sh
 
 ./create-all-pv-pvc.sh
 

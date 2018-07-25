@@ -76,25 +76,10 @@ spec:
         envFrom:
           - configMapRef:
               name: env-common
-        command:
-          - /bin/bash
-          - -c
-          - >
-            QUERY_WSREP_READY="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_READY';";
-            QUERY_WSREP_CLUSTER_SIZE="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_CLUSTER_SIZE';";
-            QUERY_WSREP_CLUSTER_STATUS="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_CLUSTER_STATUS';";
-            QUERY_WSREP_LOCAL_STATE_COMMENT="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_LOCAL_STATE_COMMENT';";
-            until [ "$WSREP_READY" == "ON" ] && [ "$WSREP_CLUSTER_SIZE" == "3" ] && [ "$WSREP_CLUSTER_STATUS" == "Primary" ] && [ "$WSREP_LOCAL_STATE_COMMENT" == "Synced" ];
-            do
-              ping -c 1 -W 1 haproxy-galera 2>&1 >/dev/null;
-              echo "`date +"[%Y-%m-%d %H:%M:%S]"` haproxy-galera is not ready..... waiting...";
-              WSREP_READY=$(mysql --connect-timeout=3 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_READY" 2>1 2> /dev/null;);
-              WSREP_CLUSTER_SIZE=$(mysql --connect-timeout=3 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_SIZE" 2>1 2> /dev/null;);
-              WSREP_CLUSTER_STATUS=$(mysql --connect-timeout=3 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_STATUS" 2>1 2> /dev/null;);
-              WSREP_LOCAL_STATE_COMMENT=$(mysql --connect-timeout=3 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_LOCAL_STATE_COMMENT" 2>1 2> /dev/null;);
-              sleep 5;
-            done;
-            echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ haproxy-galera is ready~~";
+        volumeMounts:
+        - name: init-container-scripts
+          mountPath: /init-container-scripts
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-haproxy.sh"]
       - name: wait2
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
@@ -102,26 +87,10 @@ spec:
         envFrom:
           - configMapRef:
               name: env-common
-        command:
-          - /bin/bash
-          - -c
-          - >
-            RETURN=1;
-            CURRENT_CONNECTIONS=-1;
-            until [ $RETURN -eq 0 ];
-            do
-              echo "`date +"[%Y-%m-%d %H:%M:%S]"` memcached is not ready..... waiting...";
-              CURRENT_CONNECTIONS=$((echo stats ; echo quit) | nc memcached 11211 | awk '/curr_connections/ {print $3}' | tr -d '\015');
-              RETURN=$?;
-              sleep 5;
-            done;
-            UPTIME=$((echo stats ; echo quit) | nc memcached 11211 | awk '/uptime/ {print $3}' | tr -d '\015');
-            until [ $CURRENT_CONNECTIONS -gt 0 ] && [ $UPTIME -gt 0 ];
-            do
-              echo "`date +"[%Y-%m-%d %H:%M:%S]"` memcached is not ready..... waiting...";
-              sleep 5;
-            done;
-            echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ memcached is ready~~";
+        volumeMounts:
+        - name: init-container-scripts
+          mountPath: /init-container-scripts
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-memcached.sh"]
       - name: wait3
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
@@ -129,20 +98,10 @@ spec:
         envFrom:
           - configMapRef:
               name: env-common
-        command:
-          - /bin/bash
-          - -c
-          - >
-            R0_ALIVENESS=$(curl --connect-timeout 3 -s -u $K8S_RABBITMQ_ADMIN_USER:$K8S_RABBITMQ_ADMIN_PASS "http://rabbitmq-0.rabbitmq:15672/api/aliveness-test/%2F");
-            R1_ALIVENESS=$(curl --connect-timeout 3 -s -u $K8S_RABBITMQ_ADMIN_USER:$K8S_RABBITMQ_ADMIN_PASS "http://rabbitmq-1.rabbitmq:15672/api/aliveness-test/%2F");
-            R2_ALIVENESS=$(curl --connect-timeout 3 -s -u $K8S_RABBITMQ_ADMIN_USER:$K8S_RABBITMQ_ADMIN_PASS "http://rabbitmq-2.rabbitmq:15672/api/aliveness-test/%2F");
-            until [ "$R0_ALIVENESS" == "{\"status\":\"ok\"}" ] && [ "$R1_ALIVENESS" == "{\"status\":\"ok\"}" ] && [ "$R2_ALIVENESS" == "{\"status\":\"ok\"}" ];
-            do
-              ping -c 1 -W 1 rabbitmq 2>&1 >/dev/null
-              echo "`date +"[%Y-%m-%d %H:%M:%S]"` rabbitmq is not ready..... waiting...";
-              sleep 5;
-            done;
-            echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ rabbitmq is ready~~";
+        volumeMounts:
+        - name: init-container-scripts
+          mountPath: /init-container-scripts
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-rabbitmq.sh"]
       hostAliases:
       - ip: "127.0.0.1"
         hostnames:
@@ -186,6 +145,10 @@ spec:
           ##  initialDelaySeconds: 5
           ##  periodSeconds: 10
       volumes:
+      - name: init-container-scripts
+        configMap:
+          name: init-container-scripts
+          defaultMode: 0755
       - name: keystone-setup
         configMap:
           name: keystone-setup

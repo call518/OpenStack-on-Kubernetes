@@ -77,25 +77,10 @@ spec:
         envFrom:
           - configMapRef:
               name: env-common
-        command:
-          - /bin/bash
-          - -c
-          - >
-            QUERY_WSREP_READY="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_READY';";
-            QUERY_WSREP_CLUSTER_SIZE="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_CLUSTER_SIZE';";
-            QUERY_WSREP_CLUSTER_STATUS="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_CLUSTER_STATUS';";
-            QUERY_WSREP_LOCAL_STATE_COMMENT="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_LOCAL_STATE_COMMENT';";
-            until [ "$WSREP_READY" == "ON" ] && [ "$WSREP_CLUSTER_SIZE" == "3" ] && [ "$WSREP_CLUSTER_STATUS" == "Primary" ] && [ "$WSREP_LOCAL_STATE_COMMENT" == "Synced" ];
-            do
-              ping -c 1 -W 1 haproxy-galera 2>&1 >/dev/null
-              echo "`date +"[%Y-%m-%d %H:%M:%S]"` haproxy-galera is not ready..... waiting...";
-              WSREP_READY=$(mysql --connect-timeout=3 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_READY" 2>1 2> /dev/null;);
-              WSREP_CLUSTER_SIZE=$(mysql --connect-timeout=3 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_SIZE" 2>1 2> /dev/null;);
-              WSREP_CLUSTER_STATUS=$(mysql --connect-timeout=3 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_STATUS" 2>1 2> /dev/null;);
-              WSREP_LOCAL_STATE_COMMENT=$(mysql --connect-timeout=3 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_LOCAL_STATE_COMMENT" 2>1 2> /dev/null;);
-              sleep 5;
-            done;
-            echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ haproxy-galera is ready~~";
+        volumeMounts:
+        - name: init-container-scripts
+          mountPath: /init-container-scripts
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-haproxy.sh"]
       - name: wait2
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
@@ -103,26 +88,10 @@ spec:
         envFrom:
           - configMapRef:
               name: env-common
-        command:
-          - /bin/bash
-          - -c
-          - >
-            RETURN=1;
-            CURRENT_CONNECTIONS=-1;
-            until [ $RETURN -eq 0 ];
-            do
-              echo "`date +"[%Y-%m-%d %H:%M:%S]"` memcached is not ready..... waiting...";
-              CURRENT_CONNECTIONS=$((echo stats ; echo quit) | nc memcached 11211 | awk '/curr_connections/ {print $3}' | tr -d '\015');
-              RETURN=$?;
-              sleep 5;
-            done;
-            UPTIME=$((echo stats ; echo quit) | nc memcached 11211 | awk '/uptime/ {print $3}' | tr -d '\015');
-            until [ $CURRENT_CONNECTIONS -gt 0 ] && [ $UPTIME -gt 0 ];
-            do
-              echo "`date +"[%Y-%m-%d %H:%M:%S]"` memcached is not ready..... waiting...";
-              sleep 5;
-            done;
-            echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ memcached is ready~~";
+        volumeMounts:
+        - name: init-container-scripts
+          mountPath: /init-container-scripts
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-memcached.sh"]
       - name: wait3
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
@@ -130,19 +99,10 @@ spec:
         envFrom:
           - configMapRef:
               name: env-common
-        command:
-          - /bin/bash
-          - -c
-          - >
-            until [ "$API_35357" == "\"stable\"" ] && [ "$API_5000" == "\"stable\"" ];
-            do
-              ping -c 1 -W 1 keystone 2>&1 >/dev/null
-              API_35357=$(curl --connect-timeout 3 -s "http://keystone:35357" | jq ".versions.values[0].status");
-              API_5000=$(curl --connect-timeout 3 -s "http://keystone:5000" | jq ".versions.values[0].status");
-              echo "`date +"[%Y-%m-%d %H:%M:%S]"` keystone is not ready..... waiting...";
-              sleep 5;
-            done;
-            echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ keystone is ready~~";
+        volumeMounts:
+        - name: init-container-scripts
+          mountPath: /init-container-scripts
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-keystone.sh"]
       - name: wait4
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
@@ -150,18 +110,10 @@ spec:
         envFrom:
           - configMapRef:
               name: env-common
-        command:
-          - /bin/bash
-          - -c
-          - >
-            until [ "$API_9292" == "\"CURRENT\"" ];
-            do
-              ping -c 1 -W 1 keystone 2>&1 >/dev/null
-              API_9292=$(curl --connect-timeout 3 -s "http://glance:9292" | jq ".versions[0].status");
-              echo "`date +"[%Y-%m-%d %H:%M:%S]"` glance is not ready..... waiting...";
-              sleep 5;
-            done;
-            echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ glance is ready~~";
+        volumeMounts:
+        - name: init-container-scripts
+          mountPath: /init-container-scripts
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-glance.sh"]
       hostAliases:
       - ip: "127.0.0.1"
         hostnames:
@@ -202,6 +154,10 @@ spec:
           ##  initialDelaySeconds: 5
           ##  periodSeconds: 10
       volumes:
+      - name: init-container-scripts
+        configMap:
+          name: init-container-scripts
+          defaultMode: 0755
       - name: horizon-setup
         configMap:
           name: horizon-setup

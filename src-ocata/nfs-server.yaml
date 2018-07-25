@@ -40,16 +40,10 @@ spec:
     envFrom:
       - configMapRef:
           name: env-common
-    command:
-      - /bin/bash
-      - -c
-      - >
-        until [ "`curl --connect-timeout 3 -s -L \"http://$DISCOVERY_SERVICE/health\"`" == "{\"health\":\"true\"}" ];
-        do
-          echo "`date +"[%Y-%m-%d %H:%M:%S]"` etcd is not ready..... waiting...";
-          sleep 5;
-        done;
-        echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ etcd is ready~~";
+    volumeMounts:
+    - name: init-container-scripts
+      mountPath: /init-container-scripts
+    command: ["/bin/bash","-c","/init-container-scripts/init-check-etcd.sh"]
   containers:
   - name: nfs-server
     image: call518/oaas-nfs-server
@@ -114,6 +108,10 @@ spec:
           - >
             curl -s -L "http://$DISCOVERY_SERVICE/v2/keys/oaas/$K8S_NFS_SERVER_IP_ETC_KEY" -XDELETE;
   volumes:
+  - name: init-container-scripts
+    configMap:
+      name: init-container-scripts
+      defaultMode: 0755
   - name: pvc-nfs-server
     persistentVolumeClaim:
       claimName: pvc-nfs-server

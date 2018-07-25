@@ -20,6 +20,7 @@ if [ "$1" != "--force" ]; then
     #for pod in $(kubectl get all | awk '/^pod/ {print $1}'); do kubectl delete $pod --grace-period=0 --force; done
     
     kubectl delete configmap env-common
+    kubectl delete configmap init-container-scripts
     kubectl delete configmap keystone-setup
     kubectl delete configmap glance-setup
     kubectl delete configmap cinder-setup
