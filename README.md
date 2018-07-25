@@ -1,14 +1,17 @@
 OpenStack on Kubernetes (OaaS)
 ================================
 
-* MAINTAINER: Jung-In.Jung (call518@gmail.com)
-* 2018-06-20 ~ Now
+# Greetings
 
+> Hey guys, This is my toy project. If you are interested in this, please contact me. Welcome anytime. Have nice day~~!!!
 
 Intro
 ================================
 
 * **OaaS** is "**OpenStack as a Service**".
+
+* MAINTAINER: Jung-In.Jung (call518@gmail.com)
+* 2018-06-20 ~ Now
 
 ### Features
 
@@ -171,6 +174,7 @@ data:
   K8S_DEMO_SUBNET_CIDR: "172.16.0.0/24"
   K8S_DEMO_SUBNET_GW: "172.16.0.1"
   K8S_DEMO_SUBNET_DNS: "8.8.8.8"
+  K8S_VNC_PROXY_SERVICE_IP: "192.168.0.151"
 ```
 
 ### Initiate Deploying OpenStack
@@ -189,52 +193,52 @@ data:
 [k8s-master]# kubectl get all -o wide
 NAME                           READY     STATUS              RESTARTS   AGE       IP              NODE
 pod/cinder-0                   1/1       Running             0          1m        10.244.3.18     k8s-node03
-pod/cinder-1                   1/1       Running             0          1m        10.244.3.18     k8s-node02
+pod/cinder-1                   1/1       Running             0          1m        10.244.2.48     k8s-node02
 pod/etcd0                      1/1       Running             0          1m        10.244.3.16     k8s-node03
 pod/etcd1                      1/1       Running             0          1m        10.244.2.16     k8s-node02
 pod/etcd2                      1/1       Running             0          1m        10.244.1.18     k8s-node01
 pod/galera-0                   1/1       Running             0          1m        10.244.3.20     k8s-node03
-pod/galera-1                   1/1       Running             0          1m        10.244.3.20     k8s-node01
+pod/galera-1                   1/1       Running             0          1m        10.244.2.14     k8s-node01
 pod/galera-2                   1/1       Running             0          1m        10.244.3.20     k8s-node02
 pod/glance-0                   1/1       Running             0          1m        10.244.2.20     k8s-node02
 pod/glance-1                   1/1       Running             0          1m        10.244.2.20     k8s-node01
 pod/haproxy-6c79f76c5f-9fxlj   1/1       Running             0          1m        10.244.2.17     k8s-node02
 pod/horizon-8595cdb556-ln5db   1/1       Running             0          1m        10.244.2.19     k8s-node02
 pod/keystone-0                 1/1       Running             0          1m        10.244.1.20     k8s-node01
-pod/keystone-1                 1/1       Running             0          1m        10.244.1.20     k8s-node03
+pod/keystone-1                 1/1       Running             0          1m        10.244.2.21     k8s-node03
 pod/memcached-0                1/1       Running             0          1m        10.244.2.18     k8s-node02
 pod/memcached-1                1/1       Running             0          1m        10.244.1.19     k8s-node01
 pod/memcached-2                1/1       Running             0          1m        10.244.3.17     k8s-node03
-pod/neutron-server-0           1/1       Running             0          1m        192.168.0.152   k8s-node02
-pod/neutron-server-1           1/1       Running             0          1m        192.168.0.152   k8s-node03
+pod/neutron-server-0           1/1       Running             0          1m        10.244.2.108    k8s-node02
+pod/neutron-server-1           1/1       Running             0          1m        10.244.2.87     k8s-node03
 pod/nfs-server                 1/1       Running             0          2m        10.244.1.17     k8s-node01
 pod/nova-compute-0             1/1       Running             0          1m        10.244.5.5      k8s-node05
 pod/nova-compute-1             1/1       Running             0          1m        10.244.4.4      k8s-node04
 pod/nova-server-0              1/1       Running             0          1m        10.244.1.21     k8s-node01
-pod/nova-server-1              1/1       Running             0          1m        10.244.1.21     k8s-node02
-pod/rabbitmq-0                 1/1       Running             0          1m        <none>          k8s-node03
-pod/rabbitmq-1                 1/1       Running             0          1m        <none>          k8s-node02
-pod/rabbitmq-2                 1/1       Running             0          1m        <none>          k8s-node01
+pod/nova-server-1              1/1       Running             0          1m        10.244.2.123    k8s-node02
+pod/rabbitmq-0                 1/1       Running             0          1m        10.244.1.134    k8s-node03
+pod/rabbitmq-1                 1/1       Running             0          1m        10.244.2.111    k8s-node02
+pod/rabbitmq-2                 1/1       Running             0          1m        10.244.3.125    k8s-node01
 
 NAME                          TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)                               AGE       SELECTOR
-service/cinder                ClusterIP   None             <none>        8776/TCP                              3m        app=cinder
-service/etcd-client           ClusterIP   10.110.131.251   <none>        2379/TCP                              3m        app=etcd
-service/etcd0                 ClusterIP   10.102.216.231   <none>        2379/TCP,2380/TCP                     3m        etcd_node=etcd0
-service/etcd1                 ClusterIP   10.105.13.88     <none>        2379/TCP,2380/TCP                     3m        etcd_node=etcd1
-service/etcd2                 ClusterIP   10.102.221.20    <none>        2379/TCP,2380/TCP                     3m        etcd_node=etcd2
-service/galera                ClusterIP   None             <none>        3306/TCP                              3m        app=galera
-service/glance                ClusterIP   None             <none>        9292/TCP,9191/TCP                     3m        app=glance
-service/haproxy-galera        ClusterIP   None             <none>        3306/TCP                              3m        app=haproxy
-service/haproxy-stats         NodePort    10.104.13.149    <none>        9000:30090/TCP                        3m        app=haproxy
-service/horizon               NodePort    10.96.152.72     <none>        80:30080/TCP                          3m        app=horizon
-service/keystone              ClusterIP   None             <none>        5000/TCP,35357/TCP                    3m        app=keystone
-service/kubernetes            ClusterIP   10.96.0.1        <none>        443/TCP                               21h       <none>
-service/memcached             ClusterIP   None             <none>        11211/TCP                             3m        app=memcached
-service/neutron-server        ClusterIP   None             <none>        9696/TCP                              3m        app=neutron-server
-service/nova-compute          ClusterIP   None             <none>        8774/TCP,8775/TCP,6080/TCP            3m        app=nova-compute
-service/nova-server           ClusterIP   None             <none>        8774/TCP,8778/TCP,8775/TCP,6080/TCP   3m        app=nova-server
-service/rabbitmq              ClusterIP   None             <none>        5672/TCP,4369/TCP,25672/TCP           3m        app=rabbitmq
-service/rabbitmq-management   ClusterIP   None             <none>        15672/TCP                             3m        app=rabbitmq
+service/cinder                ClusterIP   None             <none>        8776/TCP                                                      7h        app=cinder
+service/etcd-client           ClusterIP   10.110.4.252     <none>        2379/TCP                                                      7h        app=etcd
+service/etcd0                 ClusterIP   10.104.155.139   <none>        2379/TCP,2380/TCP                                             7h        etcd_node=etcd0
+service/etcd1                 ClusterIP   10.98.92.241     <none>        2379/TCP,2380/TCP                                             7h        etcd_node=etcd1
+service/etcd2                 ClusterIP   10.111.254.15    <none>        2379/TCP,2380/TCP                                             7h        etcd_node=etcd2
+service/galera                ClusterIP   None             <none>        3306/TCP                                                      7h        app=galera
+service/glance                ClusterIP   None             <none>        9292/TCP,9191/TCP                                             7h        app=glance
+service/haproxy-galera        ClusterIP   None             <none>        3306/TCP                                                      7h        app=haproxy
+service/haproxy-stats         NodePort    10.103.116.220   <none>        9000:30090/TCP                                                7h        app=haproxy
+service/horizon               NodePort    10.99.222.154    <none>        80:30080/TCP                                                  7h        app=horizon
+service/keystone              ClusterIP   None             <none>        5000/TCP,35357/TCP                                            7h        app=keystone
+service/kubernetes            ClusterIP   10.96.0.1        <none>        443/TCP                                                       2d        <none>
+service/memcached             ClusterIP   None             <none>        11211/TCP                                                     7h        app=memcached
+service/neutron-server        ClusterIP   None             <none>        9696/TCP                                                      7h        app=neutron-server
+service/nova-compute          ClusterIP   None             <none>        8774/TCP,8775/TCP,6080/TCP                                    7h        app=nova-compute
+service/nova-server           NodePort    10.97.139.99     <none>        8774:32626/TCP,8778:30445/TCP,8775:30588/TCP,6080:30068/TCP   7h        app=nova-server
+service/rabbitmq              ClusterIP   None             <none>        5672/TCP,4369/TCP,25672/TCP                                   7h        app=rabbitmq
+service/rabbitmq-management   ClusterIP   None             <none>        15672/TCP                                                     7h        app=rabbitmq
 
 NAME                      DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE       CONTAINERS   IMAGES                 SELECTOR
 deployment.apps/haproxy   1         1         1            0           1m        haproxy      call518/oaas-haproxy   app=haproxy
@@ -276,16 +280,6 @@ statefulset.apps/rabbitmq         3         3         1m        rabbitmq        
 
 #### Instance Web Console
 ![Horizon VM Console](README/screenshot-horizon-vm-console.png)
-
-
-Limitation
-================================
-
-* Not support "volume snapshot", "volume backup"
- * because, in nfs-backend mode, cinder can not support it.
-* Currently, we can not access to floating-ips from external.
- * we are trying to solve this...
-
 
 TODO
 ================================
