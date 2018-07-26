@@ -23,11 +23,11 @@ Intro
 * MAINTAINER: Jung-In.Jung (call518@gmail.com)
 * 2018-06-20 ~ Now
 
-### Features
+### Goals
 
-* Auto-Provisioning Based on Kubernetes(k8s).
-* Micro-Service for Scalable LB/HA.
-* Support Many OpenStack Releases. (Newton/Ocata/Pike/Queens/...)
+* Auto-Provisioning OpenStack, Based on Kubernetes(k8s).
+* Scalaing for LB/HA.
+* Supoort Provisioning Almost OpenStack Releases. (Newton/Ocata/Pike/Queens/...)
 * Simple and Dynamic Configuration.
 * Auto Failover/Failback.
 
@@ -39,7 +39,7 @@ Intro
 
 ![OaaS Netowkring](README/OaaS-Networking.png)
 
-### Current Status
+### Progress
 
 * **memcached** (Completed)
 * **rabbitmq** (Completed)
