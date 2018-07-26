@@ -66,11 +66,11 @@ Tutorial
 
 > (Note) Maybe, you need much RAM. if not, reduce number of replicas.
 
-* OS CentOS7 x86_64
-* 2EA vCPUs
-* 8G vRAM
-* 100GB vDisk
-* 1EA NIC
+* CentOS-7 x86_64
+* 2 EA vCPUs
+* 8 GB vRAM
+* 100 GB vDisk
+* 1 EA NIC
 
 #### Spec. of K8S
 
@@ -263,6 +263,17 @@ statefulset.apps/rabbitmq         3         3         1m        rabbitmq        
 ### Open Horizon Dashboard
 
 > In browser, **http://[One_of_worker_nodes]:30080**
+
+### Scaling
+
+> (Note) Maybe, needed more worker nodes...
+
+```bash
+<Examples>
+
+[k8s-master]# kubectl scale --replicas=4 statefulset.apps/cinder
+[k8s-master]# kubectl scale --replicas=5 statefulset.apps/galera (must 2n+1)
+```
 
 ### ScreenShots
 
