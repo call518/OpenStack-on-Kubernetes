@@ -48,7 +48,7 @@ metadata:
 spec:
   serviceName: "nova-compute"
   #replicas: 3
-  replicas: 2
+  replicas: 1
   #podManagementPolicy: OrderedReady
   podManagementPolicy: Parallel
   selector:
