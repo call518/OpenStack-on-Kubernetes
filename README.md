@@ -5,14 +5,14 @@ OpenStack on Kubernetes (OaaS)
 
 > Hi! all, Welcome to my project. I hope this will be useful thing. :)
 
-> ps) And I hope that some guy help me. If you are interested in this, please contact me. thank you.
+> p.s. And I hope that some guy help me. If you are interested in this, please contact me. thank you.
 
 # Repositories
 
-### Main Repository
+### Active Repository (GitHub)
 https://github.com/call518/OpenStack-on-Kubernetes
 
-### Mirror Repository (GitLab)
+### Mirrored Repository (GitLab)
 https://gitlab.com/call518/OpenStack-on-Kubernetes
 
 Intro
