@@ -93,9 +93,9 @@ spec:
         mkdir -p /data/pv/zookeeper-{0,1,2};
         mkdir -p /data/pv/cinder-volumes;
         mkdir -p /data/pv/cinder-backups;
-        mkdir -p /data/pv/cinder-lock_path;
-        mkdir -p /data/pv/nova-server-lock_path;
-        mkdir -p /data/pv/nova-compute-lock_path;
+        #mkdir -p /data/pv/cinder-lock_path;
+        #mkdir -p /data/pv/nova-server-lock_path;
+        #mkdir -p /data/pv/nova-compute-lock_path;
         mkdir -p /data/pv/nova-compute-images;
         mkdir -p /data/pv/nova-compute-instances;
         chmod 777 /data/pv/cinder-*

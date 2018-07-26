@@ -100,7 +100,7 @@ data:
     #mkdir -p /usr/lib/python2.7/dist-packages/keys
     mkdir -p $(python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/keys
     mkdir -p /var/lib/nova/lock
-    mount -t nfs4 $NFS_BACKEND_HOST_IP:/pv/nova-server-lock_path /var/lib/nova/lock
+    #mount -t nfs4 $NFS_BACKEND_HOST_IP:/pv/nova-server-lock_path /var/lib/nova/lock
     chown -R nova:nova /var/lib/nova/lock
     service nova-api restart
     service nova-consoleauth restart

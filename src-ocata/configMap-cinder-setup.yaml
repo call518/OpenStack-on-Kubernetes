@@ -100,7 +100,7 @@ data:
       su -s /bin/sh -c "cinder-manage db sync" cinder
     fi
     mkdir -p /var/lib/cinder/lock
-    mount -t nfs4 $NFS_BACKEND_HOST_IP:/pv/cinder-lock_path /var/lib/cinder/lock
+    #mount -t nfs4 $NFS_BACKEND_HOST_IP:/pv/cinder-lock_path /var/lib/cinder/lock
     chown -R cinder:cinder /var/lib/cinder/lock
     service cinder-volume restart
     service cinder-scheduler restart
