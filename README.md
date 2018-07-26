@@ -129,8 +129,7 @@ k8s-node05   Ready     <none>    18h       v1.11.1
 
 #### default configs (eg. password)
 
-edit, src-ocata/configMap-env-common.yaml
-(Note) **K8S_VNC_PROXY_SERVICE_IP** must be edited. It can be one of woker nodes's ip address.
+check main env file, **src-ocata/configMap-env-common.yaml**
 
 ```yaml
 apiVersion: v1

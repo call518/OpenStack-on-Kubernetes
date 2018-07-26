@@ -3,6 +3,7 @@ kind: ConfigMap
 metadata:
   name: env-common
 data:
+  K8S_OPENSTACK_RELEASE: "ocata"
   MYSQL_ROOT_PASSWORD: "passw0rd"
   DISCOVERY_SERVICE: "etcd-client:2379"
   XTRABACKUP_PASSWORD: "passw0rd"
@@ -39,4 +40,3 @@ data:
   K8S_DEMO_SUBNET_CIDR: "172.16.0.0/24"
   K8S_DEMO_SUBNET_GW: "172.16.0.1"
   K8S_DEMO_SUBNET_DNS: "8.8.8.8"
-  K8S_VNC_PROXY_SERVICE_IP: "192.168.0.151"

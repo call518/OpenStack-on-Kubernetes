@@ -48,7 +48,7 @@ metadata:
 spec:
   serviceName: "nova-compute"
   #replicas: 3
-  replicas: 2
+  replicas: 1
   #podManagementPolicy: OrderedReady
   podManagementPolicy: Parallel
   selector:
@@ -157,6 +157,10 @@ spec:
             #  valueFrom:
             #    fieldRef:
             #      fieldPath: metadata.namespace
+            - name: MY_NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
             - name: MY_POD_IP
               valueFrom:
                 fieldRef:

@@ -19,6 +19,7 @@ data:
     sed -i "s/___K8S_KEYSTONE_USER_NOVA_PASS___/$K8S_KEYSTONE_USER_NOVA_PASS/g" /etc/nova/nova.conf
     sed -i "s/___K8S_KEYSTONE_USER_PLACEMENT_PASS___/$K8S_KEYSTONE_USER_PLACEMENT_PASS/g" /etc/nova/nova.conf
     sed -i "s/___K8S_METADATA_PROXY_SHARED_SECRET___/$K8S_METADATA_PROXY_SHARED_SECRET/g" /etc/nova/nova.conf
+    sed -i "s/___MY_NODE_IP___/$MY_NODE_IP/g" /etc/nova/nova.conf
     sed -i "s/___MY_IP___/$MY_POD_IP/g" /etc/nova/nova.conf
     cat > /root/admin-openrc << EOF
     export OS_PROJECT_DOMAIN_NAME=default
@@ -231,11 +232,12 @@ data:
     [vmware]
     [vnc]
     enabled = true
-    vncserver_listen = $my_ip
+    vncserver_listen = 0.0.0.0
     vncserver_proxyclient_address = $my_ip
     #novncproxy_host = $my_ip
     #novncproxy_port = 6080
     #novncproxy_base_url = http://nova-server:6080/vnc_auto.html
+    novncproxy_base_url = http://___MY_NODE_IP___:30068/vnc_auto.html
     [workarounds]
     [wsgi]
     [xenserver]
