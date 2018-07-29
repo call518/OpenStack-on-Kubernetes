@@ -127,18 +127,15 @@ k8s-node05   Ready     <none>    18h       v1.11.1
 
 ## Deploy Tutorial
 
-> (Note) Now, OpenStack Release is separated. but soon all will be integrated by yaml template.
-> (Do not use src-newton, it will be removed....)
-
 #### Requirements
 
 * All k8s Worker nodes have to sync Time (e.g. chrony, ntp)
 * k8s worker nodes for neutron-server/nova-compute need to load openvswitch and ebtables kernel module.
- * run contents of **host_kernel_modules_for_oaas.sh** on all woker nodes.
+  * run contents of **host_kernel_modules_for_oaas.sh** on all woker nodes.
 * Quorum PODs (Replica is  have to **2n+1**)
- * galera-etc
- * galera
- * rabbitmq
+  * galera-etc
+  * galera
+  * rabbitmq
 
 #### default configs (eg. password)
 
