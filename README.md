@@ -62,8 +62,8 @@ Tutorial
 
 ## System Env. & Arch.
 
-** PHYSICAL MACHINES ENVIRONMENT IS RECOMMENDED.**
-(Note) VM Env is so slow, and sometimes NFS I/O hang and failed.
+** IF MULTIPLE COMPONENT PROVISIONING IS NEEDED, THEN PHYSICAL MACHINES ENVIRONMENT IS RECOMMENDED.**
+(Note) VM Env is so slow, and sometimes NFS I/O hang and failed. So if tutorial is in VM, I recommended running one replica=1.
 
 ### System Diagram
 

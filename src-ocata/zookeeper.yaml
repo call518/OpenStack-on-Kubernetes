@@ -75,10 +75,10 @@ spec:
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
         image: "k8s.gcr.io/kubernetes-zookeeper:1.0-3.4.10"
-        resources:
-          requests:
-            memory: "1Gi"
-            cpu: "0.5"
+#        resources:
+#          requests:
+#            memory: "1Gi"
+#            cpu: "0.5"
         ports:
         - containerPort: 2181
           name: client
