@@ -62,6 +62,9 @@ Tutorial
 
 ## System Env. & Arch.
 
+** PHYSICAL MACHINES ENVIRONMENT IS RECOMMENDED.**
+(Note) VM Env is so slow, and sometimes NFS I/O hang and failed.
+
 ### System Diagram
 
 (TODO - Diagram)
