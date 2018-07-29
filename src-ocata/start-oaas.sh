@@ -11,6 +11,7 @@ kubectl label nodes k8s-node05 compute=true
 
 ./create-all-pv-pvc.sh
 
+./update-configMap-openstack-openrc.sh
 ./update-configMap-keystone-setup.sh
 ./update-configMap-glance-setup.sh
 ./update-configMap-cinder-setup.sh

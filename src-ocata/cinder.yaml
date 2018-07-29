@@ -42,7 +42,7 @@ metadata:
     app: cinder
 spec:
   serviceName: "cinder"
-  replicas: 1
+  replicas: 2
   podManagementPolicy: OrderedReady
   #podManagementPolicy: Parallel
   selector:
@@ -165,6 +165,8 @@ spec:
           ports:
             - containerPort: 8776
           volumeMounts:
+          - name: openstack-openrc
+            mountPath: /root/openrc
           - name: cinder-setup
             mountPath: /scripts
 #          - name: pvc-cinder-volumes
@@ -196,6 +198,10 @@ spec:
       - name: cinder-setup
         configMap:
           name: cinder-setup
+          defaultMode: 0755
+      - name: openstack-openrc
+        configMap:
+          name: openstack-openrc
           defaultMode: 0755
 #      - name: pvc-cinder-volumes
 #        persistentVolumeClaim:

@@ -28,6 +28,7 @@ if [ "$1" != "--force" ]; then
     kubectl delete configmap nova-server-setup
     kubectl delete configmap nova-compute-setup
     kubectl delete configmap horizon-setup
+    kubectl delete configmap openstack-openrc
     
     kubectl delete secret keystone-fernet-keys
     #kubectl delete secret mongodb-secret

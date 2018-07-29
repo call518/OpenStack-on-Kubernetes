@@ -15,27 +15,7 @@ data:
     sed -i "s/___K8S_RABBITMQ_OPENSTACK_USER___/$K8S_RABBITMQ_OPENSTACK_USER/g" /etc/glance/glance-{api,registry}.conf
     sed -i "s/___K8S_RABBITMQ_OPENSTACK_PASS___/$K8S_RABBITMQ_OPENSTACK_PASS/g" /etc/glance/glance-{api,registry}.conf
     sed -i "s/___K8S_KEYSTONE_USER_GLANCE_PASS___/$K8S_KEYSTONE_USER_GLANCE_PASS/g" /etc/glance/glance-{api,registry}.conf
-    cat > /root/admin-openrc << EOF
-    export OS_PROJECT_DOMAIN_NAME=default
-    export OS_USER_DOMAIN_NAME=default
-    export OS_PROJECT_NAME=admin
-    export OS_USERNAME=admin
-    export OS_PASSWORD=$K8S_KEYSTONE_USER_ADMIN_PASS
-    export OS_AUTH_URL=http://keystone:35357/v3
-    export OS_IDENTITY_API_VERSION=3
-    export OS_IMAGE_API_VERSION=2
-    EOF
-    cat > /root/demo-openrc << EOF
-    export OS_PROJECT_DOMAIN_NAME=Default
-    export OS_USER_DOMAIN_NAME=Default
-    export OS_PROJECT_NAME=demo
-    export OS_USERNAME=demo
-    export OS_PASSWORD=$K8S_KEYSTONE_USER_DEMO_PASS
-    export OS_AUTH_URL=http://keystone:5000/v3
-    export OS_IDENTITY_API_VERSION=3
-    export OS_IMAGE_API_VERSION=2
-    EOF
-    source /root/admin-openrc
+    source /root/openrc/admin-openrc
     exist_glance_db=$(mysql -s -N -q -A --connect-timeout=10 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW DATABASES LIKE 'glance';" 2>/dev/null)
     if [ "X$exist_glance_db" == "X" ]; then
       mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS glance"

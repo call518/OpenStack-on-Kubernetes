@@ -42,7 +42,7 @@ metadata:
 spec:
   serviceName: "neutron-server"
   #replicas: 3
-  replicas: 1
+  replicas: 2
   podManagementPolicy: OrderedReady
   #podManagementPolicy: Parallel
   selector:
@@ -152,6 +152,8 @@ spec:
           ports:
             - containerPort: 9696
           volumeMounts:
+          - name: openstack-openrc
+            mountPath: /root/openrc
           - name: neutron-server-setup
             mountPath: /scripts
           - name: kernel-modules
@@ -179,6 +181,10 @@ spec:
       - name: init-container-scripts
         configMap:
           name: init-container-scripts
+          defaultMode: 0755
+      - name: openstack-openrc
+        configMap:
+          name: openstack-openrc
           defaultMode: 0755
       - name: neutron-server-setup
         configMap:

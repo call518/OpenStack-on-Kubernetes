@@ -92,8 +92,8 @@ spec:
       - name: galera
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
-        #image: severalnines/mariadb:10.1
-        image: call518/oaas-galera
+        image: severalnines/mariadb:10.1
+        #image: call518/oaas-galera
         ports:
         - name: mysql
           containerPort: 3306

@@ -44,7 +44,7 @@ metadata:
     app: glance
 spec:
   serviceName: "glance"
-  replicas: 1
+  replicas: 2
   podManagementPolicy: OrderedReady
   #podManagementPolicy: Parallel
   selector:
@@ -131,6 +131,8 @@ spec:
           ports:
             - containerPort: 9191
           volumeMounts:
+          - name: openstack-openrc
+            mountPath: /root/openrc
           - name: glance-setup
             mountPath: /scripts
           - name: pvc-glance-images
@@ -158,6 +160,10 @@ spec:
       - name: init-container-scripts
         configMap:
           name: init-container-scripts
+          defaultMode: 0755
+      - name: openstack-openrc
+        configMap:
+          name: openstack-openrc
           defaultMode: 0755
       - name: glance-setup
         configMap:

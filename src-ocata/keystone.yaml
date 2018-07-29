@@ -44,7 +44,7 @@ metadata:
     app: keystone
 spec:
   serviceName: "keystone"
-  replicas: 1
+  replicas: 2
   podManagementPolicy: OrderedReady
   #podManagementPolicy: Parallel
   selector:
@@ -120,6 +120,8 @@ spec:
           ports:
             - containerPort: 35357
           volumeMounts:
+          - name: openstack-openrc
+            mountPath: /root/openrc
           - name: keystone-setup
             mountPath: /scripts
           - name: keystone-fernet-keys
@@ -148,6 +150,10 @@ spec:
       - name: init-container-scripts
         configMap:
           name: init-container-scripts
+          defaultMode: 0755
+      - name: openstack-openrc
+        configMap:
+          name: openstack-openrc
           defaultMode: 0755
       - name: keystone-setup
         configMap:

@@ -44,3 +44,11 @@ spec:
        valueFrom:
          fieldRef:
            fieldPath: status.podIP
+   volumeMounts:
+   - name: openstack-openrc
+     mountPath: /root/openrc
+ volumes:
+ - name: openstack-openrc
+   configMap:
+     name: openstack-openrc
+     defaultMode: 0755

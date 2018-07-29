@@ -48,7 +48,7 @@ metadata:
 spec:
   serviceName: "nova-compute"
   #replicas: 3
-  replicas: 1
+  replicas: 2
   #podManagementPolicy: OrderedReady
   podManagementPolicy: Parallel
   selector:
@@ -183,6 +183,8 @@ spec:
             - containerPort: 8775
             - containerPort: 6080
           volumeMounts:
+          - name: openstack-openrc
+            mountPath: /root/openrc
           - name: nova-compute-setup
             mountPath: /scripts
           - name: kernel-modules
@@ -210,6 +212,10 @@ spec:
       - name: init-container-scripts
         configMap:
           name: init-container-scripts
+          defaultMode: 0755
+      - name: openstack-openrc
+        configMap:
+          name: openstack-openrc
           defaultMode: 0755
       - name: nova-compute-setup
         configMap:
