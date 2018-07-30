@@ -41,7 +41,7 @@ metadata:
     app: neutron-server
 spec:
   serviceName: "neutron-server"
-  #replicas: 3
+  ## now, replicas must be "1", because of high load-average issue. (trying to solv).
   replicas: 1
   podManagementPolicy: OrderedReady
   #podManagementPolicy: Parallel

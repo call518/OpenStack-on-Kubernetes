@@ -33,20 +33,23 @@ Intro
 
 ### Progress
 
-* **memcached** (Completed)
-* **rabbitmq** (Completed)
-* **mongodb** (Completed)
-* **etcd** (Completed)
-* **galera** (Completed)
-* **haproxy** (Completed)
-* **keystone** (Completed)
-* **glance** (Completed)
-* **nova** (Completed)
-* **neutron** (Completed)
-* **cinder** (Completed)
-* heat (TODO)
-* ceilometer (TODO)
-* **horizon** (Completed)
+* Ocata
+  * **memcached** (Completed)
+  * **rabbitmq** (Completed)
+  * **mongodb** (Completed)
+  * **etcd** (Completed)
+  * **galera** (Completed)
+  * **haproxy** (Completed)
+  * **keystone** (Completed)
+  * **glance** (Completed)
+  * **nova** (Completed)
+  * **neutron** (Completed)
+  * **cinder** (Completed)
+  * heat (TODO)
+  * ceilometer (TODO)
+  * **horizon** (Completed)
+* Integration of OpenStack Releases.
+  * (TODO: Planning...)
 
 
 Tutorial
@@ -56,6 +59,7 @@ Tutorial
 
 ** IF MULTIPLE COMPONENT PROVISIONING IS NEEDED, THEN PHYSICAL MACHINES ENVIRONMENT IS RECOMMENDED.**
 (Note) VM Env is so slow, and sometimes NFS I/O hang and failed. So if tutorial is in VM, I recommended running one replica=1.
+(Recommended Back-end Storage is CEPH.)
 
 ### System Diagram
 
@@ -80,9 +84,17 @@ Tutorial
 
 (Note) We use NFS for cinder backend storage for simple tutorial, but soon we will change to ceph back-end storage.
 
+#### Spec. of Physical Host
+
+* Processor: Intel Core i5-6500 (3.2GHz)
+* Memory: 32GB
+* Storage: HDD (2TB)
+* NIC: Intel(R) Ethernet Connection (5) I219-LM
+
 #### Spec. of each VM
 
 (Note) Maybe, you need much RAM. if not, reduce number of replicas.
+**(WARN)** if virtual machine env, **neutron-server's replicas must be "1"**, because neutron-server need too high load-average.
 
 * CentOS-7 x86_64
 * 2 EA vCPUs
