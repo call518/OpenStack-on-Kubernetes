@@ -127,6 +127,17 @@ spec:
         volumeMounts:
         - name: init-container-scripts
           mountPath: /init-container-scripts
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-neutron-server.sh"]
+      - name: wait6
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        image: call518/oaas-init-container
+        envFrom:
+          - configMapRef:
+              name: env-common
+        volumeMounts:
+        - name: init-container-scripts
+          mountPath: /init-container-scripts
         command: ["/bin/bash","-c","/init-container-scripts/init-check-nova-server.sh"]
       hostAliases:
       - ip: "127.0.0.1"

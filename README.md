@@ -7,14 +7,6 @@ OpenStack on Kubernetes (OaaS)
 
 > p.s. And I hope that some guy help me. If you are interested in this, please contact me. thank you.
 
-### Repositories
-
-#### Active Repository (GitHub)
-https://github.com/call518/OpenStack-on-Kubernetes
-
-#### Mirrored Repository (GitLab)
-https://gitlab.com/call518/OpenStack-on-Kubernetes
-
 Intro
 ================================
 
@@ -69,15 +61,28 @@ Tutorial
 
 (TODO - Diagram)
 
+### Requirements.
+
+* General Kubernetes Cluster.
+  * [kubernetes Installation guide](https://www.howtoforge.com/tutorial/centos-kubernetes-docker-cluster/)
+* All k8s Worker nodes have to sync Time (e.g. chrony, ntp)
+* k8s worker nodes for neutron-server/nova-compute need to load openvswitch/ebtables/ip_vs kernel module.
+  * run contents of **host_kernel_modules_for_oaas.sh** on all woker nodes.
+* Quorum PODs (Replica is  have to **2n+1**)
+  * galera-etc
+  * galera
+  * rabbitmq
+
+
 ### Env.
 
-> (Note) We are now testing/developing with 6 VMs on VirtualBox Env. If u want, any env is possible. (eg. physical machines)
+(Note) We are now testing/developing with 6 VMs on VirtualBox Env. If u want, any env is possible. (eg. physical machines)
 
-> (Note) We use NFS for cinder backend storage for simple tutorial, but soon we will change to ceph back-end storage.
+(Note) We use NFS for cinder backend storage for simple tutorial, but soon we will change to ceph back-end storage.
 
 #### Spec. of each VM
 
-> (Note) Maybe, you need much RAM. if not, reduce number of replicas.
+(Note) Maybe, you need much RAM. if not, reduce number of replicas.
 
 * CentOS-7 x86_64
 * 2 EA vCPUs
@@ -87,8 +92,7 @@ Tutorial
 
 #### Spec. of K8S
 
-> This is just version that i have tested.
-> (Note) [Instation guide of k8s](https://www.howtoforge.com/tutorial/centos-kubernetes-docker-cluster/)
+> This is versions of packages that i have tested.
 
 * docker-ce-18.06.0.ce-3.el7.x86_64
 * kubernetes-cni-0.6.0-0.x86_64
@@ -127,16 +131,6 @@ k8s-node05   Ready     <none>    18h       v1.11.1
 
 ## Deploy Tutorial
 
-#### Requirements
-
-* All k8s Worker nodes have to sync Time (e.g. chrony, ntp)
-* k8s worker nodes for neutron-server/nova-compute need to load openvswitch and ebtables kernel module.
-  * run contents of **host_kernel_modules_for_oaas.sh** on all woker nodes.
-* Quorum PODs (Replica is  have to **2n+1**)
-  * galera-etc
-  * galera
-  * rabbitmq
-
 #### default configs (eg. password)
 
 check main env file, **src-ocata/configMap-env-common.yaml**
@@ -147,6 +141,7 @@ kind: ConfigMap
 metadata:
   name: env-common
 data:
+  K8S_OPENSTACK_RELEASE: "ocata"
   MYSQL_ROOT_PASSWORD: "passw0rd"
   DISCOVERY_SERVICE: "etcd-client:2379"
   XTRABACKUP_PASSWORD: "passw0rd"
@@ -182,16 +177,19 @@ data:
   K8S_EXT_SUBNET_GW: "192.168.100.1"
   K8S_DEMO_SUBNET_CIDR: "172.16.0.0/24"
   K8S_DEMO_SUBNET_GW: "172.16.0.1"
-  K8S_DEMO_SUBNET_DNS: "8.8.8.8"
-  K8S_VNC_PROXY_SERVICE_IP: "192.168.0.151"
+  K8S_DEMO_SUBNET_DNS: "8.8.8.8
 ```
 
 ### Required Docker Images.
 
+* call518/oaas-init-container
+* call518/oaas-nfs-server
 * call518/oaas-etcd
 * call518/oaas-galera
 * call518/oaas-memcached
 * call518/oaas-rabbitmq
+* call518/oaas-mongodb
+* call518/oaas-haproxy
 * call518/oaas-ocata
 
 ### Initiate Deploying OpenStack
@@ -316,3 +314,25 @@ TODO
 * Re-Configuration Flat-IP Ranbe for EXT-NET.
 * (Done) ~~Simplify initContainer Check-Processing.~~
 * Integration of All of Provision Source. /w Template and ETc...
+
+
+
+Appendix
+================================
+
+## Repositories
+
+#### Active Repository (GitHub)
+https://github.com/call518/OpenStack-on-Kubernetes
+
+#### Mirrored Repository (GitLab)
+https://gitlab.com/call518/OpenStack-on-Kubernetes
+
+## References
+
+* HAProxy
+  * https://blog.bluematador.com/posts/running-haproxy-docker-containers-kubernetes/
+* MongoDB
+  * https://www.ibm.com/developerworks/cloud/library/cl-deploy-mongodb-replica-set-using-ibm-cloud-container-service/index.html
+  * https://github.com/MichaelScript/kubernetes-mongodb
+  * https://github.com/MichaelScript/kubernetes-mongodb/blob/master/mongodb.yaml

@@ -117,6 +117,16 @@ data:
     done;
     echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ cinder is ready~~";
 
+  init-check-neutron-server.sh: |
+    until [ "$NS0_API_9696" == "CURRENT" ];
+    do
+      ping -c 1 -W 1 keystone 2>&1 >/dev/null;
+      NS0_API_9696=$(curl --connect-timeout 3 -s "http://neutron-server-0.neutron-server:9696" | jq -r ".versions[0].status");
+      echo "`date +"[%Y-%m-%d %H:%M:%S]"` neutron-server is not ready..... waiting...";
+      sleep 5;
+    done;
+    echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ neutron-server is ready~~";
+
   init-check-nova-server.sh: |
     until [ "$NS0_API_8774" == "SUPPORTED" ];
     do
