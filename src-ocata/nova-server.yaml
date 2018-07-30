@@ -52,7 +52,7 @@ metadata:
 spec:
   serviceName: "nova-server"
   #replicas: 3
-  replicas: 1
+  replicas: 2
   podManagementPolicy: OrderedReady
   #podManagementPolicy: Parallel
   selector:
