@@ -7,6 +7,17 @@ data:
     #!/bin/bash
     set -e
     service rsyslog restart
+    apt-get update
+    apt-get -y install git
+    git clone https://git.openstack.org/openstack/neutron-lbaas-dashboard
+    cd neutron-lbaas-dashboard
+    git checkout stable/ocata
+    #python setup.py install
+    python setup.py sdist
+    \cp neutron_lbaas_dashboard/enabled/* /usr/share/openstack-dashboard/openstack_dashboard/local/enabled/
+    rm -f /usr/share/openstack-dashboard/openstack_dashboard/local/enabled/_1480_project_*
+    /usr/share/openstack-dashboard/manage.py collectstatic --noinput
+    /usr/share/openstack-dashboard/manage.py compress --force
     cp -a /etc/openstack-dashboard/local_settings.py /etc/openstack-dashboard/local_settings.py.default
     cat /scripts/local_settings.py > /etc/openstack-dashboard/local_settings.py
     a2dissite 000-default

@@ -45,7 +45,7 @@ metadata:
     app: horizon
 spec:
   #serviceName: "horizon"
-  replicas: 2
+  replicas: 1
   #podManagementPolicy: OrderedReady
   ##podManagementPolicy: Parallel
   selector:
@@ -73,7 +73,7 @@ spec:
       - name: wait1
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
-        image: call518/oaas-init-container
+        image: call518/oaas-init-container:1.0
         envFrom:
           - configMapRef:
               name: env-common
@@ -84,7 +84,7 @@ spec:
       - name: wait2
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
-        image: call518/oaas-init-container
+        image: call518/oaas-init-container:1.0
         envFrom:
           - configMapRef:
               name: env-common
@@ -95,7 +95,7 @@ spec:
       - name: wait3
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
-        image: call518/oaas-init-container
+        image: call518/oaas-init-container:1.0
         envFrom:
           - configMapRef:
               name: env-common
@@ -106,7 +106,7 @@ spec:
       - name: wait4
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
-        image: call518/oaas-init-container
+        image: call518/oaas-init-container:1.0
         envFrom:
           - configMapRef:
               name: env-common
@@ -117,7 +117,7 @@ spec:
       - name: wait5
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
-        image: call518/oaas-init-container
+        image: call518/oaas-init-container:1.0
         envFrom:
           - configMapRef:
               name: env-common
@@ -128,7 +128,7 @@ spec:
       - name: wait6
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
-        image: call518/oaas-init-container
+        image: call518/oaas-init-container:1.0
         envFrom:
           - configMapRef:
               name: env-common
@@ -139,7 +139,7 @@ spec:
       - name: wait7
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
-        image: call518/oaas-init-container
+        image: call518/oaas-init-container:1.0
         envFrom:
           - configMapRef:
               name: env-common
@@ -154,7 +154,7 @@ spec:
       containers:
         - name: horizon
           #image: call518/oaas-horizon
-          image: call518/oaas-ocata
+          image: call518/oaas-ocata:1.1
           #imagePullPolicy: Always
           imagePullPolicy: IfNotPresent
           envFrom:

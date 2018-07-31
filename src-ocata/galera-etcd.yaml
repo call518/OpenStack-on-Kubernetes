@@ -60,7 +60,7 @@ spec:
     #imagePullPolicy: Always
     imagePullPolicy: IfNotPresent
     #image: quay.io/coreos/etcd:latest
-    image: call518/oaas-etcd
+    image: call518/oaas-etcd:1.0
     name: etcd0
     ports:
     - containerPort: 2379
@@ -139,7 +139,7 @@ spec:
     - new
     imagePullPolicy: Always
     #image: quay.io/coreos/etcd:latest
-    image: call518/oaas-etcd
+    image: call518/oaas-etcd:1.0
     name: etcd1
     ports:
     - containerPort: 2379
@@ -218,7 +218,7 @@ spec:
     - new
     imagePullPolicy: Always
     #image: quay.io/coreos/etcd:latest
-    image: call518/oaas-etcd
+    image: call518/oaas-etcd:1.0
     name: etcd2
     ports:
     - containerPort: 2379

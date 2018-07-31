@@ -66,7 +66,7 @@ spec:
         controller: "true"
       containers:
         - name: memcached
-          image: call518/oaas-memcached
+          image: call518/oaas-memcached:1.0
           #imagePullPolicy: Always
           imagePullPolicy: IfNotPresent
           #envFrom:

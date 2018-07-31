@@ -72,7 +72,7 @@ spec:
       - name: wait1
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
-        image: call518/oaas-init-container
+        image: call518/oaas-init-container:1.0
         envFrom:
           - configMapRef:
               name: env-common
@@ -83,7 +83,7 @@ spec:
       - name: wait2
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
-        image: call518/oaas-init-container
+        image: call518/oaas-init-container:1.0
         envFrom:
           - configMapRef:
               name: env-common
@@ -94,7 +94,7 @@ spec:
       - name: wait3
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
-        image: call518/oaas-init-container
+        image: call518/oaas-init-container:1.0
         envFrom:
           - configMapRef:
               name: env-common
@@ -105,7 +105,7 @@ spec:
       - name: wait4
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
-        image: call518/oaas-init-container
+        image: call518/oaas-init-container:1.0
         envFrom:
           - configMapRef:
               name: env-common
@@ -119,7 +119,7 @@ spec:
         - "glance"
       containers:
         - name: glance
-          image: call518/oaas-ocata
+          image: call518/oaas-ocata:1.1
           #imagePullPolicy: Always
           imagePullPolicy: IfNotPresent
           envFrom:

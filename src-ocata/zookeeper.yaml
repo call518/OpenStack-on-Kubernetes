@@ -74,7 +74,8 @@ spec:
       - name: kubernetes-zookeeper
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
-        image: "k8s.gcr.io/kubernetes-zookeeper:1.0-3.4.10"
+        #image: "k8s.gcr.io/kubernetes-zookeeper:1.0-3.4.10"
+        image: call518/oaas-zookeeper:1.0
 #        resources:
 #          requests:
 #            memory: "1Gi"

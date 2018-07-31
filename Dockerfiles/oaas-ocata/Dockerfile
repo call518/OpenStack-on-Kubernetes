@@ -12,6 +12,7 @@ RUN cp -a /etc/apt/sources.list /etc/apt/sources.list.default \
     && apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y rsyslog mysql-client keystone python-openstackclient apache2 libapache2-mod-wsgi python-pip cinder-api cinder-scheduler cinder-volume cinder-backup nfs-common tgt python-openstackclient glance openstack-dashboard neutron-server neutron-plugin-ml2 neutron-plugin-openvswitch-agent neutron-linuxbridge-agent neutron-l3-agent neutron-dhcp-agent neutron-metadata-agent neutron-lbaasv2-agent neutron-metering-agent haproxy nova-api nova-conductor nova-consoleauth nova-novncproxy nova-scheduler nova-placement-api nova-compute nova-novncproxy nova-placement-api python-novaclient neutron-plugin-openvswitch-agent libguestfs-tools\
     && pip install python-memcached \
-    && apt-get install -y iputils-ping net-tools vim telnet lsof wget curl jq tcpdump \
+    && apt-get install -y iputils-ping net-tools vim telnet lsof wget curl jq tcpdump git \
     && rm -rf /var/lib/apt/lists/*
+COPY neutron-lbaas-dashboard /neutron-lbaas-dashboard
 COPY check-init.sh /check-init.sh

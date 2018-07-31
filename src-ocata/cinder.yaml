@@ -70,7 +70,7 @@ spec:
       - name: wait1
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
-        image: call518/oaas-init-container
+        image: call518/oaas-init-container:1.0
         envFrom:
           - configMapRef:
               name: env-common
@@ -81,7 +81,7 @@ spec:
       - name: wait2
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
-        image: call518/oaas-init-container
+        image: call518/oaas-init-container:1.0
         envFrom:
           - configMapRef:
               name: env-common
@@ -92,7 +92,7 @@ spec:
       - name: wait3
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
-        image: call518/oaas-init-container
+        image: call518/oaas-init-container:1.0
         envFrom:
           - configMapRef:
               name: env-common
@@ -103,7 +103,7 @@ spec:
       - name: wait4
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
-        image: call518/oaas-init-container
+        image: call518/oaas-init-container:1.0
         envFrom:
           - configMapRef:
               name: env-common
@@ -114,7 +114,7 @@ spec:
       - name: wait5
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
-        image: call518/oaas-init-container
+        image: call518/oaas-init-container:1.0
         envFrom:
           - configMapRef:
               name: env-common
@@ -125,7 +125,7 @@ spec:
       - name: wait6
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
-        image: call518/oaas-init-container
+        image: call518/oaas-init-container:1.0
         envFrom:
           - configMapRef:
               name: env-common
@@ -142,7 +142,7 @@ spec:
       #  - "nfs-server"
       containers:
         - name: cinder
-          image: call518/oaas-ocata
+          image: call518/oaas-ocata:1.1
           #imagePullPolicy: Always
           imagePullPolicy: IfNotPresent
           securityContext:

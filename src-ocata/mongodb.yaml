@@ -68,7 +68,7 @@ spec:
         - name: mongodb
           #image: pkdone/mongo-ent:3.4
           #image: mongo
-          image: call518/oaas-mongodb
+          image: call518/oaas-mongodb:1.0
           #imagePullPolicy: Always
           imagePullPolicy: IfNotPresent
           env:

@@ -80,7 +80,7 @@ spec:
       - name: wait1
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
-        image: call518/oaas-init-container
+        image: call518/oaas-init-container:1.0
         envFrom:
           - configMapRef:
               name: env-common
@@ -92,8 +92,8 @@ spec:
       - name: galera
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
-        image: severalnines/mariadb:10.1
-        #image: call518/oaas-galera
+        #image: severalnines/mariadb:10.1
+        image: call518/oaas-galera:1.0
         ports:
         - name: mysql
           containerPort: 3306
