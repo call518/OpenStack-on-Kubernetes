@@ -7,6 +7,7 @@ data:
     #!/bin/bash
     set -e;
     service rsyslog restart;
+    ## OVS Networking - BEGIN
     #export K8S_DEFAULT_GW_IP=$(ip route | awk '/default/ { print $3 }');
     export K8S_DEFAULT_GW_IP=$(ip route show 0.0.0.0/0 dev eth0 | awk '{print $3}');
     until ping -c 1 -W 1 $K8S_DEFAULT_GW_IP; do echo "gateway ping testing....."; sleep 1; done
@@ -65,6 +66,7 @@ data:
     sysctl -w net.ipv4.conf.default.rp_filter=0;
     sysctl -w net.ipv4.conf.all.rp_filter=0;
     sysctl -w net.ipv4.ip_forward=1;
+    ## OVS Networking - END
     cp -a /etc/neutron /etc/neutron.default;
     cat /scripts/neutron.conf > /etc/neutron/neutron.conf;
     cat /scripts/ml2_conf.ini > /etc/neutron/plugins/ml2/ml2_conf.ini;

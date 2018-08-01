@@ -44,7 +44,7 @@ metadata:
     app: keystone
 spec:
   serviceName: "keystone"
-  replicas: 2
+  replicas: 1
   podManagementPolicy: OrderedReady
   #podManagementPolicy: Parallel
   selector:

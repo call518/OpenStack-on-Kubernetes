@@ -57,9 +57,7 @@ Tutorial
 
 ## System Env. & Arch.
 
-** IF MULTIPLE COMPONENT PROVISIONING IS NEEDED, THEN PHYSICAL MACHINES ENVIRONMENT IS RECOMMENDED.**
-(Note) VM Env is so slow, and sometimes NFS I/O hang and failed. So if tutorial is in VM, I recommended running one replica=1.
-(Recommended Back-end Storage is CEPH.)
+**(Note) IF MULTIPLE COMPONENT PROVISIONING IS NEEDED, THEN PHYSICAL MACHINES ENVIRONMENT IS RECOMMENDED.**
 
 ### System Diagram
 
@@ -71,38 +69,42 @@ Tutorial
   * [kubernetes Installation guide](https://www.howtoforge.com/tutorial/centos-kubernetes-docker-cluster/)
 * All k8s Worker nodes have to sync Time (e.g. chrony, ntp)
 * k8s worker nodes for neutron-server/nova-compute need to load openvswitch/ebtables/ip_vs kernel module.
-  * run contents of **host_kernel_modules_for_oaas.sh** on all woker nodes.
+  * run contents of **host_kernel_modules_for_oaas.sh** on compute/network role(label) woker nodes.
 * Quorum PODs (Replica is  have to **2n+1**)
   * galera-etc
   * galera
   * rabbitmq
 
-
 ### Env.
 
-(Note) We are now testing/developing with 6 VMs on VirtualBox Env. If u want, any env is possible. (eg. physical machines)
+(Note) We have tested this tutorial with 6 VMs on VirtualBox Env. If u want, any env is possible. (eg. physical machines)
 
 (Note) We use NFS for cinder backend storage for simple tutorial, but soon we will change to ceph back-end storage.
 
 #### Spec. of Physical Host
 
 * Processor: Intel Core i5-6500 (3.2GHz)
-* Memory: 32GB
-* Storage: HDD (2TB)
+* Memory: 64GB
+* Storage: SSD (2TB)
 * NIC: Intel(R) Ethernet Connection (5) I219-LM
 
 #### Spec. of each VM
 
-(Note) Maybe, you need much RAM. if not, reduce number of replicas.
-**(WARN)** if virtual machine env, **neutron-server's replicas must be "1"**, because neutron-server need too high load-average.
+(Note) Maybe, you need big RAM. if not, reduce number of replicas.
 
 * CentOS-7 x86_64
 * 2 EA vCPUs
-* 8 GB vRAM
+* vRAM
+  * k8s-master: 4GB
+  * k8s-node01: 12GB
+  * k8s-node02: 12GB
+  * k8s-node03: 12GB
+  * k8s-node04: 4GB
+  * k8s-node05: 4GB
 * 100 GB vDisk
 * 1 EA NIC
 
-#### Spec. of K8S
+#### Spec. of k8s
 
 > This is versions of packages that i have tested.
 
@@ -127,21 +129,23 @@ Tutorial
 192.168.0.155 k8s-node05
 ```
 
-#### k8s node info
+## Deploy Tutorial
+
+#### Node Labels (Role)
+
+(!) Network(neutron-sever) worker nodes must be separated/dedicated. (network=true)
 
 ```bash
-[k8s-master]# kubectl get nodes
+[k8s-master]# kubectl get node --show-labels
 
-NAME         STATUS    ROLES     AGE       VERSION
-k8s-master   Ready     master    18h       v1.11.1
-k8s-node01   Ready     <none>    18h       v1.11.1
-k8s-node02   Ready     <none>    18h       v1.11.1
-k8s-node03   Ready     <none>    18h       v1.11.1
-k8s-node04   Ready     <none>    18h       v1.11.1
-k8s-node05   Ready     <none>    18h       v1.11.1
+NAME         STATUS    ROLES     AGE       VERSION   LABELS
+k8s-master   Ready     master    8d        v1.11.1   node-role.kubernetes.io/master=
+k8s-node01   Ready     <none>    8d        v1.11.1   controller=true,compute=true,nfs-server=true
+k8s-node02   Ready     <none>    8d        v1.11.1   controller=true,compute=true
+k8s-node03   Ready     <none>    8d        v1.11.1   controller=true,compute=true
+k8s-node04   Ready     <none>    8d        v1.11.1   network=true
+k8s-node05   Ready     <none>    8d        v1.11.1   network=true
 ```
-
-## Deploy Tutorial
 
 #### default configs (eg. password)
 

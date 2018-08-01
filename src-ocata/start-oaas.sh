@@ -1,10 +1,10 @@
 #!/bin/bash
 
-kubectl label nodes k8s-node01 controller=true network=true nfs-server=true
-kubectl label nodes k8s-node02 controller=true network=true
-kubectl label nodes k8s-node03 controller=true network=true
-kubectl label nodes k8s-node04 compute=true
-kubectl label nodes k8s-node05 compute=true
+kubectl label nodes k8s-node01 controller=true compute=true nfs-server=true
+kubectl label nodes k8s-node02 controller=true compute=true
+kubectl label nodes k8s-node03 controller=true compute=true
+kubectl label nodes k8s-node04 network=true
+kubectl label nodes k8s-node05 network=true
 
 ./update-configMap-env-common.sh
 ./update-configMap-init-container-scripts.sh

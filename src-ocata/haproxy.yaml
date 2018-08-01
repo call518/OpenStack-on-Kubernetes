@@ -58,7 +58,7 @@ kind: Deployment
 metadata:
   name: haproxy
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: haproxy
@@ -94,7 +94,7 @@ spec:
         command: ["/bin/bash", "-c", "/init-container-scripts/init-check-galera.sh"]
       containers:
       - name: haproxy
-        image: call518/oaas-haproxy:1.0
+        image: call518/oaas-haproxy:1.1
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
         envFrom:
@@ -106,6 +106,9 @@ spec:
           - >
             sed -i "s/@@STATS_USERNAME@@/$K8S_HAPROXY_STATS_USERNAME/g" /etc/haproxy/haproxy.cfg;
             sed -i "s/@@STATS_PASSWORD@@/$K8S_HAPROXY_STATS_PASSWORD/g" /etc/haproxy/haproxy.cfg;
+            echo "  server galera-0 galera-0.galera:3306 check inter 2000 rise 2 fall 2 on-marked-down shutdown-sessions" >> /etc/haproxy/haproxy.cfg;
+            echo "  server galera-1 galera-1.galera:3306 check inter 2000 rise 2 fall 2 on-marked-down shutdown-sessions backup" >> /etc/haproxy/haproxy.cfg;
+            echo "  server galera-2 galera-2.galera:3306 check inter 2000 rise 2 fall 2 on-marked-down shutdown-sessions backup" >> /etc/haproxy/haproxy.cfg;
             service rsyslog start;
             haproxy -f /etc/haproxy/haproxy.cfg;
             tail -F /var/log/syslog;
