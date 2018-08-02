@@ -108,7 +108,7 @@ data:
     service virtlogd restart
     service nova-api-metadata restart
     service nova-compute restart
-    service nova-novncproxy restart
+    #service nova-novncproxy restart
     sleep 5;
     #until (service libvirt-bin status) && (service nova-compute status); do echo "(1) waiting for nova-compute service response....."; sleep 5; done
     until (service libvirtd status) && (service nova-compute status); do echo "(1) waiting for nova-compute service response....."; sleep 5; done
@@ -151,8 +151,7 @@ data:
     [cache]
     enabled = true
     backend = oslo_cache.memcache_pool
-    #memcached_servers = memcached:11211
-    #memcached_servers = memcached-0.memcached:11211,memcached-1.memcached:11211,memcached-2.memcached:11211
+    #memcache_servers = memcached:11211
     memcache_servers = memcached-0.memcached:11211,memcached-1.memcached:11211,memcached-2.memcached:11211
     [cells]
     #enable=false
@@ -243,14 +242,15 @@ data:
     [upgrade_levels]
     [vmware]
     [vnc]
+    #enabled = true
+    #vncserver_listen = $my_ip
+    #vncserver_proxyclient_address = $my_ip
+    #vncproxy_url = http://___MY_NODE_IP___:6080
+    #novncproxy_base_url = http://___MY_NODE_IP___:30068/vnc_auto.html
     enabled = true
-    vncserver_listen = 0.0.0.0
-    #vnc_auto.html vncserver_listen = 0.0.0.0
-    vncserver_proxyclient_address = $my_ip
-    #novncproxy_host = $my_ip
-    #novncproxy_port = 6080
-    #novncproxy_base_url = http://nova-server:6080/vnc_auto.html
     novncproxy_base_url = http://___MY_NODE_IP___:30068/vnc_auto.html
+    vncserver_listen = 0.0.0.0
+    vncserver_proxyclient_address = $my_ip
     [workarounds]
     [wsgi]
     [xenserver]

@@ -53,6 +53,7 @@ data:
     CACHES = {
         'default': {
             'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+            #'LOCATION': 'memcached:11211',
             'LOCATION': 'memcached-0.memcached:11211',
             'LOCATION': 'memcached-1.memcached:11211',
             'LOCATION': 'memcached-2.memcached:11211',

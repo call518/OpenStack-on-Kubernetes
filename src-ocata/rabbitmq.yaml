@@ -60,7 +60,7 @@ metadata:
   name: rabbitmq
 spec:
   serviceName: "rabbitmq"
-  replicas: 3
+  replicas: 1
   podManagementPolicy: OrderedReady
   #podManagementPolicy: Parallel
   template:

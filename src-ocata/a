@@ -104,12 +104,12 @@ spec:
           - bash
           - -c
           - >
-            service rsyslog start;
             sed -i "s/@@STATS_USERNAME@@/$K8S_HAPROXY_STATS_USERNAME/g" /etc/haproxy/haproxy.cfg;
             sed -i "s/@@STATS_PASSWORD@@/$K8S_HAPROXY_STATS_PASSWORD/g" /etc/haproxy/haproxy.cfg;
             echo "  server galera-0 galera-0.galera:3306 check inter 2000 rise 2 fall 2 on-marked-down shutdown-sessions" >> /etc/haproxy/haproxy.cfg;
             echo "  server galera-1 galera-1.galera:3306 check inter 2000 rise 2 fall 2 on-marked-down shutdown-sessions backup" >> /etc/haproxy/haproxy.cfg;
             echo "  server galera-2 galera-2.galera:3306 check inter 2000 rise 2 fall 2 on-marked-down shutdown-sessions backup" >> /etc/haproxy/haproxy.cfg;
+            service rsyslog start;
             haproxy -f /etc/haproxy/haproxy.cfg;
             tail -F /var/log/syslog;
         ports:
