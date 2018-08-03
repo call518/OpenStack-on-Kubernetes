@@ -61,7 +61,9 @@ Tutorial
 
 ### System Diagram
 
-(TODO - Diagram)
+This is example diagram. You can change Cluster Environment you want.
+
+![System Diagram](README/OaaS-Diagram_v201800803.png)
 
 ### Requirements.
 
@@ -69,15 +71,15 @@ Tutorial
   * [kubernetes Installation guide](https://www.howtoforge.com/tutorial/centos-kubernetes-docker-cluster/)
 * All k8s Worker nodes have to sync Time (e.g. chrony, ntp)
 * k8s worker nodes for neutron-server/nova-compute need to load openvswitch/ebtables/ip_vs kernel module.
-  * run contents of **host_kernel_modules_for_oaas.sh** on compute/network role(label) woker nodes.
+  * Run contents of **host_kernel_modules_for_oaas.sh** on compute/network role(label) woker nodes.
 * Quorum PODs (Replica is  have to **2n+1**)
-  * galera-etc
+  * galera-etcd
   * galera
   * rabbitmq
 
 ### Env.
 
-(Note) We have tested this tutorial with 6 VMs on VirtualBox Env. If u want, any env is possible. (eg. physical machines)
+(Note) We have tested this tutorial with **6 VMs** on VirtualBox Env. If u want, any env is possible. (eg. physical machines)
 
 (Note) We use NFS for cinder backend storage for simple tutorial, but soon we will change to ceph back-end storage.
 

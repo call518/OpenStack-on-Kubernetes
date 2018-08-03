@@ -15,6 +15,7 @@ kubectl label nodes k8s-node05 network=true
 ./update-configMap-keystone-setup.sh
 ./update-configMap-glance-setup.sh
 ./update-configMap-cinder-setup.sh
+./update-configMap-ovs-setup.sh
 ./update-configMap-neutron-server-setup.sh
 ./update-configMap-nova-server-setup.sh
 ./update-configMap-nova-compute-setup.sh
@@ -24,7 +25,7 @@ kubectl label nodes k8s-node05 network=true
 ./update-secret-rabbitmq-erlang-cookie.sh
 ./update-secret-keystone-fernet-key-secrets.sh
 
-kubectl create -f galera-etcd.yaml 
+kubectl create -f etcd.yaml 
 kubectl create -f galera.yaml
 kubectl create -f haproxy.yaml
 kubectl create -f memcached.yaml

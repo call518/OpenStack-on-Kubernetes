@@ -30,6 +30,23 @@ spec:
   - name: nova-metadata-api
     port: 8775
     targetPort: 8775
+  #sessionAffinity: ClientIP
+  clusterIP: None
+  #type: NodePort # Or LoadBalancer in production w/ proper security
+  #type: LoadBalancer
+  selector:
+    app: nova-server
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: nova-novncproxy
+  labels:
+    app: nova-novncproxy
+spec:
+  ports:
   - name: nova-novncproxy
     port: 6080
     targetPort: 6080

@@ -15,7 +15,7 @@ if [ "$1" != "--force" ]; then
     ./reset-mongodb.sh
     ./reset-memcached.sh
     ./reset-galera.sh
-    ./reset-galera-etcd.sh
+    ./reset-etcd.sh
     
     #for pod in $(kubectl get all | awk '/^pod/ {print $1}'); do kubectl delete $pod --grace-period=0 --force; done
     
@@ -27,6 +27,7 @@ if [ "$1" != "--force" ]; then
     kubectl delete configmap neutron-server-setup
     kubectl delete configmap nova-server-setup
     kubectl delete configmap nova-compute-setup
+    kubectl delete configmap ovs-setup
     kubectl delete configmap horizon-setup
     kubectl delete configmap openstack-openrc
     

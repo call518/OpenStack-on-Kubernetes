@@ -194,12 +194,14 @@ spec:
             - containerPort: 8775
             - containerPort: 6080
           volumeMounts:
-          - name: openstack-openrc
-            mountPath: /root/openrc
-          - name: nova-compute-setup
-            mountPath: /scripts
           - name: kernel-modules
             mountPath: /lib/modules
+          - name: openstack-openrc
+            mountPath: /root/openrc
+          - name: ovs-setup
+            mountPath: /ovs-setup
+          - name: nova-compute-setup
+            mountPath: /scripts
           readinessProbe:
             exec:
               command:
@@ -224,15 +226,19 @@ spec:
         configMap:
           name: init-container-scripts
           defaultMode: 0755
+      - name: kernel-modules
+        hostPath:
+          path: /lib/modules
+          type: Directory
       - name: openstack-openrc
         configMap:
           name: openstack-openrc
+          defaultMode: 0755
+      - name: ovs-setup
+        configMap:
+          name: ovs-setup
           defaultMode: 0755
       - name: nova-compute-setup
         configMap:
           name: nova-compute-setup
           defaultMode: 0755
-      - name: kernel-modules
-        hostPath:
-          path: /lib/modules
-          type: Directory
