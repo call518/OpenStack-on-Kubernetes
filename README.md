@@ -46,7 +46,7 @@ Intro
   * **neutron** (Completed)
   * **cinder** (Completed)
   * heat (TODO)
-  * ceilometer (TODO)
+  * **ceilometer** (Completed)
   * **horizon** (Completed)
 * Integration of OpenStack Releases.
   * (TODO: Planning...)
