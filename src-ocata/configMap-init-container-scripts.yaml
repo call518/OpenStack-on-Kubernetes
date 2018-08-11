@@ -61,11 +61,11 @@ data:
     #RUOK_Z2=$(echo ruok | nc zk-1.zk-svc 2181);
     #RUOK_Z2=$(echo ruok | nc zk-2.zk-svc 2181);
     #until [ "$RUOK_Z1" == "imok" ] && [ "$RUOK_Z2" == "imok" ] && [ "$RUOK_Z2" == "imok" ];
-    RUOK=$(echo ruok | nc zk-svc 2181);
     until [ "$RUOK" == "imok" ];
     do
       ping -c 1 -W 1 zk-svc 2>&1 >/dev/null
       echo "`date +"[%Y-%m-%d %H:%M:%S]"` zookeeper is not ready..... waiting...";
+      RUOK=$(echo ruok | nc zk-svc 2181);
       sleep 5;
     done;
     echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ zookeeper is ready~~";
