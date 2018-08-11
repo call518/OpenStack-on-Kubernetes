@@ -130,7 +130,7 @@ spec:
       #  - "nfs-server"
       containers:
         - name: ceilometer-central
-          image: call518/oaas-ocata:1.3
+          image: call518/oaas-ocata:1.4
           #imagePullPolicy: Always
           imagePullPolicy: IfNotPresent
           securityContext:
