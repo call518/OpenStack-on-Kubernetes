@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-ceilometer-gnocchi
+  labels:
+    app: pv-ceilometer-gnocchi
+spec:
+  accessModes:
+  #- ReadWriteOnce
+  - ReadWriteMany
+  capacity:
+    storage: 10Gi
+  #hostPath:
+  #  path: /pv/ceilometer-gnocchi
+  volumeMode: Filesystem
+  #persistentVolumeReclaimPolicy: Recycle
+  persistentVolumeReclaimPolicy: Retain
+  mountOptions:
+    - hard
+    - nfsvers=4
+  nfs:
+    path: /pv/ceilometer-gnocchi
+    server: ___NFS_SERVER_IP___

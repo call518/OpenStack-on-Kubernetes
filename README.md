@@ -57,14 +57,6 @@ Tutorial
 
 ## System Env. & Arch.
 
-**(Note) IF MULTIPLE COMPONENT PROVISIONING IS NEEDED, THEN PHYSICAL MACHINES ENVIRONMENT IS RECOMMENDED.**
-
-### System Diagram
-
-This is example diagram. You can change Cluster Environment you want.
-
-![System Diagram](README/OaaS-Diagram_v201800803.png)
-
 ### Requirements.
 
 * General Kubernetes Cluster.
@@ -208,6 +200,7 @@ data:
 * call518/oaas-rabbitmq
 * call518/oaas-mongodb
 * call518/oaas-haproxy
+* call518/oaas-zookeeper
 * call518/oaas-ocata
 
 ### Initiate Deploying OpenStack

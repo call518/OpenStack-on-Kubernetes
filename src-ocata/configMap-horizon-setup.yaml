@@ -7,6 +7,7 @@ data:
     #!/bin/bash
     set -e
     service rsyslog restart
+    a2enconf openstack-dashboard
     cd neutron-lbaas-dashboard
     git checkout stable/$K8S_OPENSTACK_RELEASE
     python setup.py install
@@ -16,7 +17,6 @@ data:
     /usr/share/openstack-dashboard/manage.py compress --force
     cp -a /etc/openstack-dashboard/local_settings.py /etc/openstack-dashboard/local_settings.py.default
     cat /scripts/local_settings.py > /etc/openstack-dashboard/local_settings.py
-    a2dissite 000-default
     echo "ServerName localhost" >> /etc/apache2/apache2.conf
     service apache2 restart
     sleep 5;

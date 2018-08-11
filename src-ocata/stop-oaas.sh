@@ -2,11 +2,11 @@
 
 if [ "$1" != "--force" ]; then
 
-    ./reset-zookeeper.sh
     ./reset-nova-compute.sh
     ./reset-nova-server.sh
     ./reset-neutron-server.sh
     ./reset-horizon.sh
+    ./reset-ceilometer-central.sh
     ./reset-cinder.sh
     ./reset-glance.sh
     ./reset-keystone.sh
@@ -14,6 +14,7 @@ if [ "$1" != "--force" ]; then
     ./reset-rabbitmq.sh
     ./reset-mongodb.sh
     ./reset-memcached.sh
+    ./reset-zookeeper.sh
     ./reset-galera.sh
     ./reset-etcd.sh
     
@@ -24,6 +25,8 @@ if [ "$1" != "--force" ]; then
     kubectl delete configmap keystone-setup
     kubectl delete configmap glance-setup
     kubectl delete configmap cinder-setup
+    kubectl delete configmap ceilometer-central-setup
+    kubectl delete configmap zookeeper-setup
     kubectl delete configmap neutron-server-setup
     kubectl delete configmap nova-server-setup
     kubectl delete configmap nova-compute-setup

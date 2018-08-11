@@ -7,7 +7,7 @@ data:
     #!/bin/bash
     set -e
     service rsyslog restart
-    a2dissite 000-default
+    a2enconf cinder-wsgi
     echo "ServerName localhost" >> /etc/apache2/apache2.conf
     export NFS_BACKEND_HOST_IP=$(curl -s -L "http://$DISCOVERY_SERVICE/v2/keys/oaas/$K8S_NFS_SERVER_IP_ETC_KEY" -XGET | jq -r .node.value)
     export NFS_BACKEND_PATH_VOLUME="/pv/cinder-volumes"

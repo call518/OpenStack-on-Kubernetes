@@ -7,7 +7,7 @@ data:
     #!/bin/bash
     set -e
     service rsyslog restart
-    a2dissite 000-default
+    a2ensite keystone
     echo "ServerName localhost" >> /etc/apache2/apache2.conf
     cp -a /etc/keystone/keystone.conf /etc/keystone/keystone.conf.default
     cat /scripts/keystone.conf > /etc/keystone/keystone.conf
@@ -118,6 +118,15 @@ data:
     openstack service delete cinderv3
     openstack user delete cinder
     mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "DROP DATABASE IF EXISTS cinder; DELETE FROM mysql.user WHERE User='cinder'; DELETE FROM mysql.db WHERE Db='cinder' AND User='cinder'; FLUSH PRIVILEGES;"
+
+  remove-ceilometer-central.sh: |
+    #!/bin/bash
+    source /root/openrc/admin-openrc
+    openstack endpoint delete $(openstack endpoint list --service gnocchi -f value -c ID)
+    openstack service delete gnocchi
+    openstack user delete gnocchi
+    openstack user delete ceilometer
+    mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "DROP DATABASE IF EXISTS gnocchi; DELETE FROM mysql.user WHERE User='gnocchi'; DELETE FROM mysql.db WHERE Db='gnocchi' AND User='gnocchi'; FLUSH PRIVILEGES;"
 
   remove-neutron-server.sh: |
     #!/bin/bash
