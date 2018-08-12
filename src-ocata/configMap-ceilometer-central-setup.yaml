@@ -87,7 +87,7 @@ data:
     [archive_policy]
     default_aggregation_methods = mean,min,max,sum,std,median,count,last,95pct
     [database]
-    backend = sqlalchemy
+    #backend = sqlalchemy
     [indexer]
     url = mysql+pymysql://gnocchi:___K8S_GNOCCHI_DB_PASS___@haproxy-galera/gnocchi
     [keystone_authtoken]

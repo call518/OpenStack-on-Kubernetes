@@ -113,6 +113,16 @@ data:
     done;
     echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ keystone is ready~~";
 
+  init-check-ceilometer-central.sh: |
+    until [ "$API_8041" == "CURRENT" ];
+    do
+      ping -c 1 -W 1 ceilometer-central 2>&1 >/dev/null
+      API_8041=$(curl --connect-timeout 3 -s "http://ceilometer-central:8041" | jq -r ".versions[0].status");
+      echo "`date +"[%Y-%m-%d %H:%M:%S]"` ceilometer-central is not ready..... waiting...";
+      sleep 5;
+    done;
+    echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ ceilometer-central is ready~~";
+
   init-check-glance.sh: |
     until [ "$API_9292" == "CURRENT" ];
     do

@@ -6,6 +6,7 @@ if [ "$1" != "--force" ]; then
     ./reset-nova-server.sh
     ./reset-neutron-server.sh
     ./reset-horizon.sh
+    ./reset-aodh.sh
     ./reset-ceilometer-central.sh
     ./reset-cinder.sh
     ./reset-glance.sh
@@ -25,6 +26,7 @@ if [ "$1" != "--force" ]; then
     kubectl delete configmap keystone-setup
     kubectl delete configmap glance-setup
     kubectl delete configmap cinder-setup
+    kubectl delete configmap aodh-setup
     kubectl delete configmap ceilometer-central-setup
     kubectl delete configmap zookeeper-setup
     kubectl delete configmap neutron-server-setup

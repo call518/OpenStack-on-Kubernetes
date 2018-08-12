@@ -3,11 +3,11 @@
 apiVersion: policy/v1beta1
 kind: PodDisruptionBudget
 metadata:
-  name: ceilometer-central-pdb
+  name: aodh-pdb
 spec:
   selector:
     matchLabels:
-      app: ceilometer-central
+      app: aodh
   minAvailable: 1
   #maxUnavailable: 2
 
@@ -16,41 +16,41 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: ceilometer-central
+  name: aodh
   labels:
-    app: ceilometer-central
+    app: aodh
 spec:
   ports:
-  - name: gnocchi-api
-    port: 8041
-    targetPort: 8041
+  - name: aodh-api
+    port: 8042
+    targetPort: 8042
   #sessionAffinity: ClientIP
   clusterIP: None
   #type: NodePort # Or LoadBalancer in production w/ proper security
   #type: LoadBalancer
   selector:
-    app: ceilometer-central
+    app: aodh
 
 ---
 
 apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
-  name: ceilometer-central
+  name: aodh
   labels:
-    app: ceilometer-central
+    app: aodh
 spec:
-  serviceName: "ceilometer-central"
-  replicas: 1
+  serviceName: "aodh"
+  replicas: 3
   podManagementPolicy: OrderedReady
   #podManagementPolicy: Parallel
   selector:
     matchLabels:
-      app: ceilometer-central
+      app: aodh
   template:
     metadata:
       labels:
-        app: ceilometer-central
+        app: aodh
     spec:
       terminationGracePeriodSeconds: 10
       affinity:
@@ -61,7 +61,7 @@ spec:
                - key: "app"
                  operator: In
                  values:
-                 - ceilometer-central
+                 - aodh
              topologyKey: "kubernetes.io/hostname"
       nodeSelector:
         controller: "true"
@@ -76,7 +76,7 @@ spec:
         volumeMounts:
         - name: init-container-scripts
           mountPath: /init-container-scripts
-        command: ["/bin/bash","-c","/init-container-scripts/init-check-zookeeper.sh"]
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-haproxy.sh"]
       - name: wait2
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
@@ -87,7 +87,7 @@ spec:
         volumeMounts:
         - name: init-container-scripts
           mountPath: /init-container-scripts
-        command: ["/bin/bash","-c","/init-container-scripts/init-check-haproxy.sh"]
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-memcached.sh"]
       - name: wait3
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
@@ -98,7 +98,7 @@ spec:
         volumeMounts:
         - name: init-container-scripts
           mountPath: /init-container-scripts
-        command: ["/bin/bash","-c","/init-container-scripts/init-check-memcached.sh"]
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-rabbitmq.sh"]
       - name: wait4
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
@@ -109,7 +109,7 @@ spec:
         volumeMounts:
         - name: init-container-scripts
           mountPath: /init-container-scripts
-        command: ["/bin/bash","-c","/init-container-scripts/init-check-rabbitmq.sh"]
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-keystone.sh"]
       - name: wait5
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
@@ -120,16 +120,16 @@ spec:
         volumeMounts:
         - name: init-container-scripts
           mountPath: /init-container-scripts
-        command: ["/bin/bash","-c","/init-container-scripts/init-check-keystone.sh"]
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-ceilometer-central.sh"]
       hostAliases:
       - ip: "127.0.0.1"
         hostnames:
-        - "ceilometer-central"
+        - "aodh"
       #- ip: "192.168.0.150"
       #  hostnames:
       #  - "nfs-server"
       containers:
-        - name: ceilometer-central
+        - name: aodh
           image: call518/oaas-ocata:1.4
           #imagePullPolicy: Always
           imagePullPolicy: IfNotPresent
@@ -141,16 +141,14 @@ spec:
           envFrom:
             - configMapRef:
                 name: env-common
-          command: ["/scripts/ceilometer-central-init.sh"]
+          command: ["/scripts/aodh-init.sh"]
           ports:
-            - containerPort: 8041
+            - containerPort: 8042
           volumeMounts:
           - name: openstack-openrc
             mountPath: /root/openrc
-          - name: ceilometer-central-setup
+          - name: aodh-setup
             mountPath: /scripts
-          - name: pvc-ceilometer-gnocchi
-            mountPath: /var/lib/gnocchi
           readinessProbe:
             exec:
               command:
@@ -167,7 +165,7 @@ spec:
           #    - --liveness
           #livenessProbe:
           #  tcpSocket:
-          #    port: 8041
+          #    port: 8042
           #  initialDelaySeconds: 120
           #  periodSeconds: 10
       volumes:
@@ -175,14 +173,11 @@ spec:
         configMap:
           name: init-container-scripts
           defaultMode: 0755
-      - name: ceilometer-central-setup
+      - name: aodh-setup
         configMap:
-          name: ceilometer-central-setup
+          name: aodh-setup
           defaultMode: 0755
       - name: openstack-openrc
         configMap:
           name: openstack-openrc
           defaultMode: 0755
-      - name: pvc-ceilometer-gnocchi
-        persistentVolumeClaim:
-          claimName: pvc-ceilometer-gnocchi
