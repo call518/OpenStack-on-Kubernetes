@@ -47,7 +47,7 @@ Intro
   * **cinder** (Completed)
   * **heat** (Completed)
   * **ceilometer-central** (Completed)
-  * **aodn** (Completed)
+  * **aodh** (Completed)
   * **horizon** (Completed)
 * Integration of OpenStack Releases.
   * (TODO: Planning...)
