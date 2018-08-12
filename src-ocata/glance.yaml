@@ -119,7 +119,7 @@ spec:
         - "glance"
       containers:
         - name: glance
-          image: call518/oaas-ocata:1.4
+          image: call518/oaas-ocata:1.5
           #imagePullPolicy: Always
           imagePullPolicy: IfNotPresent
           envFrom:
@@ -128,7 +128,6 @@ spec:
           command: ["/scripts/glance-init.sh"]
           ports:
             - containerPort: 9292
-          ports:
             - containerPort: 9191
           volumeMounts:
           - name: openstack-openrc

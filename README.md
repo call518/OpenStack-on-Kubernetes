@@ -45,8 +45,9 @@ Intro
   * **nova** (Completed)
   * **neutron** (Completed)
   * **cinder** (Completed)
-  * heat (TODO)
-  * **ceilometer** (Completed)
+  * **heat** (Completed)
+  * **ceilometer-central** (Completed)
+  * **aodn** (Completed)
   * **horizon** (Completed)
 * Integration of OpenStack Releases.
   * (TODO: Planning...)
@@ -166,6 +167,8 @@ data:
   K8S_CINDER_DB_PASS: "passw0rd"
   K8S_NEUTRON_DB_PASS: "passw0rd"
   K8S_NOVA_DB_PASS: "passw0rd"
+  K8S_GNOCCHI_DB_PASS: "passw0rd"
+  K8S_AODH_DB_PASS: "passw0rd"
   K8S_KEYSTONE_USER_ADMIN_PASS: "passw0rd"
   K8S_KEYSTONE_USER_DEMO_PASS: "demo"
   K8S_KEYSTONE_USER_GLANCE_PASS: "passw0rd"
@@ -173,6 +176,9 @@ data:
   K8S_KEYSTONE_USER_NEUTRON_PASS: "passw0rd"
   K8S_KEYSTONE_USER_NOVA_PASS: "passw0rd"
   K8S_KEYSTONE_USER_PLACEMENT_PASS: "passw0rd"
+  K8S_KEYSTONE_USER_GNOCCHI_PASS: "passw0rd"
+  K8S_KEYSTONE_USER_CEILOMETER_PASS: "passw0rd"
+  K8S_KEYSTONE_USER_AODH_PASS: "passw0rd"
   K8S_HAPROXY_STATS_USERNAME: "admin"
   K8S_HAPROXY_STATS_PASSWORD: "passw0rd"
   K8S_RABBITMQ_ADMIN_USER: "admin"
@@ -187,7 +193,7 @@ data:
   K8S_EXT_SUBNET_GW: "192.168.100.1"
   K8S_DEMO_SUBNET_CIDR: "172.16.0.0/24"
   K8S_DEMO_SUBNET_GW: "172.16.0.1"
-  K8S_DEMO_SUBNET_DNS: "8.8.8.8
+  K8S_DEMO_SUBNET_DNS: "8.8.8.8"
 ```
 
 ### Required Docker Images.

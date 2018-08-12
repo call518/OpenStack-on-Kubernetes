@@ -130,14 +130,14 @@ spec:
       #  - "nfs-server"
       containers:
         - name: ceilometer-central
-          image: call518/oaas-ocata:1.4
+          image: call518/oaas-ocata:1.5
           #imagePullPolicy: Always
           imagePullPolicy: IfNotPresent
-          securityContext:
-            privileged: true
-            capabilities:
-              add:
-              - CAP_SYS_ADMIN
+          #securityContext:
+          #  privileged: true
+          #  capabilities:
+          #    add:
+          #    - CAP_SYS_ADMIN
           envFrom:
             - configMapRef:
                 name: env-common
@@ -155,7 +155,7 @@ spec:
             exec:
               command:
               - /check-init.sh
-            initialDelaySeconds: 120
+            initialDelaySeconds: 60
             periodSeconds: 5
             #timeoutSeconds: 5
             successThreshold: 1

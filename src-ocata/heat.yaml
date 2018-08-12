@@ -1,14 +1,13 @@
 # Reference: (N/A)
-# NFS Backend Issue(Not support snapshot/backup): https://bugzilla.redhat.com/show_bug.cgi?id=1388056
 
 apiVersion: policy/v1beta1
 kind: PodDisruptionBudget
 metadata:
-  name: cinder-pdb
+  name: heat-pdb
 spec:
   selector:
     matchLabels:
-      app: cinder
+      app: heat
   minAvailable: 1
   #maxUnavailable: 2
 
@@ -17,41 +16,44 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: cinder
+  name: heat
   labels:
-    app: cinder
+    app: heat
 spec:
   ports:
-  - name: cinder-api
-    port: 8776
-    targetPort: 8776
+  - name: heat-api
+    port: 8004
+    targetPort: 8004
+  - name: heat-cfn-api
+    port: 8000
+    targetPort: 8000
   #sessionAffinity: ClientIP
   clusterIP: None
   #type: NodePort # Or LoadBalancer in production w/ proper security
   #type: LoadBalancer
   selector:
-    app: cinder
+    app: heat
 
 ---
 
 apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
-  name: cinder
+  name: heat
   labels:
-    app: cinder
+    app: heat
 spec:
-  serviceName: "cinder"
+  serviceName: "heat"
   replicas: 1
   podManagementPolicy: OrderedReady
   #podManagementPolicy: Parallel
   selector:
     matchLabels:
-      app: cinder
+      app: heat
   template:
     metadata:
       labels:
-        app: cinder
+        app: heat
     spec:
       terminationGracePeriodSeconds: 10
       affinity:
@@ -62,7 +64,7 @@ spec:
                - key: "app"
                  operator: In
                  values:
-                 - cinder
+                 - heat
              topologyKey: "kubernetes.io/hostname"
       nodeSelector:
         controller: "true"
@@ -77,7 +79,7 @@ spec:
         volumeMounts:
         - name: init-container-scripts
           mountPath: /init-container-scripts
-        command: ["/bin/bash","-c","/init-container-scripts/init-check-nfs-sever-etcd.sh"]
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-haproxy.sh"]
       - name: wait2
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
@@ -88,7 +90,7 @@ spec:
         volumeMounts:
         - name: init-container-scripts
           mountPath: /init-container-scripts
-        command: ["/bin/bash","-c","/init-container-scripts/init-check-haproxy.sh"]
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-memcached.sh"]
       - name: wait3
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
@@ -99,7 +101,7 @@ spec:
         volumeMounts:
         - name: init-container-scripts
           mountPath: /init-container-scripts
-        command: ["/bin/bash","-c","/init-container-scripts/init-check-memcached.sh"]
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-rabbitmq.sh"]
       - name: wait4
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
@@ -110,7 +112,7 @@ spec:
         volumeMounts:
         - name: init-container-scripts
           mountPath: /init-container-scripts
-        command: ["/bin/bash","-c","/init-container-scripts/init-check-rabbitmq.sh"]
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-keystone.sh"]
       - name: wait5
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
@@ -121,7 +123,7 @@ spec:
         volumeMounts:
         - name: init-container-scripts
           mountPath: /init-container-scripts
-        command: ["/bin/bash","-c","/init-container-scripts/init-check-keystone.sh"]
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-ceilometer-central.sh"]
       - name: wait6
         #imagePullPolicy: Always
         imagePullPolicy: IfNotPresent
@@ -132,45 +134,36 @@ spec:
         volumeMounts:
         - name: init-container-scripts
           mountPath: /init-container-scripts
-        command: ["/bin/bash","-c","/init-container-scripts/init-check-glance.sh"]
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-aodh.sh"]
       hostAliases:
       - ip: "127.0.0.1"
         hostnames:
-        - "cinder"
+        - "heat"
       #- ip: "192.168.0.150"
       #  hostnames:
       #  - "nfs-server"
       containers:
-        - name: cinder
+        - name: heat
           image: call518/oaas-ocata:1.5
           #imagePullPolicy: Always
           imagePullPolicy: IfNotPresent
-          securityContext:
-            privileged: true
-            capabilities:
-              add:
-              - CAP_SYS_ADMIN
+          #securityContext:
+          #  privileged: true
+          #  capabilities:
+          #    add:
+          #    - CAP_SYS_ADMIN
           envFrom:
             - configMapRef:
                 name: env-common
-          command: ["/scripts/cinder-init.sh"]
-          lifecycle:
-            preStop:
-              exec:
-                command:
-                - /bin/sh
-                - -c
-                - >
-                  umount -a -t nfs;
+          command: ["/scripts/heat-init.sh"]
           ports:
-            - containerPort: 8776
+            - containerPort: 8004
+            - containerPort: 8000
           volumeMounts:
           - name: openstack-openrc
             mountPath: /root/openrc
-          - name: cinder-setup
+          - name: heat-setup
             mountPath: /scripts
-#          - name: pvc-cinder-volumes
-#            mountPath: /cinder-nfs-data
           readinessProbe:
             exec:
               command:
@@ -185,24 +178,21 @@ spec:
           #    command:
           #    - /healthcheck.sh
           #    - --liveness
-          ##livenessProbe:
-          ##  tcpSocket:
-          ##    port: 35357
-          ##  initialDelaySeconds: 5
-          ##  periodSeconds: 10
+          #livenessProbe:
+          #  tcpSocket:
+          #    port: 8042
+          #  initialDelaySeconds: 120
+          #  periodSeconds: 10
       volumes:
       - name: init-container-scripts
         configMap:
           name: init-container-scripts
           defaultMode: 0755
-      - name: cinder-setup
+      - name: heat-setup
         configMap:
-          name: cinder-setup
+          name: heat-setup
           defaultMode: 0755
       - name: openstack-openrc
         configMap:
           name: openstack-openrc
           defaultMode: 0755
-#      - name: pvc-cinder-volumes
-#        persistentVolumeClaim:
-#          claimName: pvc-cinder-volumes
