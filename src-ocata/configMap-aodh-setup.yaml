@@ -29,13 +29,13 @@ data:
         openstack service create --name aodh --description "Telemetry" alarming;
       fi
       if ! openstack endpoint list --service aodh -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "aodh alarming public" > /dev/null; then
-        openstack endpoint create --region RegionOne alarming public http://aodh:8042
+        openstack endpoint create --region RegionOne alarming public http://aodh:8004
       fi
       if ! openstack endpoint list --service aodh -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "aodh alarming internal" > /dev/null; then
-        openstack endpoint create --region RegionOne alarming internal http://aodh:8042
+        openstack endpoint create --region RegionOne alarming internal http://aodh:8004
       fi
       if ! openstack endpoint list --service aodh -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "aodh alarming admin" > /dev/null; then
-        openstack endpoint create --region RegionOne alarming admin http://aodh:8042
+        openstack endpoint create --region RegionOne alarming admin http://aodh:8004
       fi
       su -s /bin/sh -c "aodh-dbsync" aodh
     fi

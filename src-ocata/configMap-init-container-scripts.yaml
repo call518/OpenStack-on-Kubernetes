@@ -123,6 +123,16 @@ data:
     done;
     echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ ceilometer-central is ready~~";
 
+  init-check-aodh.sh: |
+    until [ "$API_8042" == "stable" ];
+    do
+      ping -c 1 -W 1 aodh 2>&1 >/dev/null
+      API_8042=$(curl --connect-timeout 3 -s "http://aodh:8042" | jq -r ".versions.values[0].status");
+      echo "`date +"[%Y-%m-%d %H:%M:%S]"` aodh is not ready..... waiting...";
+      sleep 5;
+    done;
+    echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ aodh is ready~~";
+
   init-check-glance.sh: |
     until [ "$API_9292" == "CURRENT" ];
     do

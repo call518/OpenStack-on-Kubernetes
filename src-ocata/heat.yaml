@@ -3,11 +3,11 @@
 apiVersion: policy/v1beta1
 kind: PodDisruptionBudget
 metadata:
-  name: aodh-pdb
+  name: heat-pdb
 spec:
   selector:
     matchLabels:
-      app: aodh
+      app: heat
   minAvailable: 1
   #maxUnavailable: 2
 
@@ -16,41 +16,44 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: aodh
+  name: heat
   labels:
-    app: aodh
+    app: heat
 spec:
   ports:
-  - name: aodh-api
-    port: 8042
-    targetPort: 8042
+  - name: heat-api
+    port: 8004
+    targetPort: 8004
+  - name: heat-cfn-api
+    port: 8000
+    targetPort: 8000
   #sessionAffinity: ClientIP
   clusterIP: None
   #type: NodePort # Or LoadBalancer in production w/ proper security
   #type: LoadBalancer
   selector:
-    app: aodh
+    app: heat
 
 ---
 
 apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
-  name: aodh
+  name: heat
   labels:
-    app: aodh
+    app: heat
 spec:
-  serviceName: "aodh"
+  serviceName: "heat"
   replicas: 1
   podManagementPolicy: OrderedReady
   #podManagementPolicy: Parallel
   selector:
     matchLabels:
-      app: aodh
+      app: heat
   template:
     metadata:
       labels:
-        app: aodh
+        app: heat
     spec:
       terminationGracePeriodSeconds: 10
       affinity:
@@ -61,7 +64,7 @@ spec:
                - key: "app"
                  operator: In
                  values:
-                 - aodh
+                 - heat
              topologyKey: "kubernetes.io/hostname"
       nodeSelector:
         controller: "true"
@@ -121,16 +124,27 @@ spec:
         - name: init-container-scripts
           mountPath: /init-container-scripts
         command: ["/bin/bash","-c","/init-container-scripts/init-check-ceilometer-central.sh"]
+      - name: wait6
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        image: call518/oaas-init-container:1.0
+        envFrom:
+          - configMapRef:
+              name: env-common
+        volumeMounts:
+        - name: init-container-scripts
+          mountPath: /init-container-scripts
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-aodh.sh"]
       hostAliases:
       - ip: "127.0.0.1"
         hostnames:
-        - "aodh"
+        - "heat"
       #- ip: "192.168.0.150"
       #  hostnames:
       #  - "nfs-server"
       containers:
-        - name: aodh
-          image: call518/oaas-ocata:1.4
+        - name: heat
+          image: call518/oaas-ocata:1.5
           #imagePullPolicy: Always
           imagePullPolicy: IfNotPresent
           #securityContext:
@@ -141,13 +155,14 @@ spec:
           envFrom:
             - configMapRef:
                 name: env-common
-          command: ["/scripts/aodh-init.sh"]
+          command: ["/scripts/heat-init.sh"]
           ports:
-            - containerPort: 8042
+            - containerPort: 8004
+            - containerPort: 8000
           volumeMounts:
           - name: openstack-openrc
             mountPath: /root/openrc
-          - name: aodh-setup
+          - name: heat-setup
             mountPath: /scripts
           readinessProbe:
             exec:
@@ -173,9 +188,9 @@ spec:
         configMap:
           name: init-container-scripts
           defaultMode: 0755
-      - name: aodh-setup
+      - name: heat-setup
         configMap:
-          name: aodh-setup
+          name: heat-setup
           defaultMode: 0755
       - name: openstack-openrc
         configMap:

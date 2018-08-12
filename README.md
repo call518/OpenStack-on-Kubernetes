@@ -45,7 +45,7 @@ Intro
   * **nova** (Completed)
   * **neutron** (Completed)
   * **cinder** (Completed)
-  * heat (TODO)
+  * **heat** (Completed)
   * **ceilometer-central** (Completed)
   * **aodn** (Completed)
   * **horizon** (Completed)

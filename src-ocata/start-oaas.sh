@@ -18,6 +18,7 @@ kubectl label nodes k8s-node05 network=true
 ./update-configMap-cinder-setup.sh
 ./update-configMap-ceilometer-central-setup.sh
 ./update-configMap-aodh-setup.sh
+./update-configMap-heat-setup.sh
 ./update-configMap-ovs-setup.sh
 ./update-configMap-neutron-server-setup.sh
 ./update-configMap-nova-server-setup.sh
@@ -38,6 +39,7 @@ kubectl create -f keystone.yaml
 kubectl create -f zookeeper.yaml
 kubectl create -f ceilometer-central.yaml
 kubectl create -f aodh.yaml
+kubectl create -f heat.yaml
 kubectl create -f glance.yaml
 kubectl create -f cinder.yaml
 kubectl create -f neutron-server.yaml

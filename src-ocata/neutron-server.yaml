@@ -121,7 +121,7 @@ spec:
       #hostNetwork: true
       containers:
         - name: neutron-server
-          image: call518/oaas-ocata:1.4
+          image: call518/oaas-ocata:1.5
           #imagePullPolicy: Always
           imagePullPolicy: IfNotPresent
           securityContext:

@@ -148,7 +148,7 @@ spec:
       #  - "nfs-server"
       containers:
         - name: nova-compute
-          image: call518/oaas-ocata:1.4
+          image: call518/oaas-ocata:1.5
           #imagePullPolicy: Always
           imagePullPolicy: IfNotPresent
           securityContext:

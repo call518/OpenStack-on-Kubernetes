@@ -137,6 +137,21 @@ data:
     openstack user delete aodh
     mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "DROP DATABASE IF EXISTS aodh; DELETE FROM mysql.user WHERE User='aodh'; DELETE FROM mysql.db WHERE Db='aodh' AND User='aodh'; FLUSH PRIVILEGES;"
 
+  remove-heat.sh: |
+    #!/bin/bash
+    source /root/openrc/admin-openrc
+    openstack endpoint delete $(openstack endpoint list --service heat -f value -c ID)
+    openstack endpoint delete $(openstack endpoint list --service heat-cfn -f value -c ID)
+    openstack service delete heat
+    openstack service delete heat-cfn
+    openstack user delete heat
+    openstack user delete heat_domain_admin
+    openstack role delete heat_stack_user
+    openstack role delete heat_stack_owner
+    openstack domain set --disable heat
+    openstack domain delete heat
+    mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "DROP DATABASE IF EXISTS heat; DELETE FROM mysql.user WHERE User='heat'; DELETE FROM mysql.db WHERE Db='heat' AND User='heat'; FLUSH PRIVILEGES;"
+
   remove-neutron-server.sh: |
     #!/bin/bash
     source /root/openrc/admin-openrc

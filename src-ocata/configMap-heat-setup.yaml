@@ -1,0 +1,152 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: heat-setup
+data:
+  heat-init.sh: |
+    #!/bin/bash
+    set -e
+    service rsyslog restart
+    cp -a /etc/heat/heat.conf /etc/heat/heat.conf.default
+    cat /scripts/heat.conf > /etc/heat/heat.conf
+    sed -i "s/___K8S_KEYSTONE_USER_HEAT_PASS___/$K8S_KEYSTONE_USER_HEAT_PASS/g" /etc/heat/heat.conf
+    sed -i "s/___K8S_HEAT_DB_PASS___/$K8S_HEAT_DB_PASS/g" /etc/heat/heat.conf
+    sed -i "s/___K8S_RABBITMQ_OPENSTACK_USER___/$K8S_RABBITMQ_OPENSTACK_USER/g" /etc/heat/heat.conf
+    sed -i "s/___K8S_RABBITMQ_OPENSTACK_PASS___/$K8S_RABBITMQ_OPENSTACK_PASS/g" /etc/heat/heat.conf
+    source /root/openrc/admin-openrc
+    exist_heat_db=$(mysql -s -N -q -A --connect-timeout=10 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW DATABASES LIKE 'heat';" 2>/dev/null)
+    if [ "X$exist_heat_db" == "X" ]; then
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS heat"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON heat.* TO 'heat'@'localhost' IDENTIFIED BY '$K8S_HEAT_DB_PASS'"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON heat.* TO 'heat'@'%' IDENTIFIED BY '$K8S_HEAT_DB_PASS'"
+      if ! openstack user list -f value -c Name | grep heat > /dev/null; then
+        openstack user create --domain default --password $K8S_KEYSTONE_USER_HEAT_PASS heat 2>/dev/null
+      fi
+      openstack role add --project service --user heat admin
+      if ! openstack service list -f value -c Name | grep "^heat$" > /dev/null; then
+        openstack service create --name heat --description "Orchestration" orchestration;
+      fi
+      if ! openstack service list -f value -c Name | grep "^heat-cfn$" > /dev/null; then
+        openstack service create --name heat-cfn --description "Orchestration" cloudformation;
+      fi
+      if ! openstack endpoint list --service heat -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "heat orchestration public" > /dev/null; then
+        openstack endpoint create --region RegionOne orchestration public http://heat:8004/v1/%\(tenant_id\)s
+      fi
+      if ! openstack endpoint list --service heat -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "heat orchestration internal" > /dev/null; then
+        openstack endpoint create --region RegionOne orchestration internal http://heat:8004/v1/%\(tenant_id\)s
+      fi
+      if ! openstack endpoint list --service heat -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "heat orchestration admin" > /dev/null; then
+        openstack endpoint create --region RegionOne orchestration admin http://heat:8004/v1/%\(tenant_id\)s
+      fi
+      if ! openstack endpoint list --service heat -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "heat cloudformation public" > /dev/null; then
+        openstack endpoint create --region RegionOne cloudformation public http://heat:8000/v1/%\(tenant_id\)s
+      fi
+      if ! openstack endpoint list --service heat -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "heat cloudformation internal" > /dev/null; then
+        openstack endpoint create --region RegionOne cloudformation internal http://heat:8000/v1/%\(tenant_id\)s
+      fi
+      if ! openstack endpoint list --service heat -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "heat cloudformation admin" > /dev/null; then
+        openstack endpoint create --region RegionOne cloudformation admin http://heat:8000/v1/%\(tenant_id\)s
+      fi
+      if ! openstack domain list -f value -c "Name" | grep "^heat$" > /dev/null; then
+        openstack domain create --description "Stack projects and users" heat
+      fi
+      if ! openstack user list -f value -c Name | grep "heat_domain_admin" > /dev/null; then
+        openstack user create --domain heat --password $K8S_KEYSTONE_USER_HEAT_PASS heat_domain_admin 2>/dev/null
+      fi
+      openstack role add --domain heat --user-domain heat --user heat_domain_admin admin
+      if ! openstack role list -f value -c "Name" | grep "^heat_stack_owner$" > /dev/null; then
+        openstack role create heat_stack_owner
+      fi
+      ## You must add the heat_stack_owner role to each user that manages stacks.
+      openstack role add --project demo --user demo heat_stack_owner
+      if ! openstack role list -f value -c "Name" | grep "^heat_stack_user$" > /dev/null; then
+        openstack role create heat_stack_user
+      fi
+      su -s /bin/sh -c "heat-manage db_sync" heat
+    fi
+    service heat-api restart
+    service heat-api-cfn restart
+    service heat-engine restart
+    until [ "X$HEAT_SERVICES_ENABLED" == "XTrue" ];
+    do
+      echo "waiting for service response....."
+      HEAT_SERVICES_ENABLED=$(openstack service show heat -f value -c enabled || true)
+      sleep 5
+    done
+    echo "ok~~~~ service is ready~~!!!"
+    openstack service show heat || true
+    touch /.setup_completed
+    tail -F /var/log/syslog /var/log/heat/*
+
+  heat.conf: |
+    [DEFAULT]
+    #transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq
+    transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-0.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-1.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-2.rabbitmq
+    heat_metadata_server_url = http://heat:8000
+    heat_waitcondition_server_url = http://heat:8000/v1/waitcondition
+    stack_domain_admin = heat_domain_admin
+    stack_domain_admin_password = ___K8S_KEYSTONE_USER_HEAT_PASS___
+    stack_user_domain_name = heat
+    [auth_password]
+    [clients]
+    [clients_aodh]
+    [clients_barbican]
+    [clients_ceilometer]
+    [clients_cinder]
+    [clients_designate]
+    [clients_glance]
+    [clients_heat]
+    [clients_keystone]
+    auth_uri = http://keystone:35357
+    [clients_magnum]
+    [clients_manila]
+    [clients_mistral]
+    [clients_monasca]
+    [clients_neutron]
+    [clients_nova]
+    [clients_sahara]
+    [clients_senlin]
+    [clients_swift]
+    [clients_trove]
+    [clients_zaqar]
+    [cors]
+    [cors.subdomain]
+    [database]
+    connection = mysql+pymysql://heat:___K8S_HEAT_DB_PASS___@haproxy-galera/heat
+    [ec2authtoken]
+    auth_uri = http://keystone:5000/v3
+    [eventlet_opts]
+    [healthcheck]
+    [heat_api]
+    [heat_api_cfn]
+    [heat_api_cloudwatch]
+    [keystone_authtoken]
+    auth_uri = http://keystone:5000
+    auth_url = http://keystone:35357
+    #memcached_servers = memcached:11211
+    memcached_servers = memcached-0.memcached:11211,memcached-1.memcached:11211,memcached-2.memcached:11211
+    auth_type = password
+    project_domain_name = default
+    user_domain_name = default
+    project_name = service
+    username = heat
+    password = ___K8S_KEYSTONE_USER_HEAT_PASS___
+    [matchmaker_redis]
+    [oslo_messaging_amqp]
+    [oslo_messaging_kafka]
+    [oslo_messaging_notifications]
+    [oslo_messaging_rabbit]
+    [oslo_messaging_zmq]
+    [oslo_middleware]
+    [oslo_policy]
+    [paste_deploy]
+    [profiler]
+    [revision]
+    [ssl]
+    [trustee]
+    auth_type = password
+    auth_url = http://keystone:35357
+    username = heat
+    password = ___K8S_KEYSTONE_USER_HEAT_PASS___
+    user_domain_name = default
+    [volumes]
