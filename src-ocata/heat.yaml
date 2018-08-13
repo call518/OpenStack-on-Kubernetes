@@ -135,6 +135,17 @@ spec:
         - name: init-container-scripts
           mountPath: /init-container-scripts
         command: ["/bin/bash","-c","/init-container-scripts/init-check-aodh.sh"]
+      #- name: wait7
+      #  #imagePullPolicy: Always
+      #  imagePullPolicy: IfNotPresent
+      #  image: call518/oaas-init-container:1.0
+      #  envFrom:
+      #    - configMapRef:
+      #        name: env-common
+      #  volumeMounts:
+      #  - name: init-container-scripts
+      #    mountPath: /init-container-scripts
+      #  command: ["/bin/bash","-c","/init-container-scripts/init-check-neutron-server.sh"]
       hostAliases:
       - ip: "127.0.0.1"
         hostnames:

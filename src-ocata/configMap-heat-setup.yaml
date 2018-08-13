@@ -9,6 +9,10 @@ data:
     service rsyslog restart
     cp -a /etc/heat/heat.conf /etc/heat/heat.conf.default
     cat /scripts/heat.conf > /etc/heat/heat.conf
+    cat /scripts/sample-heat-template-1.yaml > /sample-heat-template-1.yaml
+    cat /scripts/sample-heat-template-2.yaml > /sample-heat-template-2.yaml
+    cat /scripts/sample-heat-template-2-lb-server.yaml > /sample-heat-template-2-lb-server.yaml
+    source /root/openrc/demo-openrc
     sed -i "s/___K8S_KEYSTONE_USER_HEAT_PASS___/$K8S_KEYSTONE_USER_HEAT_PASS/g" /etc/heat/heat.conf
     sed -i "s/___K8S_HEAT_DB_PASS___/$K8S_HEAT_DB_PASS/g" /etc/heat/heat.conf
     sed -i "s/___K8S_RABBITMQ_OPENSTACK_USER___/$K8S_RABBITMQ_OPENSTACK_USER/g" /etc/heat/heat.conf
@@ -150,3 +154,304 @@ data:
     password = ___K8S_KEYSTONE_USER_HEAT_PASS___
     user_domain_name = default
     [volumes]
+
+  sample-heat-template-1.yaml: |
+    heat_template_version: 2013-05-23
+    
+    description: Simple template to set the admin password for a virtual machine
+    
+    parameters:
+      key_name:
+        type: string
+        label: Key Name
+        default: demo-test-key
+        description: SCOKEY Name of the key pair to be used for the compute instance
+      image_name:
+        type: string
+        label: Image Name
+        default: cirros-0.4.0-i386-disk
+        description: SCOIMAGE Name of the image to be used for the compute instance
+      password:
+        type: string
+        label: Password
+        default: changeme
+        description: admin password
+        hidden: true
+    
+     
+    resources:
+      my_instance:
+        type: OS::Nova::Server
+        properties:
+          key_name: { get_param: key_name }
+          admin_user: sampleuser
+          image: { get_param: image_name }
+          flavor: m1.small
+          user_data:
+            str_replace:
+              template: |
+                #!/bin/bash
+                echo "Setting  password to  " $password           
+                echo $password |passwd --stdin sampleuser
+    
+              params:
+                $password: { get_param: password }
+
+  sample-heat-template-2.yaml: |
+    heat_template_version: 2015-10-15
+    
+    parameters:
+      image:
+        type: string
+        description: Image used for servers
+        default: cirros-0.4.0-i386-disk
+      key:
+        type: string
+        description: SSH key to connect to the servers
+        default: demo-test-key
+      flavor:
+        type: string
+        description: flavor used by the web servers
+        default: m1.tiny
+      network:
+        type: string
+        description: Network used by the server
+        default: demo-net
+      subnet_id:
+        type: string
+        description: subnet on which the load balancer will be located
+        default: ___NEUTRON_DEMO_NET_PRIVATE_SUBNET_ID___
+      external_network_id:
+        type: string
+        description: UUID of a Neutron external network
+        default: ___NEUTRON_EXT_NET_ID___
+      password:
+        type: string
+        label: Password
+        default: changeme
+        description: admin password
+        hidden: true
+    resources:
+    
+    
+    # 1) Create health monitor, pool and load balancer 
+    
+      monitor:
+        type: OS::Neutron::LBaaS::HealthMonitor
+        properties:
+          delay: 3
+          type: PING
+          timeout: 3
+          max_retries: 3
+          pool: { get_resource: pool }
+    
+      pool:
+        type: OS::Neutron::LBaaS::Pool
+        properties:
+          lb_algorithm: ROUND_ROBIN
+          protocol: HTTP
+          listener: { get_resource: listener }
+    
+      listener:
+        type: OS::Neutron::LBaaS::Listener
+        properties:
+          loadbalancer: { get_resource: lb }
+          protocol: HTTP
+          protocol_port: 80
+    
+      lb:
+        type: OS::Neutron::LBaaS::LoadBalancer
+        properties:
+          vip_subnet: { get_param:  subnet_id }
+    
+    
+    
+    # 2)  Floating IP for the load balancer
+    
+    
+      lb_floating:
+        type: OS::Neutron::FloatingIP
+        properties:
+          floating_network_id: {get_param: external_network_id}
+          port_id: {get_attr: [lb, vip_port_id]}
+    
+    
+    # 3)  Create Scaling policies
+    
+    
+      web_server_scaleup_policy:
+        type: OS::Heat::ScalingPolicy
+        properties:
+          adjustment_type: change_in_capacity
+          auto_scaling_group_id: {get_resource: asg}
+          cooldown: 60
+          scaling_adjustment: 1
+      web_server_scaledown_policy:
+        type: OS::Heat::ScalingPolicy
+        properties:
+          adjustment_type: change_in_capacity
+          auto_scaling_group_id: {get_resource: asg}
+          cooldown: 60
+          scaling_adjustment: -1
+    
+    
+    # 4)  Create autoscaling group (VMs)
+    
+    
+      asg:
+        type: OS::Heat::AutoScalingGroup
+        properties:
+          min_size: 1
+          max_size: 3
+          resource:
+            type: sample-heat-template-2-lb-server.yaml
+            properties:
+              flavor: {get_param: flavor}
+              image: {get_param: image}
+              key_name: {get_param: key}
+              network: {get_param: network}
+              pool_id: {get_resource: pool}
+              metadata: {"metering.stack": {get_param: "OS::stack_id"}}
+              subnet: {get_param:  subnet_id}
+              user_data:
+                str_replace:
+                  template: |
+                    #!/bin/bash
+                    echo "Setting  password to  " $password           
+                    echo $password |passwd --stdin sampleuser
+        
+                  params:
+                    $password: { get_param: password }
+    
+    # 5)  Create Ceilometer alarms
+    
+    
+      cpu_alarm_high:
+        type: OS::Ceilometer::Alarm
+        properties:
+          description: Scale-up if the average CPU > 50% for 1 minute
+          meter_name: cpu_util
+          statistic: avg
+          period: 60
+          evaluation_periods: 1
+          threshold: 50
+          alarm_actions:
+            - {get_attr: [web_server_scaleup_policy, alarm_url]}
+          matching_metadata: {'metadata.user_metadata.stack': {get_param: "OS::stack_id"}}
+          comparison_operator: gt
+      cpu_alarm_low:
+        type: OS::Ceilometer::Alarm
+        properties:
+          description: Scale-down if the average CPU < 15% for 10 minutes
+          meter_name: cpu_util
+          statistic: avg
+          period: 600
+          evaluation_periods: 1
+          threshold: 15
+          alarm_actions:
+            - {get_attr: [web_server_scaledown_policy, alarm_url]}
+          matching_metadata: {'metadata.user_metadata.stack': {get_param: "OS::stack_id"}}
+          comparison_operator: lt
+    
+    
+    outputs:
+      scale_up_url:
+        description: >
+          This URL is the webhook to scale up the autoscaling group.  You
+          can invoke the scale-up operation by doing an HTTP POST to this
+          URL; no body nor extra headers are needed.
+        value: {get_attr: [web_server_scaleup_policy, alarm_url]}
+      scale_dn_url:
+        description: >
+          This URL is the webhook to scale down the autoscaling group.
+          You can invoke the scale-down operation by doing an HTTP POST to
+          this URL; no body nor extra headers are needed.
+        value: {get_attr: [web_server_scaledown_policy, alarm_url]}
+      lb_ip_address:
+        value: {get_attr: [lb, vip_address]}
+        description: The IP address of the load balancing
+      website_url:
+        value:
+          str_replace:
+            template: http://host
+            params:
+              host: { get_attr: [lb_floating, floating_ip_address] }
+        description: >
+          This URL is the "external" URL that can be used to access the service.
+      ceilometer_query:
+        value:
+          str_replace:
+            template: >
+              ceilometer statistics -m cpu_util
+              -q metadata.user_metadata.stack=stackval -p 600 -a avg
+            params:
+              stackval: { get_param: "OS::stack_id" }
+        description: >
+          This is a Ceilometer query for statistics on the cpu_util meter
+          Samples about OS::Nova::Server instances in this stack.  The -q
+          parameter selects Samples according to the subject's metadata.
+          When a VM's metadata includes an item of the form metering.X=Y,
+          the corresponding Ceilometer resource has a metadata item of the
+          form user_metadata.X=Y and samples about resources so tagged can
+          be queried with a Ceilometer query term of the form
+          metadata.user_metadata.X=Y.  In this case the nested stacks give
+          their VMs metadata that is passed as a nested stack parameter,
+          and this stack passes a metadata of the form metering.stack=Y,
+          where Y is this stack's ID.
+
+  sample-heat-template-2-lb-server.yaml: |
+    heat_template_version: 2015-10-15
+    description: A load-balancer server
+    parameters:
+      image:
+        type: string
+        description: Image used for servers
+      key_name:
+        type: string
+        description: SSH key to connect to the servers
+      flavor:
+        type: string
+        description: flavor used by the servers
+      pool_id:
+        type: string
+        description: Pool to contact
+      user_data:
+        type: string
+        description: Server user_data
+      metadata:
+        type: json
+      network:
+        type: string
+        description: Network used by the server
+      subnet:
+        type: string
+        description: subnet on which server will be located
+        default:  "your subnet on teh private network ID"
+    
+    resources:
+      server:
+        type: OS::Nova::Server
+        properties:
+          flavor: {get_param: flavor}
+          image: {get_param: image}
+          key_name: {get_param: key_name}
+          metadata: {get_param: metadata}
+          user_data: {get_param: user_data}
+          user_data_format: RAW
+          networks: [{network: {get_param: network} }]
+    
+      member:
+        type: OS::Neutron::LBaaS::PoolMember
+        properties:
+          pool: {get_param: pool_id}
+          address: {get_attr: [server, first_address]}
+          protocol_port: 80
+          subnet: { get_param: subnet }
+    
+    outputs:
+      server_ip:
+        description: IP Address of the load-balanced server.
+        value: { get_attr: [server, first_address] }
+      lb_member:
+        description: LB member details.
+        value: { get_attr: [member, show] }
