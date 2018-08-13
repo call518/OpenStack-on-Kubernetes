@@ -79,7 +79,7 @@ Tutorial
 #### Spec. of Physical Host
 
 * Processor: Intel Core i5-6500 (3.2GHz)
-* Memory: 64GB
+* Memory: 32GB
 * Storage: SSD (2TB)
 * NIC: Intel(R) Ethernet Connection (5) I219-LM
 
@@ -89,13 +89,7 @@ Tutorial
 
 * CentOS-7 x86_64
 * 2 EA vCPUs
-* vRAM
-  * k8s-master: 4GB
-  * k8s-node01: 12GB
-  * k8s-node02: 12GB
-  * k8s-node03: 12GB
-  * k8s-node04: 4GB
-  * k8s-node05: 4GB
+* vRAM: 2GB ~ 6GB
 * 100 GB vDisk
 * 1 EA NIC
 
