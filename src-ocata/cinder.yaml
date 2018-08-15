@@ -142,7 +142,7 @@ spec:
       #  - "nfs-server"
       containers:
         - name: cinder
-          image: call518/oaas-ocata:1.5
+          image: call518/oaas-ocata:latest
           #imagePullPolicy: Always
           imagePullPolicy: IfNotPresent
           securityContext:

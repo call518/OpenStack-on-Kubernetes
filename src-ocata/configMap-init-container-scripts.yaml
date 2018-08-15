@@ -133,6 +133,17 @@ data:
     done;
     echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ aodh is ready~~";
 
+  init-check-heat.sh: |
+    until [ "$API_8004" == "CURRENT" ] && [ "$API_8000" == "CURRENT" ];
+    do
+      ping -c 1 -W 1 aodh 2>&1 >/dev/null
+      API_8004=$(curl --connect-timeout 3 -s "http://heat:8004" | jq -r ".versions[0].status");
+      API_8000=$(curl --connect-timeout 3 -s "http://heat:8000" | jq -r ".versions[0].status");
+      echo "`date +"[%Y-%m-%d %H:%M:%S]"` heat is not ready..... waiting...";
+      sleep 5;
+    done;
+    echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ heat is ready~~";
+
   init-check-glance.sh: |
     until [ "$API_9292" == "CURRENT" ];
     do
