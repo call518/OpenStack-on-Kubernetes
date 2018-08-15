@@ -45,6 +45,7 @@ if [ "$1" != "--force" ]; then
     sleep 10
     
     ./reset-all-pv-pvc.sh
+    kubectl delete pod/neutron-server-0 pod/nova-compute-0
 else
     for res in $(kubectl get statefulset | grep -v "^NAME" | awk '{print $1}')
     do

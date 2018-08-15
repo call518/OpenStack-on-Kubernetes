@@ -6,6 +6,8 @@ if [ $# -eq 0 ]; then
 fi
 
 LPATH=`pwd`
-NAME="call518/`basename $LPATH`:$1"
+NAME1="call518/`basename $LPATH`:$1"
+NAME2="call518/`basename $LPATH`:latest"
 
-docker build -t $NAME . && docker push $NAME
+docker build -t $NAME1 . && docker push $NAME1
+docker tag $NAME1 $NAME2 && docker push $NAME2

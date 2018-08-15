@@ -130,7 +130,7 @@ spec:
       #  - "nfs-server"
       containers:
         - name: aodh
-          image: call518/oaas-ocata:1.4
+          image: call518/oaas-ocata:latest
           #imagePullPolicy: Always
           imagePullPolicy: IfNotPresent
           #securityContext:

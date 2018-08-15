@@ -1,7 +1,7 @@
 #!/bin/bash
 
 kubectl delete pdb/nova-server-pdb
-kubectl delete service/nova-server
+kubectl delete service/nova-server service/nova-novncproxy
 kubectl delete statefulset.apps/nova-server
 
 kubectl exec -it keystone-0 -- /bin/bash /scripts/remove-nova-server.sh

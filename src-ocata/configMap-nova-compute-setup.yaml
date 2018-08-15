@@ -9,7 +9,8 @@ data:
     service rsyslog restart;
     apt-get update;
     apt-get -y purge nova-api;
-    apt-get -y install nova-api-metadata;
+    #apt-get -y install nova-api-metadata;
+    dpkg -i /nova-api-metadata.deb
     ## OVS Networking - BEGIN
     /ovs-setup/ovs-init.sh
     ## OVS Networking - END
