@@ -3,7 +3,8 @@ kind: ConfigMap
 metadata:
   name: env-common
 data:
-  K8S_OPENSTACK_RELEASE: "ocata"
+  #K8S_OPENSTACK_RELEASE: "ocata"
+  K8S_OPENSTACK_RELEASE: "pike"
   MYSQL_ROOT_PASSWORD: "passw0rd"
   DISCOVERY_SERVICE: "etcd-client:2379"
   XTRABACKUP_PASSWORD: "passw0rd"

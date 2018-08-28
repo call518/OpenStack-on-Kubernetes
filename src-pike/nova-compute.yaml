@@ -1,0 +1,244 @@
+# Reference: (N/A)
+
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: nova-compute-pdb
+spec:
+  selector:
+    matchLabels:
+      app: nova-compute
+  minAvailable: 1
+  #maxUnavailable: 2
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: nova-compute
+  labels:
+    app: nova-compute
+spec:
+  ports:
+  - name: nova-compute-api
+    port: 8774
+    targetPort: 8774
+  - name: nova-metadata-api
+    port: 8775
+    targetPort: 8775
+  #- name: nova-novncproxy
+  #  port: 6080
+  #  targetPort: 6080
+  #sessionAffinity: ClientIP
+  clusterIP: None
+  #type: NodePort # Or LoadBalancer in production w/ proper security
+  #type: LoadBalancer
+  selector:
+    app: nova-compute
+
+---
+
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: nova-compute
+  labels:
+    app: nova-compute
+spec:
+  serviceName: "nova-compute"
+  #replicas: 3
+  replicas: 3
+  #podManagementPolicy: OrderedReady
+  podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: nova-compute
+  template:
+    metadata:
+      labels:
+        app: nova-compute
+    spec:
+      terminationGracePeriodSeconds: 10
+      affinity:
+         podAntiAffinity:
+           requiredDuringSchedulingIgnoredDuringExecution:
+           - labelSelector:
+               matchExpressions:
+               - key: "app"
+                 operator: In
+                 values:
+                 - nova-compute
+             topologyKey: "kubernetes.io/hostname"
+      nodeSelector:
+        compute: "true"
+      initContainers:
+      - name: wait1
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        image: call518/oaas-init-container:1.0
+        envFrom:
+          - configMapRef:
+              name: env-common
+        volumeMounts:
+        - name: init-container-scripts
+          mountPath: /init-container-scripts
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-haproxy.sh"]
+      - name: wait2
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        image: call518/oaas-init-container:1.0
+        envFrom:
+          - configMapRef:
+              name: env-common
+        volumeMounts:
+        - name: init-container-scripts
+          mountPath: /init-container-scripts
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-memcached.sh"]
+      - name: wait3
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        image: call518/oaas-init-container:1.0
+        envFrom:
+          - configMapRef:
+              name: env-common
+        volumeMounts:
+        - name: init-container-scripts
+          mountPath: /init-container-scripts
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-rabbitmq.sh"]
+      - name: wait4
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        image: call518/oaas-init-container:1.0
+        envFrom:
+          - configMapRef:
+              name: env-common
+        volumeMounts:
+        - name: init-container-scripts
+          mountPath: /init-container-scripts
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-keystone.sh"]
+      - name: wait5
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        image: call518/oaas-init-container:1.0
+        envFrom:
+          - configMapRef:
+              name: env-common
+        volumeMounts:
+        - name: init-container-scripts
+          mountPath: /init-container-scripts
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-neutron-server.sh"]
+      - name: wait6
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        image: call518/oaas-init-container:1.0
+        envFrom:
+          - configMapRef:
+              name: env-common
+        volumeMounts:
+        - name: init-container-scripts
+          mountPath: /init-container-scripts
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-nova-server.sh"]
+      hostAliases:
+      - ip: "127.0.0.1"
+        hostnames:
+        - "nova-compute"
+      #- ip: "192.168.0.150"
+      #  hostnames:
+      #  - "nfs-server"
+      containers:
+        - name: nova-compute
+          image: call518/oaas-pike:latest
+          #imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            privileged: true
+            capabilities:
+              add:
+              - ALL
+              - CAP_SYS_ADMIN
+              - CAP_SYS_MODULE
+              - CAP_NET_ADMIN
+          env:
+            #- name: MY_POD_NAME
+            #  valueFrom:
+            #    fieldRef:
+            #      fieldPath: metadata.name
+            #- name: MY_POD_NAMESPACE
+            #  valueFrom:
+            #    fieldRef:
+            #      fieldPath: metadata.namespace
+            - name: MY_NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: MY_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          envFrom:
+            - configMapRef:
+                name: env-common
+          command: ["/scripts/nova-compute-init.sh"]
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                - /bin/sh
+                - -c
+                - >
+                  umount -a -t nfs;
+          ports:
+          ports:
+            - containerPort: 8774
+            - containerPort: 8775
+            - containerPort: 6080
+          volumeMounts:
+          - name: kernel-modules
+            mountPath: /lib/modules
+          - name: openstack-openrc
+            mountPath: /root/openrc
+          - name: ovs-setup
+            mountPath: /ovs-setup
+          - name: nova-compute-setup
+            mountPath: /scripts
+          readinessProbe:
+            exec:
+              command:
+              - /check-init.sh
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            #timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 1
+          #livenessProbe:
+          #  exec:
+          #    command:
+          #    - /healthcheck.sh
+          #    - --liveness
+          ##livenessProbe:
+          ##  tcpSocket:
+          ##    port: 35357
+          ##  initialDelaySeconds: 5
+          ##  periodSeconds: 10
+      volumes:
+      - name: init-container-scripts
+        configMap:
+          name: init-container-scripts
+          defaultMode: 0755
+      - name: kernel-modules
+        hostPath:
+          path: /lib/modules
+          type: Directory
+      - name: openstack-openrc
+        configMap:
+          name: openstack-openrc
+          defaultMode: 0755
+      - name: ovs-setup
+        configMap:
+          name: ovs-setup
+          defaultMode: 0755
+      - name: nova-compute-setup
+        configMap:
+          name: nova-compute-setup
+          defaultMode: 0755

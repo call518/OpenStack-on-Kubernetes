@@ -1,0 +1,139 @@
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: rabbitmq-pdb
+spec:
+  selector:
+    matchLabels:
+      app: rabbitmq
+  minAvailable: 2
+  #maxUnavailable: 1
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  # Expose the management HTTP port on each node
+  name: rabbitmq-management
+  labels:
+    app: rabbitmq
+spec:
+  ports:
+  - port: 15672
+    name: http
+  #sessionAffinity: ClientIP
+  clusterIP: None
+  #type: NodePort # Or LoadBalancer in production w/ proper security
+  #type: LoadBalancer
+  selector:
+    app: rabbitmq
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  # The required headless service for StatefulSets
+  name: rabbitmq
+  labels:
+    app: rabbitmq
+spec:
+  ports:
+  - port: 5672
+    name: amqp
+  - port: 4369
+    name: epmd
+  - port: 25672
+    name: rabbitmq-dist
+  #sessionAffinity: ClientIP
+  clusterIP: None
+  #type: NodePort # Or LoadBalancer in production w/ proper security
+  #type: LoadBalancer
+  selector:
+    app: rabbitmq
+
+---
+
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: rabbitmq
+spec:
+  serviceName: "rabbitmq"
+  replicas: 3
+  podManagementPolicy: OrderedReady
+  #podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      affinity:
+         podAntiAffinity:
+           requiredDuringSchedulingIgnoredDuringExecution:
+           - labelSelector:
+               matchExpressions:
+               - key: "app"
+                 operator: In
+                 values:
+                 - rabbitmq
+             topologyKey: "kubernetes.io/hostname"
+      nodeSelector:
+        controller: "true"
+      containers:
+      - name: rabbitmq
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        #image: rabbitmq:3.6.6-management-alpine
+        image: call518/oaas-rabbitmq:1.0
+        envFrom:
+          - configMapRef:
+              name: env-common
+        lifecycle:
+          postStart:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - >
+                if [ -z "$(grep rabbitmq /etc/resolv.conf)" ]; then
+                  sed "s/^search \([^ ]\+\)/search rabbitmq.\1 \1/" /etc/resolv.conf > /etc/resolv.conf.new;
+                  cat /etc/resolv.conf.new > /etc/resolv.conf;
+                  rm /etc/resolv.conf.new;
+                fi;
+                until rabbitmqctl node_health_check; do sleep 1; done;
+                if [[ "$HOSTNAME" != "rabbitmq-0" && -z "$(rabbitmqctl cluster_status | grep rabbitmq-0)" ]]; then
+                  rabbitmqctl stop_app;
+                  rabbitmqctl join_cluster rabbit@rabbitmq-0;
+                  rabbitmqctl start_app;
+                else
+                  rabbitmqctl set_policy ha-all '^(?!amq\.).*' '{"ha-mode": "all", "ha-sync-mode":"automatic"}'
+                  rabbitmqctl add_user $K8S_RABBITMQ_ADMIN_USER $K8S_RABBITMQ_ADMIN_PASS
+                  rabbitmqctl set_user_tags $K8S_RABBITMQ_ADMIN_USER administrator
+                  rabbitmqctl set_permissions -p / $K8S_RABBITMQ_ADMIN_USER ".*" ".*" ".*"
+                  rabbitmqctl delete_user guest
+                  rabbitmqctl add_user $K8S_RABBITMQ_OPENSTACK_USER $K8S_RABBITMQ_OPENSTACK_PASS
+                  rabbitmqctl set_permissions $K8S_RABBITMQ_OPENSTACK_USER ".*" ".*" ".*"
+                fi;
+        env:
+        - name: RABBITMQ_ERLANG_COOKIE
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-erlang-cookie
+              key: erlang-cookie
+        ports:
+        - containerPort: 5672
+          name: amqp
+        volumeMounts:
+        - name: pvc-rabbitmq
+          mountPath: /var/lib/rabbitmq
+  volumeClaimTemplates:
+  - metadata:
+      name: pvc-rabbitmq
+      annotations:
+        volume.alpha.kubernetes.io/storage-class: anything
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 10Gi # make this bigger in production

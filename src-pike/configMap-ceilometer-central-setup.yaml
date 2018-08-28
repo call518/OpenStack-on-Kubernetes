@@ -1,0 +1,220 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ceilometer-central-setup
+data:
+  ceilometer-central-init.sh: |
+    #!/bin/bash
+    set -e
+    service rsyslog restart
+    echo "ServerName localhost" >> /etc/apache2/apache2.conf
+    cp -a /etc/gnocchi/gnocchi.conf /etc/gnocchi/gnocchi.conf.default
+    cat /scripts/gnocchi.conf > /etc/gnocchi/gnocchi.conf
+    cp -a /etc/ceilometer/ceilometer.conf /etc/ceilometer/ceilometer.conf.default
+    cat /scripts/ceilometer.conf > /etc/ceilometer/ceilometer.conf
+    cat /scripts/apache-gnocchi-api.conf > /etc/apache2/sites-available/gnocchi-api.conf
+    a2ensite gnocchi-api
+    sed -i "s/___K8S_KEYSTONE_USER_GNOCCHI_PASS___/$K8S_KEYSTONE_USER_GNOCCHI_PASS/g" /etc/gnocchi/gnocchi.conf
+    sed -i "s/___K8S_GNOCCHI_DB_PASS___/$K8S_GNOCCHI_DB_PASS/g" /etc/gnocchi/gnocchi.conf
+    sed -i "s/___K8S_RABBITMQ_OPENSTACK_USER___/$K8S_RABBITMQ_OPENSTACK_USER/g" /etc/gnocchi/gnocchi.conf /etc/ceilometer/ceilometer.conf
+    sed -i "s/___K8S_RABBITMQ_OPENSTACK_PASS___/$K8S_RABBITMQ_OPENSTACK_PASS/g" /etc/gnocchi/gnocchi.conf /etc/ceilometer/ceilometer.conf
+    sed -i "s/___K8S_KEYSTONE_USER_CEILOMETER_PASS___/$K8S_KEYSTONE_USER_CEILOMETER_PASS/g" /etc/ceilometer/ceilometer.conf
+    echo -e "\n[pipeline:main]\npipeline = gnocchi+auth" >> /etc/gnocchi/api-paste.ini
+    source /root/openrc/admin-openrc
+    exist_gnocchi_db=$(mysql -s -N -q -A --connect-timeout=10 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW DATABASES LIKE 'gnocchi';" 2>/dev/null)
+    if [ "X$exist_gnocchi_db" == "X" ]; then
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS gnocchi"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON gnocchi.* TO 'gnocchi'@'localhost' IDENTIFIED BY '$K8S_GNOCCHI_DB_PASS'"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON gnocchi.* TO 'gnocchi'@'%' IDENTIFIED BY '$K8S_GNOCCHI_DB_PASS'"
+      if ! openstack user list -f value -c Name | grep ceilometer > /dev/null; then
+        openstack user create --domain default --password $K8S_KEYSTONE_USER_CEILOMETER_PASS ceilometer 2>/dev/null
+      fi
+      openstack role add --project service --user ceilometer admin
+      if ! openstack service list -f value -c Name | grep "^ceilometer$" > /dev/null; then
+        openstack service create --name ceilometer --description "Telemetry" metering;
+      fi
+      if ! openstack user list -f value -c Name | grep gnocchi > /dev/null; then
+        openstack user create --domain default --password $K8S_KEYSTONE_USER_GNOCCHI_PASS gnocchi 2>/dev/null
+      fi
+      openstack role add --project service --user gnocchi admin
+      if ! openstack service list -f value -c Name | grep "^gnocchi$" > /dev/null; then
+        openstack service create --name gnocchi --description "Metric Service" metric;
+      fi
+      if ! openstack endpoint list --service gnocchi -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "gnocchi metric public" > /dev/null; then
+        openstack endpoint create --region RegionOne metric public http://ceilometer-central:8041
+      fi
+      if ! openstack endpoint list --service gnocchi -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "gnocchi metric internal" > /dev/null; then
+        openstack endpoint create --region RegionOne metric internal http://ceilometer-central:8041
+      fi
+      if ! openstack endpoint list --service gnocchi -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "gnocchi metric admin" > /dev/null; then
+        openstack endpoint create --region RegionOne metric admin http://ceilometer-central:8041
+      fi
+      chown gnocchi:gnocchi -R  /var/lib/gnocchi
+      #gnocchi-upgrade
+      su gnocchi -s /bin/sh -c 'gnocchi-upgrade --config-file /etc/gnocchi/gnocchi.conf --create-legacy-resource-types'
+    fi
+    sed -i 's/8000/8041/g' /usr/bin/gnocchi-api
+    service apache2 restart
+    #service gnocchi-api restart ## Don't use this.
+    service gnocchi-metricd restart
+    if [ "X$exist_gnocchi_db" == "X" ]; then
+      ceilometer-upgrade --skip-metering-database
+    fi
+    service ceilometer-agent-central restart
+    service ceilometer-agent-notification restart
+    service ceilometer-collector restart
+    until [ "X$GNOCCHI_SERVICES_ENABLED" == "XTrue" ] && [ "X$CEILOMETER_SERVICES_ENABLED" == "XTrue" ]
+    do
+      echo "waiting for service response....."
+      GNOCCHI_SERVICES_ENABLED=$(openstack service show gnocchi -f value -c enabled || true)
+      CEILOMETER_SERVICES_ENABLED=$(openstack service show ceilometer -f value -c enabled || true)
+      sleep 5
+    done
+    echo "ok~~~~ service is ready~~!!!"
+    openstack service show gnocchi || true
+    openstack service show ceilometer || true
+    touch /.setup_completed
+    tail -F /var/log/syslog /var/log/ceilometer/* /var/log/gnocchi/* /var/log/apache2/*
+
+  gnocchi.conf: |
+    [DEFAULT]
+    log_dir = /var/log/gnocchi
+    #transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq
+    transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-0.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-1.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-2.rabbitmq
+    [api]
+    paste_config = /etc/gnocchi/api-paste.ini
+    auth_mode = keystone
+    [archive_policy]
+    default_aggregation_methods = mean,min,max,sum,std,median,count,last,95pct
+    [database]
+    #backend = sqlalchemy
+    [indexer]
+    url = mysql+pymysql://gnocchi:___K8S_GNOCCHI_DB_PASS___@haproxy-galera/gnocchi
+    [keystone_authtoken]
+    #auth_uri = http://keystone:5000/v3
+    #auth_url = http://keystone:35357/v3
+    auth_url = http://keystone:5000/v3
+    #memcached_servers = memcached:11211
+    memcached_servers = memcached-0.memcached:11211,memcached-1.memcached:11211,memcached-2.memcached:11211
+    auth_type = password
+    project_domain_name = default
+    user_domain_name = default
+    project_name = service
+    username = gnocchi
+    password = ___K8S_KEYSTONE_USER_GNOCCHI_PASS___
+    interface = internalURL
+    region_name = RegionOne
+    [metricd]
+    workers = 3
+    metric_processing_delay = 5
+    [storage]
+    ## Use file
+    driver = file
+    file_basepath = /var/lib/gnocchi
+    coordination_url = zookeeper://zk-0.zk-svc:2181,zk-1.zk-svc:2181,zk-2.zk-svc:2181
+    ## Use Ceph
+    #driver = ceph
+    #ceph_pool = gnocchi
+    #ceph_username = gnocchi
+    #ceph_keyring = /etc/ceph/ceph.client.gnocchi.keyring
+    #ceph_conffile = /etc/ceph/ceph.conf
+
+  ceilometer.conf: |
+    [DEFAULT]
+    #transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq
+    transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-0.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-1.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-2.rabbitmq
+    meter_dispatchers=gnocchi
+    event_dispatchers=gnocchi
+    [api]
+    [collector]
+    [compute]
+    [coordination]
+    [cors]
+    [cors.subdomain]
+    [database]
+    [dispatcher_file]
+    [dispatcher_gnocchi]
+    # filter out Gnocchi-related activity meters (Swift driver)
+    filter_service_activity = False
+    # default metric storage archival policy
+    archive_policy = low
+    [dispatcher_http]
+    [event]
+    [hardware]
+    [ipmi]
+    [keystone_authtoken]
+    #auth_uri = http://keystone:5000/v3
+    #auth_url = http://keystone:35357/v3
+    auth_url = http://keystone:5000/v3
+    #memcached_servers = memcached:11211
+    memcached_servers = memcached-0.memcached:11211,memcached-1.memcached:11211,memcached-2.memcached:11211
+    auth_type = password
+    project_domain_name = default
+    user_domain_name = default
+    project_name = service
+    username = ceilometer
+    password = ___K8S_KEYSTONE_USER_CEILOMETER_PASS___
+    #interface = internalURL
+    #region_name = RegionOne
+    [matchmaker_redis]
+    [meter]
+    [notification]
+    [oslo_concurrency]
+    [oslo_messaging_amqp]
+    [oslo_messaging_kafka]
+    [oslo_messaging_notifications]
+    [oslo_messaging_rabbit]
+    [oslo_messaging_zmq]
+    [oslo_middleware]
+    [oslo_policy]
+    [polling]
+    [publisher]
+    [publisher_notifier]
+    [rgw_admin_credentials]
+    [service_credentials]
+    #auth_uri = http://keystone:5000/v3
+    #auth_url = http://keystone:35357/v3
+    auth_url = http://keystone:5000/v3
+    #memcached_servers = memcached:11211
+    memcached_servers = memcached-0.memcached:11211,memcached-1.memcached:11211,memcached-2.memcached:11211
+    auth_type = password
+    project_domain_name = default
+    user_domain_name = default
+    project_name = service
+    username = ceilometer
+    password = ___K8S_KEYSTONE_USER_CEILOMETER_PASS___
+    #interface = internalURL
+    #region_name = RegionOne
+    [service_types]
+    [storage]
+    [vmware]
+    [xenapi]
+
+  apache-gnocchi-api.conf: |
+    Listen 8041
+    
+    <VirtualHost *:8041>
+        WSGIDaemonProcess gnocchi-api processes=2 threads=10 user=gnocchi display-name=%{GROUP}
+        WSGIProcessGroup gnocchi-api
+        WSGIScriptAlias / /usr/lib/python2.7/dist-packages/gnocchi/rest/app.wsgi
+        WSGIApplicationGroup %{GLOBAL}
+        <IfVersion >= 2.4>
+            ErrorLogFormat "%{cu}t %M"
+        </IfVersion>
+    
+        <Directory />
+            Options FollowSymLinks
+            AllowOverride None
+            <IfVersion >= 2.4>
+                Require all granted
+            </IfVersion>
+            <IfVersion < 2.4>
+                Order allow,deny
+                Allow from all
+            </IfVersion>
+        </Directory>
+    
+        ErrorLog /var/log/apache2/gnocchi_error.log
+        CustomLog /var/log/apache2/gnocchi_access.log combined
+    </VirtualHost>
+    WSGISocketPrefix /var/run/apache2

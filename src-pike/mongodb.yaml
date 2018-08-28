@@ -1,0 +1,156 @@
+# Reference1: https://www.ibm.com/developerworks/cloud/library/cl-deploy-mongodb-replica-set-using-ibm-cloud-container-service/index.html
+# Reference2: https://github.com/MichaelScript/kubernetes-mongodb
+# Reference3: https://github.com/MichaelScript/kubernetes-mongodb/blob/master/mongodb.yaml
+#
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb
+  labels:
+    app: mongodb
+spec:
+  ports:
+  - port: 27017
+    targetPort: 27017
+  #sessionAffinity: ClientIP
+  clusterIP: None
+  #type: NodePort # Or LoadBalancer in production w/ proper security
+  #type: LoadBalancer
+  selector:
+    app: mongodb
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: mongodb
+spec:
+  serviceName: mongodb
+  replicas: 3
+  podManagementPolicy: OrderedReady
+  #podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        app: mongodb
+        environment: test
+        replicaset: MainRepSet
+    spec:
+      terminationGracePeriodSeconds: 10
+      affinity:
+         podAntiAffinity:
+           requiredDuringSchedulingIgnoredDuringExecution:
+           - labelSelector:
+               matchExpressions:
+               - key: "app"
+                 operator: In
+                 values:
+                 - mongodb
+             topologyKey: "kubernetes.io/hostname"
+#      affinity:
+#        # This is to prevent mongodb replicas from ending up on the same
+#        # host machine
+#        podAntiAffinity:
+#          preferredDuringSchedulingIgnoredDuringExecution:
+#          - weight: 100
+#            podAffinityTerm:
+#              labelSelector:
+#                matchExpressions:
+#                - key: replicaset
+#                  operator: In
+#                  values:
+#                  - MainRepSet
+#              topologyKey: kubernetes.io/hostname
+      nodeSelector:
+        controller: "true"
+      containers:
+        - name: mongodb
+          #image: pkdone/mongo-ent:3.4
+          #image: mongo
+          image: call518/oaas-mongodb:1.0
+          #imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
+          env:
+          - name: STATEFULSET_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: MACHINE_MEMORY
+            value: &machineMemory "500Mi"
+          # We can change this to a secret
+          envFrom:
+            - configMapRef:
+                name: env-common
+          command:
+            - "bash"
+            - "-c"
+            #the default cache size guidance is: "50% of RAM minus 1 GB, or 256 MB"
+            # Which is why the wired tiger cache size is this way. This assumes 2gb of memory
+            # on the host machine. The plan is to change 0.25 to a calculated value
+            # by passing an environment variable that contains the host machines memory
+            # and automatically "personalizing" mongodb to the machine its running on
+            - |
+              numactl --interleave=all mongod --wiredTigerCacheSizeGB 0.25 --bind_ip 0.0.0.0 \
+              --replSet MainRepSet --auth --clusterAuthMode keyFile \
+              --keyFile /etc/secrets-volume/mongodb-secret \
+              --setParameter authenticationMechanisms=SCRAM-SHA-1 \
+              --fork --logpath /var/log/mongod.log \
+              &&
+              if [ $STATEFULSET_NAME == "mongodb-0" ];
+              then
+                initiated=0
+                replica_exists=false
+                while [ "$replica_exists" != true ]
+                do
+                  # Need to check to make sure that the other pods are currently up
+                  initiated=`mongo --quiet --eval 'rs.initiate({_id: "MainRepSet", version: 1, members: [
+                         { _id: 0, host : "mongodb-0.mongodb.default.svc.cluster.local:27017" },
+                         { _id: 1, host : "mongodb-1.mongodb.default.svc.cluster.local:27017" },
+                         { _id: 2, host : "mongodb-2.mongodb.default.svc.cluster.local:27017" }
+                   ]})["ok"]'`;
+                  replica_exists=`mongo --quiet --eval 'db.isMaster()["ismaster"]'`;
+                   # Shit we need to check rs status i think instead
+                  echo "Replica exists: " $replica_exists;
+                  sleep 2
+                done
+                # If everything else is working then we need to create an admin user
+                mongo --eval "db.getSiblingDB('admin').createUser({
+                      user : \"$K8S_MONGO_USER\",
+                      pwd  : \"$K8S_MONGO_PASS\",
+                      roles: [ { role: 'root', db: 'admin' } ]
+                });"
+                echo "STATEFULSET_NAME: $STATEFULSET_NAME \n MACHINE_MEMORY: $MACHINE_MEMORY";
+              fi \
+              && tail -F /var/log/mongod.log
+          # resources:
+          #   requests:
+          #     cpu: 1
+          #     memory: 300Mi
+          ports:
+            - containerPort: 27017
+          volumeMounts:
+            - name: secrets-volume
+              # readOnly: true
+              mountPath: /etc/secrets-volume/mongodb-secret
+              subPath: mongodb-secret
+            - name: pvc-mongodb
+              mountPath: /data/db
+      volumes:
+        - name: secrets-volume
+          secret:
+            secretName: mongodb-secret
+            # https://coderstoolbox.net/number/
+            # Convert to octal to decimal because kube only accepts
+            # decimal as input
+            defaultMode: 256
+  volumeClaimTemplates:
+  - metadata:
+      name: pvc-mongodb
+#      annotations:
+#        volume.beta.kubernetes.io/storage-class: "fast"
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 500Mi

@@ -1,0 +1,185 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: init-container-scripts
+data:
+
+  init-check-etcd.sh: |
+    until [ "`curl --connect-timeout 3 -s -L \"http://$DISCOVERY_SERVICE/health\"`" == "{\"health\":\"true\"}" ];
+    do
+      echo "`date +"[%Y-%m-%d %H:%M:%S]"` etcd is not ready..... waiting...";
+      sleep 5;
+    done;
+    echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ etcd is ready~~";
+
+  init-check-nfs-sever-etcd.sh: |
+    until [ "`curl --connect-timeout 3 -s -L \"http://$DISCOVERY_SERVICE/v2/keys/oaas/$K8S_NFS_SERVER_IP_ETC_KEY\" -XGET | jq -r .node.value`" != "null" ];
+    do
+      echo "`date +"[%Y-%m-%d %H:%M:%S]"` nfs-server is not ready..... waiting...";
+      sleep 5;
+    done;
+    echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ nfs-server is ready~~";
+
+  init-check-galera.sh: |
+    QUERY_HOST="galera";
+    QUERY_WSREP_READY="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_READY';";
+    QUERY_WSREP_CLUSTER_SIZE="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_CLUSTER_SIZE';";
+    QUERY_WSREP_CLUSTER_STATUS="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_CLUSTER_STATUS';";
+    QUERY_WSREP_LOCAL_STATE_COMMENT="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_LOCAL_STATE_COMMENT';";
+    until [ "$WSREP_READY" == "ON" ] && [ "$WSREP_CLUSTER_SIZE" == "3" ] && [ "$WSREP_CLUSTER_STATUS" == "Primary" ] && [ "$WSREP_LOCAL_STATE_COMMENT" == "Synced" ];
+    do
+      ping -c 1 -W 1 galera 2>&1 >/dev/null;
+      echo "`date +"[%Y-%m-%d %H:%M:%S]"` galera is not ready..... waiting...";
+      WSREP_READY=$(mysql --connect-timeout=3 -h$QUERY_HOST -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_READY" 2>1 2> /dev/null;);
+      WSREP_CLUSTER_SIZE=$(mysql --connect-timeout=3 -h$QUERY_HOST -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_SIZE" 2>1 2> /dev/null;);
+      WSREP_CLUSTER_STATUS=$(mysql --connect-timeout=3 -h$QUERY_HOST -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_STATUS" 2>1 2> /dev/null;);
+      WSREP_LOCAL_STATE_COMMENT=$(mysql --connect-timeout=3 -h$QUERY_HOST -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_LOCAL_STATE_COMMENT" 2>1 2> /dev/null;);
+      sleep 5;
+    done;
+    echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ galera is ready~~";
+
+  init-check-haproxy.sh: |
+    QUERY_HOST="haproxy-galera";
+    QUERY_WSREP_READY="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_READY';";
+    QUERY_WSREP_CLUSTER_SIZE="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_CLUSTER_SIZE';";
+    QUERY_WSREP_CLUSTER_STATUS="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_CLUSTER_STATUS';";
+    QUERY_WSREP_LOCAL_STATE_COMMENT="SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='WSREP_LOCAL_STATE_COMMENT';";
+    until [ "$WSREP_READY" == "ON" ] && [ "$WSREP_CLUSTER_SIZE" == "3" ] && [ "$WSREP_CLUSTER_STATUS" == "Primary" ] && [ "$WSREP_LOCAL_STATE_COMMENT" == "Synced" ];
+    do
+      ping -c 1 -W 1 haproxy-galera 2>&1 >/dev/null;
+      echo "`date +"[%Y-%m-%d %H:%M:%S]"` haproxy-galera is not ready..... waiting...";
+      WSREP_READY=$(mysql --connect-timeout=3 -h$QUERY_HOST -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_READY" 2>1 2> /dev/null;);
+      WSREP_CLUSTER_SIZE=$(mysql --connect-timeout=3 -h$QUERY_HOST -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_SIZE" 2>1 2> /dev/null;);
+      WSREP_CLUSTER_STATUS=$(mysql --connect-timeout=3 -h$QUERY_HOST -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_CLUSTER_STATUS" 2>1 2> /dev/null;);
+      WSREP_LOCAL_STATE_COMMENT=$(mysql --connect-timeout=3 -h$QUERY_HOST -uroot -p$MYSQL_ROOT_PASSWORD -N -s -e "$QUERY_WSREP_LOCAL_STATE_COMMENT" 2>1 2> /dev/null;);
+      sleep 5;
+    done;
+    echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ haproxy-galera is ready~~";
+
+  init-check-zookeeper.sh: |
+    #RUOK_Z1=$(echo ruok | nc zk-0.zk-svc 2181);
+    #RUOK_Z2=$(echo ruok | nc zk-1.zk-svc 2181);
+    #RUOK_Z2=$(echo ruok | nc zk-2.zk-svc 2181);
+    #until [ "$RUOK_Z1" == "imok" ] && [ "$RUOK_Z2" == "imok" ] && [ "$RUOK_Z2" == "imok" ];
+    until [ "$RUOK" == "imok" ];
+    do
+      ping -c 1 -W 1 zk-svc 2>&1 >/dev/null
+      echo "`date +"[%Y-%m-%d %H:%M:%S]"` zookeeper is not ready..... waiting...";
+      RUOK=$(echo ruok | nc zk-svc 2181);
+      sleep 5;
+    done;
+    echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ zookeeper is ready~~";
+
+  init-check-memcached.sh: |
+    RETURN=1;
+    CURRENT_CONNECTIONS=-1;
+    until [ $RETURN -eq 0 ];
+    do
+      echo "`date +"[%Y-%m-%d %H:%M:%S]"` memcached is not ready..... waiting...";
+      CURRENT_CONNECTIONS=$((echo stats ; echo quit) | nc memcached 11211 | awk '/curr_connections/ {print $3}' | tr -d '\015');
+      RETURN=$?;
+      sleep 5;
+    done;
+    UPTIME=$((echo stats ; echo quit) | nc memcached 11211 | awk '/uptime/ {print $3}' | tr -d '\015');
+    until [ $CURRENT_CONNECTIONS -gt 0 ] && [ $UPTIME -gt 0 ];
+    do
+      echo "`date +"[%Y-%m-%d %H:%M:%S]"` memcached is not ready..... waiting...";
+      sleep 5;
+    done;
+    echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ memcached is ready~~";
+
+  init-check-rabbitmq.sh: |
+    #R0_ALIVENESS=$(curl --connect-timeout 3 -s -u $K8S_RABBITMQ_ADMIN_USER:$K8S_RABBITMQ_ADMIN_PASS "http://rabbitmq-0.rabbitmq:15672/api/aliveness-test/%2F");
+    #R1_ALIVENESS=$(curl --connect-timeout 3 -s -u $K8S_RABBITMQ_ADMIN_USER:$K8S_RABBITMQ_ADMIN_PASS "http://rabbitmq-1.rabbitmq:15672/api/aliveness-test/%2F");
+    #R2_ALIVENESS=$(curl --connect-timeout 3 -s -u $K8S_RABBITMQ_ADMIN_USER:$K8S_RABBITMQ_ADMIN_PASS "http://rabbitmq-2.rabbitmq:15672/api/aliveness-test/%2F");
+    #until [ "$R0_ALIVENESS" == "{\"status\":\"ok\"}" ] && [ "$R1_ALIVENESS" == "{\"status\":\"ok\"}" ] && [ "$R2_ALIVENESS" == "{\"status\":\"ok\"}" ];
+    ALIVENESS=$(curl --connect-timeout 3 -s -u $K8S_RABBITMQ_ADMIN_USER:$K8S_RABBITMQ_ADMIN_PASS "http://rabbitmq:15672/api/aliveness-test/%2F");
+    until [ "$ALIVENESS" == "{\"status\":\"ok\"}" ];
+    do
+      ping -c 1 -W 1 rabbitmq 2>&1 >/dev/null
+      echo "`date +"[%Y-%m-%d %H:%M:%S]"` rabbitmq is not ready..... waiting...";
+      sleep 5;
+    done;
+    echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ rabbitmq is ready~~";
+
+  init-check-keystone.sh: |
+    until [ "$API_35357" == "stable" ] && [ "$API_5000" == "stable" ];
+    do
+      ping -c 1 -W 1 keystone 2>&1 >/dev/null
+      API_35357=$(curl --connect-timeout 3 -s "http://keystone:35357" | jq -r ".versions.values[0].status");
+      API_5000=$(curl --connect-timeout 3 -s "http://keystone:5000" | jq -r ".versions.values[0].status");
+      echo "`date +"[%Y-%m-%d %H:%M:%S]"` keystone is not ready..... waiting...";
+      sleep 5;
+    done;
+    echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ keystone is ready~~";
+
+  init-check-ceilometer-central.sh: |
+    until [ "$API_8041" == "CURRENT" ];
+    do
+      ping -c 1 -W 1 ceilometer-central 2>&1 >/dev/null
+      API_8041=$(curl --connect-timeout 3 -s "http://ceilometer-central:8041" | jq -r ".versions[0].status");
+      echo "`date +"[%Y-%m-%d %H:%M:%S]"` ceilometer-central is not ready..... waiting...";
+      sleep 5;
+    done;
+    echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ ceilometer-central is ready~~";
+
+  init-check-aodh.sh: |
+    until [ "$API_8042" == "stable" ];
+    do
+      ping -c 1 -W 1 aodh 2>&1 >/dev/null
+      API_8042=$(curl --connect-timeout 3 -s "http://aodh:8042" | jq -r ".versions.values[0].status");
+      echo "`date +"[%Y-%m-%d %H:%M:%S]"` aodh is not ready..... waiting...";
+      sleep 5;
+    done;
+    echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ aodh is ready~~";
+
+  init-check-heat.sh: |
+    until [ "$API_8004" == "CURRENT" ] && [ "$API_8000" == "CURRENT" ];
+    do
+      ping -c 1 -W 1 aodh 2>&1 >/dev/null
+      API_8004=$(curl --connect-timeout 3 -s "http://heat:8004" | jq -r ".versions[0].status");
+      API_8000=$(curl --connect-timeout 3 -s "http://heat:8000" | jq -r ".versions[0].status");
+      echo "`date +"[%Y-%m-%d %H:%M:%S]"` heat is not ready..... waiting...";
+      sleep 5;
+    done;
+    echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ heat is ready~~";
+
+  init-check-glance.sh: |
+    until [ "$API_9292" == "CURRENT" ];
+    do
+      ping -c 1 -W 1 keystone 2>&1 >/dev/null
+      API_9292=$(curl --connect-timeout 3 -s "http://glance:9292" | jq -r ".versions[0].status");
+      echo "`date +"[%Y-%m-%d %H:%M:%S]"` glance is not ready..... waiting...";
+      sleep 5;
+    done;
+    echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ glance is ready~~";
+
+  init-check-cinder.sh: |
+    until [ "$API_8776" == "CURRENT" ];
+    do
+      ping -c 1 -W 1 cinder 2>&1 >/dev/null
+      API_8776=$(curl --connect-timeout 3 -s "http://cinder:8776" | jq -r ".versions[-1].status");
+      echo "`date +"[%Y-%m-%d %H:%M:%S]"` cinder is not ready..... waiting...";
+      sleep 5;
+    done;
+    echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ cinder is ready~~";
+
+  init-check-neutron-server.sh: |
+    until [ "$NS0_API_9696" == "CURRENT" ];
+    do
+      ping -c 1 -W 1 keystone 2>&1 >/dev/null;
+      NS0_API_9696=$(curl --connect-timeout 3 -s "http://neutron-server-0.neutron-server:9696" | jq -r ".versions[0].status");
+      echo "`date +"[%Y-%m-%d %H:%M:%S]"` neutron-server is not ready..... waiting...";
+      sleep 5;
+    done;
+    echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ neutron-server is ready~~";
+
+  init-check-nova-server.sh: |
+    until [ "$NS0_API_8774" == "SUPPORTED" ];
+    do
+      ping -c 1 -W 1 keystone 2>&1 >/dev/null;
+      NS0_API_8774=$(curl --connect-timeout 3 -s "http://nova-server-0.nova-server:8774" | jq -r ".versions[0].status");
+      echo "`date +"[%Y-%m-%d %H:%M:%S]"` nova-server is not ready..... waiting...";
+      sleep 5;
+    done;
+    echo "`date +"[%Y-%m-%d %H:%M:%S]"` OK~ nova-server is ready~~";

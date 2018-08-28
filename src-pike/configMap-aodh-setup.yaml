@@ -1,0 +1,105 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aodh-setup
+data:
+  aodh-init.sh: |
+    #!/bin/bash
+    set -e
+    service rsyslog restart
+    echo "ServerName localhost" >> /etc/apache2/apache2.conf
+    cp -a /etc/aodh/aodh.conf /etc/aodh/aodh.conf.default
+    cat /scripts/aodh.conf > /etc/aodh/aodh.conf
+    sed -i "s/___K8S_KEYSTONE_USER_AODH_PASS___/$K8S_KEYSTONE_USER_AODH_PASS/g" /etc/aodh/aodh.conf
+    sed -i "s/___K8S_AODH_DB_PASS___/$K8S_AODH_DB_PASS/g" /etc/aodh/aodh.conf
+    sed -i "s/___K8S_RABBITMQ_OPENSTACK_USER___/$K8S_RABBITMQ_OPENSTACK_USER/g" /etc/aodh/aodh.conf
+    sed -i "s/___K8S_RABBITMQ_OPENSTACK_PASS___/$K8S_RABBITMQ_OPENSTACK_PASS/g" /etc/aodh/aodh.conf
+    a2ensite aodh-api
+    source /root/openrc/admin-openrc
+    exist_aodh_db=$(mysql -s -N -q -A --connect-timeout=10 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW DATABASES LIKE 'aodh';" 2>/dev/null)
+    if [ "X$exist_aodh_db" == "X" ]; then
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS aodh"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON aodh.* TO 'aodh'@'localhost' IDENTIFIED BY '$K8S_AODH_DB_PASS'"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON aodh.* TO 'aodh'@'%' IDENTIFIED BY '$K8S_AODH_DB_PASS'"
+      if ! openstack user list -f value -c Name | grep aodh > /dev/null; then
+        openstack user create --domain default --password $K8S_KEYSTONE_USER_AODH_PASS aodh 2>/dev/null
+      fi
+      openstack role add --project service --user aodh admin
+      if ! openstack service list -f value -c Name | grep "^aodh$" > /dev/null; then
+        openstack service create --name aodh --description "Telemetry" alarming;
+      fi
+      if ! openstack endpoint list --service aodh -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "aodh alarming public" > /dev/null; then
+        openstack endpoint create --region RegionOne alarming public http://aodh:8042
+      fi
+      if ! openstack endpoint list --service aodh -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "aodh alarming internal" > /dev/null; then
+        openstack endpoint create --region RegionOne alarming internal http://aodh:8042
+      fi
+      if ! openstack endpoint list --service aodh -f value -c "Service Name" -c "Service Type" -c "Interface" | grep "aodh alarming admin" > /dev/null; then
+        openstack endpoint create --region RegionOne alarming admin http://aodh:8042
+      fi
+      su -s /bin/sh -c "aodh-dbsync" aodh
+    fi
+    #service aodh-api restart
+    service apache2 restart
+    service aodh-evaluator restart
+    service aodh-notifier restart
+    service aodh-listener restart
+    #service aodh-expirer restart
+    until [ "X$AODH_SERVICES_ENABLED" == "XTrue" ];
+    do
+      echo "waiting for service response....."
+      AODH_SERVICES_ENABLED=$(openstack service show aodh -f value -c enabled || true)
+      sleep 5
+    done
+    echo "ok~~~~ service is ready~~!!!"
+    openstack service show aodh || true
+    touch /.setup_completed
+    tail -F /var/log/syslog /var/log/aodh/* /var/log/apache2/*
+
+  aodh.conf: |
+    [DEFAULT]
+    #transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq
+    transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-0.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-1.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-2.rabbitmq
+    auth_strategy = keystone
+    [api]
+    [coordination]
+    [cors]
+    [cors.subdomain]
+    [database]
+    connection = mysql+pymysql://aodh:___K8S_AODH_DB_PASS___@haproxy-galera/aodh
+    [evaluator]
+    [healthcheck]
+    [keystone_authtoken]
+    auth_uri = http://keystone:5000
+    auth_url = http://keystone:35357
+    #memcached_servers = memcached:11211
+    memcached_servers = memcached-0.memcached:11211,memcached-1.memcached:11211,memcached-2.memcached:11211
+    auth_type = password
+    project_domain_name = default
+    user_domain_name = default
+    project_name = service
+    username = aodh
+    password = ___K8S_KEYSTONE_USER_AODH_PASS___
+    [listener]
+    [matchmaker_redis]
+    [notifier]
+    [oslo_messaging_amqp]
+    [oslo_messaging_kafka]
+    [oslo_messaging_notifications]
+    [oslo_messaging_rabbit]
+    [oslo_messaging_zmq]
+    [oslo_middleware]
+    [oslo_policy]
+    [service_credentials]
+    auth_url = http://keystone:5000/v3
+    #memcached_servers = memcached:11211
+    memcached_servers = memcached-0.memcached:11211,memcached-1.memcached:11211,memcached-2.memcached:11211
+    auth_type = password
+    project_domain_name = default
+    user_domain_name = default
+    project_name = service
+    username = aodh
+    password = ___K8S_KEYSTONE_USER_AODH_PASS___
+    interface = internalURL
+    region_name = RegionOne
+    [service_types]

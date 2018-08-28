@@ -1,0 +1,150 @@
+## Ref: https://github.com/severalnines/galera-docker-mariadb/tree/master/example-kubernetes
+
+# (Image) https://hub.docker.com/r/severalnines/mariadb/
+#
+# [[[ Known Limitations ]]]
+# The image are tested and built using Docker version 1.12.3, build 6b644ec on CentOS 7.1.
+#
+# There will be no automatic recovery if a split-brain happens (where all nodes are in Non-Primary state). This is because the MySQL service is still running, yet it will refuse to serve any data and will return error to the client. Docker has no capability to detect this since what it cares about is the foreground MySQL process which is not terminated, killed or stopped. Automating this process is risky, especially if the service discovery is co-located with the Docker host (etcd would also lose contact with other members). Although if the service discovery is healthy externally, it is probably unreachable from the Galera containers perspective, preventing each other to see the container’s status correctly during the glitch. In this case, you will need to intervene manually. Choose the most advanced node to bootstrap and then run the following command to promote the node as Primary (other nodes shall then rejoin automatically if the network recovers):
+#
+# $ docker exec -it [container] mysql -uroot -pyoursecret -e 'set global wsrep_provider_option="pc.bootstrap=1"'
+# Also, there is no automatic cleanup for the discovery service registry. You can remove all entries using either the following command (assuming the CLUSTER_NAME is my_wsrep_cluster):
+# $ curl http://192.168.55.111:2379/v2/keys/galera/my_wsrep_cluster?recursive=true -XDELETE
+# Or using etcdctl command:
+#
+# $ etcdctl rm /galera/my_wsrep_cluster --recursive
+# 
+#
+
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: galera
+  labels:
+    app: galera
+spec:
+  ports:
+  - port: 3306
+    targetPort: 3306
+  #sessionAffinity: ClientIP
+  clusterIP: None
+  #type: NodePort # Or LoadBalancer in production w/ proper security
+  #type: LoadBalancer
+  selector:
+    app: galera
+
+---
+
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: galera-pdb
+spec:
+  selector:
+    matchLabels:
+      app: galera
+  minAvailable: 2
+  #maxUnavailable: 1
+
+---
+
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: galera
+spec:
+  serviceName: galera
+  replicas: 3
+  podManagementPolicy: OrderedReady
+  #podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        app: galera
+    spec:
+      terminationGracePeriodSeconds: 10
+      affinity:
+         podAntiAffinity:
+           requiredDuringSchedulingIgnoredDuringExecution:
+           - labelSelector:
+               matchExpressions:
+               - key: "app"
+                 operator: In
+                 values:
+                 - galera
+             topologyKey: "kubernetes.io/hostname"
+      nodeSelector:
+        controller: "true"
+      initContainers:
+      - name: wait1
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        image: call518/oaas-init-container:1.0
+        envFrom:
+          - configMapRef:
+              name: env-common
+        volumeMounts:
+        - name: init-container-scripts
+          mountPath: /init-container-scripts
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-etcd.sh"]
+      containers:
+      - name: galera
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        #image: severalnines/mariadb:10.1
+        image: call518/oaas-galera:1.0
+        ports:
+        - name: mysql
+          containerPort: 3306
+        #env:
+        #- name: MYSQL_ROOT_PASSWORD
+        #  value: "passw0rd"
+        #- name: DISCOVERY_SERVICE
+        #  value: "etcd-client:2379"
+        #- name: XTRABACKUP_PASSWORD
+        #  value: "passw0rd"
+        #- name: CLUSTER_NAME
+        #  value: "mariadb_galera_ss"
+        #- name: MYSQL_DATABASE
+        #  value: "mydatabase"
+        #- name: MYSQL_USER
+        #  value: "myuser"
+        #- name: MYSQL_PASSWORD
+        #  value: "passw0rd"
+        envFrom:
+          - configMapRef:
+              name: env-common
+        readinessProbe:
+          exec:
+            command:
+            - /healthcheck.sh
+            - --readiness
+          initialDelaySeconds: 120
+          periodSeconds: 1
+        livenessProbe:
+          exec:
+            command:
+            - /healthcheck.sh
+            - --liveness
+          initialDelaySeconds: 120
+          periodSeconds: 1
+        volumeMounts:
+        - name: pvc-galera
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: init-container-scripts
+        configMap:
+          name: init-container-scripts
+          defaultMode: 0755
+  volumeClaimTemplates:
+  - metadata:
+      name: pvc-galera
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      # uncomment if using slow storageClass on AWS
+      # then no need for running pv or pvc manifests
+      #storageClassName: slow
+      resources:
+        requests:
+          storage: 10Gi

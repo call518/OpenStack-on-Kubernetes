@@ -205,6 +205,22 @@ data:
 * call518/oaas-zookeeper
 * call518/oaas-ocata
 
+### Setup Kernel Modules on Worker Nodes ###
+
+run host_kernel_modules_for_oaas.sh or below on all worker nodes.
+
+```bash
+# cat > /etc/modules-load.d/oaas.conf << EOF
+openvswitch
+ebtables
+ip_vs
+EOF
+
+# modprobe openvswitch
+# modprobe ebtables
+# modprobe ip_vs
+```
+
 ### Initiate Deploying OpenStack
 
 ```bash
