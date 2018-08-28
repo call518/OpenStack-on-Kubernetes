@@ -8,6 +8,7 @@ data:
     set -e
     service rsyslog restart
     a2enconf openstack-dashboard
+    tar zxf neutron-lbaas-dashboard.tgz
     cd neutron-lbaas-dashboard
     git checkout stable/$K8S_OPENSTACK_RELEASE
     python setup.py install

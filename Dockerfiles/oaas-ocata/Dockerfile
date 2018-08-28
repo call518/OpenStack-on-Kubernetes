@@ -21,5 +21,5 @@ RUN cp -a /etc/apt/sources.list /etc/apt/sources.list.default \
     && a2disconf cinder-wsgi openstack-dashboard \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
-COPY neutron-lbaas-dashboard /neutron-lbaas-dashboard
+COPY neutron-lbaas-dashboard.tgz /neutron-lbaas-dashboard.tgz
 COPY check-init.sh /check-init.sh
