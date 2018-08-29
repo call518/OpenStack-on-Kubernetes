@@ -42,7 +42,7 @@ metadata:
     app: cinder
 spec:
   serviceName: "cinder"
-  replicas: 3
+  replicas: 1
   podManagementPolicy: OrderedReady
   #podManagementPolicy: Parallel
   selector:
