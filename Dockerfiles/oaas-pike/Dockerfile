@@ -3,7 +3,7 @@ MAINTAINER call518@gmail.com
 COPY Dockerfile /Dockerfile
 RUN cp -a /etc/apt/sources.list /etc/apt/sources.list.default \
     && ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime \
-    && sed -e 's/\(us.\)\?archive.ubuntu.com/ftp.daumkakao.com/g' -e 's/security.ubuntu.com/ftp.daumkakao.com/g' /etc/apt/sources.list.default > /etc/apt/sources.list \
+    && sed -e 's/\(us.\)\?archive.ubuntu.com/mirror.kakao.com/g' -e 's/security.ubuntu.com/mirror.kakao.com/g' /etc/apt/sources.list.default > /etc/apt/sources.list \
     && apt-get update \
     && apt-get -y install software-properties-common apt-utils \
     #&& add-apt-repository -y cloud-archive:queens \
