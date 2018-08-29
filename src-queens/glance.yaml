@@ -3,11 +3,11 @@
 apiVersion: policy/v1beta1
 kind: PodDisruptionBudget
 metadata:
-  name: neutron-server-pdb
+  name: glance-pdb
 spec:
   selector:
     matchLabels:
-      app: neutron-server
+      app: glance
   minAvailable: 1
   #maxUnavailable: 2
 
@@ -16,42 +16,44 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: neutron-server
+  name: glance
   labels:
-    app: neutron-server
+    app: glance
 spec:
   ports:
-  - name: neutron-server-api
-    port: 9696
-    targetPort: 9696
+  - name: glance-api
+    port: 9292
+    targetPort: 9292
+  - name: glance-registry
+    port: 9191
+    targetPort: 9191
   #sessionAffinity: ClientIP
   clusterIP: None
   #type: NodePort # Or LoadBalancer in production w/ proper security
   #type: LoadBalancer
   selector:
-    app: neutron-server
+    app: glance
 
 ---
 
 apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
-  name: neutron-server
+  name: glance
   labels:
-    app: neutron-server
+    app: glance
 spec:
-  serviceName: "neutron-server"
-  ## now, replicas must be "1", because of high load-average issue. (trying to solv).
-  replicas: 2
+  serviceName: "glance"
+  replicas: 3
   podManagementPolicy: OrderedReady
   #podManagementPolicy: Parallel
   selector:
     matchLabels:
-      app: neutron-server
+      app: glance
   template:
     metadata:
       labels:
-        app: neutron-server
+        app: glance
     spec:
       terminationGracePeriodSeconds: 10
       affinity:
@@ -62,10 +64,10 @@ spec:
                - key: "app"
                  operator: In
                  values:
-                 - neutron-server
+                 - glance
              topologyKey: "kubernetes.io/hostname"
       nodeSelector:
-        network: "true"
+        controller: "true"
       initContainers:
       - name: wait1
         #imagePullPolicy: Always
@@ -114,52 +116,26 @@ spec:
       hostAliases:
       - ip: "127.0.0.1"
         hostnames:
-        - "neutron-server"
-      #- ip: "192.168.0.150"
-      #  hostnames:
-      #  - "nfs-server"
-      #hostNetwork: true
+        - "glance"
       containers:
-        - name: neutron-server
-          image: call518/oaas-pike:latest
+        - name: glance
+          image: call518/oaas-queens:latest
           #imagePullPolicy: Always
           imagePullPolicy: IfNotPresent
-          securityContext:
-            privileged: true
-            capabilities:
-              add:
-              - ALL
-              - CAP_SYS_ADMIN
-              - CAP_SYS_MODULE
-              - CAP_NET_ADMIN
-          env:
-            #- name: MY_POD_NAME
-            #  valueFrom:
-            #    fieldRef:
-            #      fieldPath: metadata.name
-            #- name: MY_POD_NAMESPACE
-            #  valueFrom:
-            #    fieldRef:
-            #      fieldPath: metadata.namespace
-            - name: MY_POD_IP
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
           envFrom:
             - configMapRef:
                 name: env-common
-          command: ["/scripts/neutron-server-init.sh"]
+          command: ["/scripts/glance-init.sh"]
           ports:
-            - containerPort: 9696
+            - containerPort: 9292
+            - containerPort: 9191
           volumeMounts:
-          - name: kernel-modules
-            mountPath: /lib/modules
           - name: openstack-openrc
             mountPath: /root/openrc
-          - name: ovs-setup
-            mountPath: /ovs-setup
-          - name: neutron-server-setup
+          - name: glance-setup
             mountPath: /scripts
+          - name: pvc-glance-images
+            mountPath: /var/lib/glance/images
           readinessProbe:
             exec:
               command:
@@ -184,19 +160,14 @@ spec:
         configMap:
           name: init-container-scripts
           defaultMode: 0755
-      - name: kernel-modules
-        hostPath:
-          path: /lib/modules
-          type: Directory
       - name: openstack-openrc
         configMap:
           name: openstack-openrc
           defaultMode: 0755
-      - name: ovs-setup
+      - name: glance-setup
         configMap:
-          name: ovs-setup
+          name: glance-setup
           defaultMode: 0755
-      - name: neutron-server-setup
-        configMap:
-          name: neutron-server-setup
-          defaultMode: 0755
+      - name: pvc-glance-images
+        persistentVolumeClaim:
+          claimName: pvc-glance-images

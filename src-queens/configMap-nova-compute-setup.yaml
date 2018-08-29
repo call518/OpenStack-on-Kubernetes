@@ -1,0 +1,387 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nova-compute-setup
+data:
+  nova-compute-init.sh: |
+    #!/bin/bash
+    set -e;
+    service rsyslog restart;
+    apt-get update;
+    apt-get -y purge nova-api;
+    #apt-get -y install nova-api-metadata;
+    dpkg -i /nova-api-metadata.deb
+    ## OVS Networking - BEGIN
+    /ovs-setup/ovs-init.sh
+    ## OVS Networking - END
+    export NFS_BACKEND_HOST_IP=$(curl -s -L "http://$DISCOVERY_SERVICE/v2/keys/oaas/$K8S_NFS_SERVER_IP_ETC_KEY" -XGET | jq -r .node.value)
+    cp -a /etc/nova/nova.conf /etc/nova/nova.conf.default
+    cp -a /etc/nova/nova-compute.conf /etc/nova/nova-compute.conf.default
+    cp -a /etc/neutron /etc/neutron.default
+    cp -a /etc/ceilometer/ceilometer.conf /etc/ceilometer/ceilometer.conf.default
+    cat /scripts/neutron.conf > /etc/neutron/neutron.conf
+    cat /scripts/ml2_conf.ini > /etc/neutron/plugins/ml2/ml2_conf.ini
+    cat /scripts/l3_agent.ini > /etc/neutron/l3_agent.ini
+    cat /scripts/metadata_agent.ini > /etc/neutron/metadata_agent.ini
+    cat /scripts/metering_agent.ini > /etc/neutron/metering_agent.ini
+    cat /scripts/openvswitch_agent.ini > /etc/neutron/plugins/ml2/openvswitch_agent.ini
+    cat /scripts/nova.conf > /etc/nova/nova.conf
+    cat /scripts/nova-compute.conf > /etc/nova/nova-compute.conf
+    cat /scripts/ceilometer.conf > /etc/ceilometer/ceilometer.conf
+    sed -i "s/___K8S_NOVA_DB_PASS___/$K8S_NOVA_DB_PASS/g" /etc/nova/nova.conf /etc/neutron/neutron.conf
+    sed -i "s/___K8S_RABBITMQ_OPENSTACK_USER___/$K8S_RABBITMQ_OPENSTACK_USER/g" /etc/nova/nova.conf /etc/neutron/neutron.conf /etc/ceilometer/ceilometer.conf
+    sed -i "s/___K8S_RABBITMQ_OPENSTACK_PASS___/$K8S_RABBITMQ_OPENSTACK_PASS/g" /etc/nova/nova.conf /etc/neutron/neutron.conf /etc/ceilometer/ceilometer.conf
+    sed -i "s/___K8S_KEYSTONE_USER_NEUTRON_PASS___/$K8S_KEYSTONE_USER_NEUTRON_PASS/g" /etc/nova/nova.conf /etc/neutron/neutron.conf
+    sed -i "s/___K8S_KEYSTONE_USER_NOVA_PASS___/$K8S_KEYSTONE_USER_NOVA_PASS/g" /etc/nova/nova.conf /etc/neutron/neutron.conf
+    sed -i "s/___K8S_KEYSTONE_USER_PLACEMENT_PASS___/$K8S_KEYSTONE_USER_PLACEMENT_PASS/g" /etc/nova/nova.conf /etc/neutron/neutron.conf
+    sed -i "s/___K8S_METADATA_PROXY_SHARED_SECRET___/$K8S_METADATA_PROXY_SHARED_SECRET/g" /etc/nova/nova.conf /etc/neutron/neutron.conf
+    sed -i "s/___K8S_NOVA_COMPUTE_LIBVIRT_VIRT_TYPE___/$K8S_NOVA_COMPUTE_LIBVIRT_VIRT_TYPE/g" /etc/nova/nova-compute.conf
+    sed -i "s/___MY_NODE_IP___/$MY_NODE_IP/g" /etc/nova/nova.conf /etc/neutron/neutron.conf
+    sed -i "s/___MY_IP___/$MY_POD_IP/g" /etc/nova/nova.conf /etc/neutron/neutron.conf
+    sed -i "s/OVS_LOCAL_IP/$MY_POD_IP/g" /etc/neutron/plugins/ml2/openvswitch_agent.ini;
+    sed -i "s/___K8S_KEYSTONE_USER_CEILOMETER_PASS___/$K8S_KEYSTONE_USER_CEILOMETER_PASS/g" /etc/ceilometer/ceilometer.conf
+    source /root/openrc/admin-openrc
+    #mkdir -p /usr/lib/python2.7/dist-packages/keys
+    mkdir -p $(python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/keys
+    mkdir -p /var/lib/nova/lock /var/lib/nova/images /var/lib/nova/instances /var/lib/nova/mnt
+    #mount -t nfs4 $NFS_BACKEND_HOST_IP:/pv/nova-compute-lock_path /var/lib/nova/lock
+    mount -t nfs4 $NFS_BACKEND_HOST_IP:/pv/nova-compute-images /var/lib/nova/images
+    mount -t nfs4 $NFS_BACKEND_HOST_IP:/pv/nova-compute-instances /var/lib/nova/instances
+    chown -R nova:nova /var/lib/nova/lock /var/lib/nova/images /var/lib/nova/instances /var/lib/nova/mnt
+    systemd-machine-id-setup
+    ## Service - Neutron
+    service neutron-openvswitch-agent restart
+    #service neutron-ovs-cleanup restart
+    ## Service - Nova
+    #service libvirt-bin restart
+    service libvirtd restart
+    service virtlogd restart
+    service nova-api-metadata restart
+    service nova-compute restart
+    #service nova-novncproxy restart
+    service ceilometer-agent-compute restart
+    sleep 5;
+    #until (service libvirt-bin status) && (service nova-compute status); do echo "(1) waiting for nova-compute service response....."; sleep 5; done
+    until (service libvirtd status) && (service nova-compute status); do echo "(1) waiting for nova-compute service response....."; sleep 5; done
+    echo "(1) ok~~~~ nova-compute service is ready~~!!!"
+    until (nova service-list | grep $HOSTNAME | grep -q " up "); do echo "(2) waiting for nova-server service response....."; sleep 5; done
+    echo "(2) ok~~~~ nova-compute service is ready~~!!!"
+    nova service-list || true
+    touch /.setup_completed
+    tail -F /var/log/syslog /var/log/nova/*
+
+  nova.conf: |
+    [DEFAULT]
+    enabled_apis = osapi_compute,metadata
+    transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-0.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-1.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-2.rabbitmq
+    auth_strategy = keystone
+    my_ip = ___MY_IP___
+    logdir=/var/log/nova
+    state_path=/var/lib/nova
+    #ec2_listen = 0.0.0.0
+    #ec2_listen_port = 8773
+    osapi_compute_listen = 0.0.0.0
+    osapi_compute_listen_port = 8774
+    metadata_listen = $my_ip
+    use_neutron = true
+    firewall_driver = nova.virt.firewall.NoopFirewallDriver
+    instance_usage_audit = True
+    instance_usage_audit_period = hour
+    notify_on_state_change = vm_and_task_state
+    cpu_allocation_ratio = 10.0
+    ram_allocation_ratio = 1.0
+    disk_allocation_ratio = 1.0
+    instance_name_template = instance-%08x
+    allow_resize_to_same_host = True
+    block_device_allocate_retries = 300
+    block_device_allocate_retries_interval = 10
+    block_device_creation_timeout = 300
+    [api_database]
+    #connection = mysql+pymysql://nova:___K8S_NOVA_DB_PASS___@haproxy-galera/nova_api
+    [barbican]
+    [cache]
+    enabled = true
+    backend = oslo_cache.memcache_pool
+    #memcache_servers = memcached:11211
+    memcache_servers = memcached-0.memcached:11211,memcached-1.memcached:11211,memcached-2.memcached:11211
+    [cells]
+    #enable=false
+    [cinder]
+    [cloudpipe]
+    [conductor]
+    [cors]
+    [cors.subdomain]
+    [crypto]
+    [database]
+    [ephemeral_storage_encryption]
+    [glance]
+    api_servers = http://glance:9292
+    [guestfs]
+    [hyperv]
+    [image_file_url]
+    [ironic]
+    [key_manager]
+    [keystone_authtoken]
+    auth_uri = http://keystone:5000/v3
+    auth_url = http://keystone:35357/v3
+    #memcached_servers = memcached:11211
+    memcached_servers = memcached-0.memcached:11211,memcached-1.memcached:11211,memcached-2.memcached:11211
+    auth_type = password
+    project_domain_name = default
+    user_domain_name = default
+    project_name = service
+    username = nova
+    password = ___K8S_KEYSTONE_USER_NOVA_PASS___
+    [libvirt]
+    nfs_mount_options = v4
+    nfs_mount_point_base = $state_path/mnt
+    ## for CEPH
+    #images_type = rbd
+    #images_rbd_pool = vms
+    #images_rbd_ceph_conf = /etc/ceph/ceph.conf
+    #rbd_user = cinder
+    #rbd_secret_uuid = 4b5fd580-360c-4f8c-abb5-c83bb9a3f964
+    #disk_cachemodes="network=writeback"
+    #inject_password = false
+    #inject_key = false
+    #inject_partition = -2
+    #live_migration_flag="VIR_MIGRATE_UNDEFINE_SOURCE,VIR_MIGRATE_PEER2PEER,VIR_MIGRATE_LIVE,VIR_MIGRATE_PERSIST_DEST,VIR_MIGRATE_TUNNELLED"
+    #hw_disk_discard = unmap
+    [matchmaker_redis]
+    [metrics]
+    [mks]
+    [neutron]
+    url = http://neutron-server:9696
+    auth_url = http://keystone:35357/v3
+    auth_type = password
+    project_domain_name = default
+    user_domain_name = default
+    region_name = RegionOne
+    project_name = service
+    username = neutron
+    password = ___K8S_KEYSTONE_USER_NEUTRON_PASS___
+    service_metadata_proxy = true
+    metadata_proxy_shared_secret = ___K8S_METADATA_PROXY_SHARED_SECRET___
+    [osapi_v21]
+    [oslo_concurrency]
+    lock_path = /var/lib/nova/lock
+    [oslo_messaging_amqp]
+    [oslo_messaging_notifications]
+    driver = messagingv2
+    transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-0.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-1.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-2.rabbitmq
+    [oslo_messaging_rabbit]
+    [oslo_messaging_zmq]
+    [oslo_middleware]
+    [oslo_policy]
+    [placement]
+    os_region_name = RegionOne
+    project_domain_name = default
+    project_name = service
+    auth_type = password
+    user_domain_name = default
+    auth_url = http://keystone:35357/v3
+    username = placement
+    password = ___K8S_KEYSTONE_USER_PLACEMENT_PASS___
+    [placement_database]
+    #connection = mysql+pymysql://nova:___K8S_NOVA_DB_PASS___@haproxy-galera/nova_api
+    [rdp]
+    [remote_debug]
+    [serial_console]
+    [spice]
+    [ssl]
+    [trusted_computing]
+    [upgrade_levels]
+    [vmware]
+    [vnc]
+    #enabled = true
+    #vncserver_listen = $my_ip
+    #vncserver_proxyclient_address = $my_ip
+    #vncproxy_url = http://___MY_NODE_IP___:6080
+    #novncproxy_base_url = http://___MY_NODE_IP___:30068/vnc_auto.html
+    enabled = true
+    novncproxy_base_url = http://___MY_NODE_IP___:30068/vnc_auto.html
+    vncserver_listen = 0.0.0.0
+    vncserver_proxyclient_address = $my_ip
+    [workarounds]
+    [wsgi]
+    [xenserver]
+    [xvp]
+
+  neutron.conf: |
+    [DEFAULT]
+    core_plugin = ml2
+    service_plugins = router
+    router_distributed = false
+    allow_overlapping_ips = true
+    transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-0.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-1.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-2.rabbitmq
+    auth_strategy = keystone
+    notify_nova_on_port_status_changes = true
+    notify_nova_on_port_data_changes = true
+    global_physnet_mtu = 1400
+    advertise_mtu = true
+    [agent]
+    root_helper = sudo /usr/bin/neutron-rootwrap /etc/neutron/rootwrap.conf
+    [cors]
+    [cors.subdomain]
+    [database]
+    connection = mysql+pymysql://neutron:___K8S_NEUTRON_DB_PASS___@haproxy-galera/neutron
+    [keystone_authtoken]
+    auth_uri = http://keystone:5000/v3
+    auth_url = http://keystone:35357/v3
+    #memcached_servers = memcached:11211
+    memcached_servers = memcached-0.memcached:11211,memcached-1.memcached:11211,memcached-2.memcached:11211
+    auth_type = password
+    project_domain_name = default
+    user_domain_name = default
+    project_name = service
+    username = neutron
+    password = ___K8S_KEYSTONE_USER_NEUTRON_PASS___
+    [matchmaker_redis]
+    [nova]
+    auth_url = http://keystone:35357
+    auth_type = password
+    project_domain_name = default
+    user_domain_name = default
+    region_name = RegionOne
+    project_name = service
+    username = nova
+    password = ___K8S_KEYSTONE_USER_NOVA_PASS___
+    [oslo_concurrency]
+    [oslo_messaging_amqp]
+    [oslo_messaging_notifications]
+    driver = messagingv2
+    transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-0.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-1.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-2.rabbitmq
+    [oslo_messaging_rabbit]
+    [oslo_messaging_zmq]
+    [oslo_middleware]
+    [oslo_policy]
+    [qos]
+    [quotas]
+    [ssl]
+
+  ml2_conf.ini: |
+    [DEFAULT]
+    [ml2]
+    #type_drivers = flat,vlan,vxlan
+    type_drivers = flat,vxlan
+    tenant_network_types = vxlan
+    #mechanism_drivers = linuxbridge,l2population
+    mechanism_drivers = openvswitch,l2population
+    extension_drivers = port_security
+    path_mtu = 1400
+    [ml2_type_flat]
+    flat_networks = external
+    [ml2_type_geneve]
+    [ml2_type_gre]
+    [ml2_type_vlan]
+    [ml2_type_vxlan]
+    vni_ranges = 1:1000
+    [securitygroup]
+    firewall_driver = iptables_hybrid
+
+#  linuxbridge_agent.ini: |
+#    [DEFAULT]
+#    [agent]
+#    [linux_bridge]
+#    physical_interface_mappings = provider:eth0
+#    [securitygroup]
+#    enable_security_group = true
+#    firewall_driver = neutron.agent.linux.iptables_firewall.IptablesFirewallDriver
+#    [vxlan]
+#    enable_vxlan = true
+#    local_ip = OVERLAY_INTERFACE_IP_ADDRESS
+#    l2_population = true
+
+  l3_agent.ini: |
+    [DEFAULT]
+    #interface_driver = neutron.agent.linux.interface.BridgeInterfaceDriver
+    interface_driver = neutron.agent.linux.interface.OVSInterfaceDriver
+    external_network_bridge  =
+    #agent_mode = dvr_snat
+    [AGENT]
+
+  metadata_agent.ini: |
+    [DEFAULT]
+    nova_metadata_ip = nova-server
+    metadata_proxy_shared_secret = ___K8S_METADATA_PROXY_SHARED_SECRET___
+    [AGENT]
+    [cache]
+
+  metering_agent.ini: |
+    [DEFAULT]
+    driver = neutron.services.metering.drivers.iptables.iptables_driver.IptablesMeteringDriver
+    interface_driver = neutron.agent.linux.interface.OVSInterfaceDriver
+    measure_interval = 60
+    report_interval = 300
+
+  openvswitch_agent.ini: |
+    [DEFAULT]
+    [agent]
+    tunnel_types = vxlan
+    enable_distributed_routing = false
+    l2_population = true
+    arp_responder = true
+    [ovs]
+    local_ip = OVS_LOCAL_IP
+    bridge_mappings = external:br-ex
+    [securitygroup]
+    firewall_driver = iptables_hybrid
+
+  nova-compute.conf: |
+    [DEFAULT]
+    compute_driver=libvirt.LibvirtDriver
+    [libvirt]
+    virt_type=___K8S_NOVA_COMPUTE_LIBVIRT_VIRT_TYPE___
+
+  ceilometer.conf: |
+    [DEFAULT]
+    #transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq
+    transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-0.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-1.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-2.rabbitmq
+    log_dir = /var/log/ceilometer
+    [api]
+    [collector]
+    [compute]
+    [coordination]
+    [cors]
+    [cors.subdomain]
+    [database]
+    [dispatcher_file]
+    [dispatcher_gnocchi]
+    [dispatcher_http]
+    [event]
+    [hardware]
+    [ipmi]
+    [keystone_authtoken]
+    [matchmaker_redis]
+    [meter]
+    [notification]
+    [oslo_concurrency]
+    [oslo_messaging_amqp]
+    [oslo_messaging_kafka]
+    [oslo_messaging_notifications]
+    [oslo_messaging_rabbit]
+    [oslo_messaging_zmq]
+    [oslo_middleware]
+    [oslo_policy]
+    [polling]
+    [publisher]
+    [publisher_notifier]
+    [rgw_admin_credentials]
+    [service_credentials]
+    #auth_uri = http://keystone:5000/v3
+    #auth_url = http://keystone:35357/v3
+    auth_url = http://keystone:5000/v3
+    #memcached_servers = memcached:11211
+    memcached_servers = memcached-0.memcached:11211,memcached-1.memcached:11211,memcached-2.memcached:11211
+    auth_type = password
+    project_domain_name = default
+    user_domain_name = default
+    project_name = service
+    username = ceilometer
+    password = ___K8S_KEYSTONE_USER_CEILOMETER_PASS___
+    #interface = internalURL
+    #region_name = RegionOne
+    [service_types]
+    [storage]
+    [vmware]
+    [xenapi]

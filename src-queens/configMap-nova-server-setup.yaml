@@ -1,0 +1,230 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nova-server-setup
+data:
+  nova-server-init.sh: |
+    #!/bin/bash
+    set -e;
+    service rsyslog restart
+    a2ensite nova-placement-api
+    echo "ServerName localhost" >> /etc/apache2/apache2.conf
+    export NFS_BACKEND_HOST_IP=$(curl -s -L "http://$DISCOVERY_SERVICE/v2/keys/oaas/$K8S_NFS_SERVER_IP_ETC_KEY" -XGET | jq -r .node.value)
+    cp -a /etc/nova/nova.conf /etc/nova/nova.conf.default
+    cat /scripts/nova.conf > /etc/nova/nova.conf
+    sed -i "s/___K8S_NOVA_DB_PASS___/$K8S_NOVA_DB_PASS/g" /etc/nova/nova.conf
+    sed -i "s/___K8S_RABBITMQ_OPENSTACK_USER___/$K8S_RABBITMQ_OPENSTACK_USER/g" /etc/nova/nova.conf
+    sed -i "s/___K8S_RABBITMQ_OPENSTACK_PASS___/$K8S_RABBITMQ_OPENSTACK_PASS/g" /etc/nova/nova.conf
+    sed -i "s/___K8S_KEYSTONE_USER_NEUTRON_PASS___/$K8S_KEYSTONE_USER_NEUTRON_PASS/g" /etc/nova/nova.conf
+    sed -i "s/___K8S_KEYSTONE_USER_NOVA_PASS___/$K8S_KEYSTONE_USER_NOVA_PASS/g" /etc/nova/nova.conf
+    sed -i "s/___K8S_KEYSTONE_USER_PLACEMENT_PASS___/$K8S_KEYSTONE_USER_PLACEMENT_PASS/g" /etc/nova/nova.conf
+    sed -i "s/___K8S_METADATA_PROXY_SHARED_SECRET___/$K8S_METADATA_PROXY_SHARED_SECRET/g" /etc/nova/nova.conf
+    sed -i "s/___MY_NODE_IP___/$MY_NODE_IP/g" /etc/nova/nova.conf
+    sed -i "s/___MY_IP___/$MY_POD_IP/g" /etc/nova/nova.conf
+    source /root/openrc/admin-openrc
+    exist_nova_db=$(mysql -s -N -q -A --connect-timeout=10 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW DATABASES LIKE 'nova';" 2>/dev/null)
+    if [ "X$exist_nova_db" == "X" ]; then
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS nova_api"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'localhost' IDENTIFIED BY '$K8S_NOVA_DB_PASS'"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON nova_api.* TO 'nova'@'%' IDENTIFIED BY '$K8S_NOVA_DB_PASS'"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS nova"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'localhost' IDENTIFIED BY '$K8S_NOVA_DB_PASS'"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON nova.* TO 'nova'@'%' IDENTIFIED BY '$K8S_NOVA_DB_PASS'"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "CREATE DATABASE IF NOT EXISTS nova_cell0"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON nova_cell0.* TO 'nova'@'localhost' IDENTIFIED BY '$K8S_NOVA_DB_PASS'"
+      mysql -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "GRANT ALL PRIVILEGES ON nova_cell0.* TO 'nova'@'%' IDENTIFIED BY '$K8S_NOVA_DB_PASS'"
+      ## Nova API Service
+      if ! openstack user list -f value -c Name | grep -q nova; then
+        openstack user create --domain default --password $K8S_KEYSTONE_USER_NOVA_PASS nova 2>/dev/null
+      fi
+      openstack role add --project service --user nova admin
+      if ! openstack service list -f value -c Name | grep -q "^nova$"; then
+        openstack service create --name nova --description "OpenStack Compute" compute;
+      fi
+      if ! openstack endpoint list --service nova -f value -c "Service Name" -c "Service Type" -c "Interface" | grep -q "nova compute public"; then
+        #openstack endpoint create --region RegionOne compute public http://nova-server:8774/v2.1/%\(tenant_id\)s
+        openstack endpoint create --region RegionOne compute public http://nova-server:8774/v2.1
+      fi
+      if ! openstack endpoint list --service nova -f value -c "Service Name" -c "Service Type" -c "Interface" | grep -q "neutron network internal"; then
+        #openstack endpoint create --region RegionOne compute internal http://nova-server:8774/v2.1/%\(tenant_id\)s
+        openstack endpoint create --region RegionOne compute internal http://nova-server:8774/v2.1
+      fi
+      if ! openstack endpoint list --service nova -f value -c "Service Name" -c "Service Type" -c "Interface" | grep -q "neutron network admin"; then
+        #openstack endpoint create --region RegionOne compute admin http://nova-server:8774/v2.1/%\(tenant_id\)s
+        openstack endpoint create --region RegionOne compute admin http://nova-server:8774/v2.1
+      fi
+      ## Placement API Service
+      if ! openstack user list -f value -c Name | grep -q placement; then
+        openstack user create --domain default --password $K8S_KEYSTONE_USER_PLACEMENT_PASS placement 2>/dev/null
+      fi
+      openstack role add --project service --user placement admin
+      if ! openstack service list -f value -c Name | grep -q "^placement$"; then
+        openstack service create --name placement --description "Placement API" placement;
+      fi
+      if ! openstack endpoint list --service placement -f value -c "Service Name" -c "Service Type" -c "Interface" | grep -q "placement placement public"; then
+        openstack endpoint create --region RegionOne placement public http://nova-server:8778
+      fi
+      if ! openstack endpoint list --service placement -f value -c "Service Name" -c "Service Type" -c "Interface" | grep -q "placement placement internal"; then
+        openstack endpoint create --region RegionOne placement internal http://nova-server:8778
+      fi
+      if ! openstack endpoint list --service placement -f value -c "Service Name" -c "Service Type" -c "Interface" | grep -q "placement placement admin"; then
+        openstack endpoint create --region RegionOne placement admin http://nova-server:8778
+      fi
+      # DB Sync
+      su -s /bin/sh -c "nova-manage api_db sync" nova
+      su -s /bin/sh -c "nova-manage cell_v2 map_cell0" nova
+      su -s /bin/sh -c "nova-manage cell_v2 create_cell --name=cell1 --verbose" nova
+      su -s /bin/sh -c "nova-manage db sync" nova
+      nova-manage cell_v2 list_cells
+      ## Create Test Keypair for Demo User. (NOT WORKING...)
+      #source /root/openrc/demo-openrc
+      #openstack keypair create demo-test-key
+      #source /root/openrc/admin-openrc
+    fi
+    #mkdir -p /usr/lib/python2.7/dist-packages/keys
+    mkdir -p $(python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/keys
+    mkdir -p /var/lib/nova/lock
+    #mount -t nfs4 $NFS_BACKEND_HOST_IP:/pv/nova-server-lock_path /var/lib/nova/lock
+    chown -R nova:nova /var/lib/nova/lock
+    service nova-api restart
+    service nova-consoleauth restart
+    service nova-scheduler restart
+    service nova-conductor restart
+    service nova-novncproxy restart
+    service apache2 restart
+    sleep 5;
+    until (echo $NOVA_SERVICES | grep -q "nova-scheduler ${HOSTNAME} enabled up") && (echo $NOVA_SERVICES | grep -q "nova-consoleauth ${HOSTNAME} enabled up") && (echo $NOVA_SERVICES | grep -q "nova-conductor ${HOSTNAME} enabled up")
+    do
+      echo "waiting for service response....."
+      NOVA_SERVICES=$(nova service-list | sed -e 's/ //g'| cut -d'|' -f 3,4,6,7 | grep "^nova-" | sed -e 's/|/ /g' || true)
+      sleep 5
+    done
+    echo "ok~~~~ service is ready~~!!!"
+    nova service-list
+    if [ "X$exist_nova_db" == "X" ]; then
+      openstack flavor create --id 0 --ram 128 --vcpus 1 --disk 10 m1.tiny
+      openstack flavor create --id 1 --ram 256 --vcpus 1 --disk 10 m1.small
+      openstack flavor create --id 2 --ram 512 --vcpus 1 --disk 20 m1.medium
+      openstack flavor create --id 3 --ram 1024 --vcpus 2 --disk 40 m1.large
+      openstack flavor create --id 4 --ram 2048 --vcpus 2 --disk 80 m1.xlarge
+      openstack flavor create --id 5 --ram 4096 --vcpus 4 --disk 160 m1.jumbo
+      nova-status upgrade check || true
+    fi
+    touch /.setup_completed
+    tail -F /var/log/syslog /var/log/nova/* /var/log/apache2/*
+
+  nova.conf: |
+    [DEFAULT]
+    enabled_apis = osapi_compute,metadata
+    transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-0.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-1.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-2.rabbitmq
+    auth_strategy = keystone
+    my_ip = ___MY_IP___
+    #ec2_listen = 0.0.0.0
+    #ec2_listen_port = 8773
+    osapi_compute_listen = 0.0.0.0
+    osapi_compute_listen_port = 8774
+    metadata_listen = 0.0.0.0
+    metadata_listen_port = 8775
+    use_neutron = true
+    firewall_driver = nova.virt.firewall.NoopFirewallDriver
+    [api_database]
+    connection = mysql+pymysql://nova:___K8S_NOVA_DB_PASS___@haproxy-galera/nova_api
+    [barbican]
+    [cache]
+    enabled = true
+    backend = oslo_cache.memcache_pool
+    #memcache_servers = memcached:11211
+    memcache_servers = memcached-0.memcached:11211,memcached-1.memcached:11211,memcached-2.memcached:11211
+    [cells]
+    #enable=false
+    [cinder]
+    os_region_name = RegionOne
+    [cloudpipe]
+    [conductor]
+    [cors]
+    [cors.subdomain]
+    [crypto]
+    [database]
+    connection = mysql+pymysql://nova:___K8S_NOVA_DB_PASS___@haproxy-galera/nova
+    [ephemeral_storage_encryption]
+    [glance]
+    api_servers = http://glance:9292
+    [guestfs]
+    [hyperv]
+    [image_file_url]
+    [ironic]
+    [key_manager]
+    [keystone_authtoken]
+    auth_uri = http://keystone:5000/v3
+    auth_url = http://keystone:35357/v3
+    #memcached_servers = memcached:11211
+    memcached_servers = memcached-0.memcached:11211,memcached-1.memcached:11211,memcached-2.memcached:11211
+    auth_type = password
+    project_domain_name = default
+    user_domain_name = default
+    project_name = service
+    username = nova
+    password = ___K8S_KEYSTONE_USER_NOVA_PASS___
+    [libvirt]
+    [matchmaker_redis]
+    [metrics]
+    [mks]
+    [neutron]
+    url = http://neutron-server:9696
+    auth_url = http://keystone:35357/v3
+    auth_type = password
+    project_domain_name = default
+    user_domain_name = default
+    region_name = RegionOne
+    project_name = service
+    username = neutron
+    password = ___K8S_KEYSTONE_USER_NEUTRON_PASS___
+    service_metadata_proxy = true
+    metadata_proxy_shared_secret = ___K8S_METADATA_PROXY_SHARED_SECRET___
+    [osapi_v21]
+    [oslo_concurrency]
+    lock_path = /var/lib/nova/lock
+    [oslo_messaging_amqp]
+    [oslo_messaging_notifications]
+    driver = messagingv2
+    transport_url = rabbit://___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-0.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-1.rabbitmq,___K8S_RABBITMQ_OPENSTACK_USER___:___K8S_RABBITMQ_OPENSTACK_PASS___@rabbitmq-2.rabbitmq
+    [oslo_messaging_rabbit]
+    [oslo_messaging_zmq]
+    [oslo_middleware]
+    [oslo_policy]
+    [placement]
+    os_region_name = RegionOne
+    project_domain_name = default
+    project_name = service
+    auth_type = password
+    user_domain_name = default
+    auth_url = http://keystone:35357/v3
+    username = placement
+    password = ___K8S_KEYSTONE_USER_PLACEMENT_PASS___
+    [placement_database]
+    #connection = mysql+pymysql://nova:___K8S_NOVA_DB_PASS___@haproxy-galera/nova_api
+    [rdp]
+    [remote_debug]
+    [scheduler]
+    discover_hosts_in_cells_interval = 60
+    [serial_console]
+    [spice]
+    [ssl]
+    [trusted_computing]
+    [upgrade_levels]
+    [vmware]
+    [vnc]
+    #enabled = true
+    #vncserver_host = 0.0.0.0
+    #vncserver_listen = $my_ip
+    #vncproxy_url = http://___MY_NODE_IP___:6080
+    #vncserver_proxyclient_address = $my_ip
+    #novncproxy_base_url = http://___MY_NODE_IP___:30068/vnc_auto.html
+    enabled = true
+    novncproxy_host=0.0.0.0
+    novncproxy_port=6080
+    novncproxy_base_url = http://___MY_NODE_IP___:30068/vnc_auto.html
+    [workarounds]
+    [wsgi]
+    [xenserver]
+    [xvp]

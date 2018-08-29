@@ -3,11 +3,11 @@
 apiVersion: policy/v1beta1
 kind: PodDisruptionBudget
 metadata:
-  name: neutron-server-pdb
+  name: nova-compute-pdb
 spec:
   selector:
     matchLabels:
-      app: neutron-server
+      app: nova-compute
   minAvailable: 1
   #maxUnavailable: 2
 
@@ -16,42 +16,48 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: neutron-server
+  name: nova-compute
   labels:
-    app: neutron-server
+    app: nova-compute
 spec:
   ports:
-  - name: neutron-server-api
-    port: 9696
-    targetPort: 9696
+  - name: nova-compute-api
+    port: 8774
+    targetPort: 8774
+  - name: nova-metadata-api
+    port: 8775
+    targetPort: 8775
+  #- name: nova-novncproxy
+  #  port: 6080
+  #  targetPort: 6080
   #sessionAffinity: ClientIP
   clusterIP: None
   #type: NodePort # Or LoadBalancer in production w/ proper security
   #type: LoadBalancer
   selector:
-    app: neutron-server
+    app: nova-compute
 
 ---
 
 apiVersion: apps/v1beta1
 kind: StatefulSet
 metadata:
-  name: neutron-server
+  name: nova-compute
   labels:
-    app: neutron-server
+    app: nova-compute
 spec:
-  serviceName: "neutron-server"
-  ## now, replicas must be "1", because of high load-average issue. (trying to solv).
-  replicas: 2
-  podManagementPolicy: OrderedReady
-  #podManagementPolicy: Parallel
+  serviceName: "nova-compute"
+  #replicas: 3
+  replicas: 3
+  #podManagementPolicy: OrderedReady
+  podManagementPolicy: Parallel
   selector:
     matchLabels:
-      app: neutron-server
+      app: nova-compute
   template:
     metadata:
       labels:
-        app: neutron-server
+        app: nova-compute
     spec:
       terminationGracePeriodSeconds: 10
       affinity:
@@ -62,10 +68,10 @@ spec:
                - key: "app"
                  operator: In
                  values:
-                 - neutron-server
+                 - nova-compute
              topologyKey: "kubernetes.io/hostname"
       nodeSelector:
-        network: "true"
+        compute: "true"
       initContainers:
       - name: wait1
         #imagePullPolicy: Always
@@ -111,17 +117,38 @@ spec:
         - name: init-container-scripts
           mountPath: /init-container-scripts
         command: ["/bin/bash","-c","/init-container-scripts/init-check-keystone.sh"]
+      - name: wait5
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        image: call518/oaas-init-container:1.0
+        envFrom:
+          - configMapRef:
+              name: env-common
+        volumeMounts:
+        - name: init-container-scripts
+          mountPath: /init-container-scripts
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-neutron-server.sh"]
+      - name: wait6
+        #imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
+        image: call518/oaas-init-container:1.0
+        envFrom:
+          - configMapRef:
+              name: env-common
+        volumeMounts:
+        - name: init-container-scripts
+          mountPath: /init-container-scripts
+        command: ["/bin/bash","-c","/init-container-scripts/init-check-nova-server.sh"]
       hostAliases:
       - ip: "127.0.0.1"
         hostnames:
-        - "neutron-server"
+        - "nova-compute"
       #- ip: "192.168.0.150"
       #  hostnames:
       #  - "nfs-server"
-      #hostNetwork: true
       containers:
-        - name: neutron-server
-          image: call518/oaas-pike:latest
+        - name: nova-compute
+          image: call518/oaas-queens:latest
           #imagePullPolicy: Always
           imagePullPolicy: IfNotPresent
           securityContext:
@@ -141,6 +168,10 @@ spec:
             #  valueFrom:
             #    fieldRef:
             #      fieldPath: metadata.namespace
+            - name: MY_NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
             - name: MY_POD_IP
               valueFrom:
                 fieldRef:
@@ -148,9 +179,20 @@ spec:
           envFrom:
             - configMapRef:
                 name: env-common
-          command: ["/scripts/neutron-server-init.sh"]
+          command: ["/scripts/nova-compute-init.sh"]
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                - /bin/sh
+                - -c
+                - >
+                  umount -a -t nfs;
           ports:
-            - containerPort: 9696
+          ports:
+            - containerPort: 8774
+            - containerPort: 8775
+            - containerPort: 6080
           volumeMounts:
           - name: kernel-modules
             mountPath: /lib/modules
@@ -158,7 +200,7 @@ spec:
             mountPath: /root/openrc
           - name: ovs-setup
             mountPath: /ovs-setup
-          - name: neutron-server-setup
+          - name: nova-compute-setup
             mountPath: /scripts
           readinessProbe:
             exec:
@@ -196,7 +238,7 @@ spec:
         configMap:
           name: ovs-setup
           defaultMode: 0755
-      - name: neutron-server-setup
+      - name: nova-compute-setup
         configMap:
-          name: neutron-server-setup
+          name: nova-compute-setup
           defaultMode: 0755

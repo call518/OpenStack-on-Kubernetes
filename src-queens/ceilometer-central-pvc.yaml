@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-ceilometer-gnocchi
+spec:
+  accessModes:
+    #- ReadWriteOnce
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  selector:
+    matchLabels:
+      app: pv-ceilometer-gnocchi
