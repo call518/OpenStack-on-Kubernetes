@@ -115,7 +115,7 @@ data:
     connection = mysql+pymysql://neutron:___K8S_NEUTRON_DB_PASS___@haproxy-galera/neutron
     [keystone_authtoken]
     auth_uri = http://keystone:5000/v3
-    auth_url = http://keystone:35357/v3
+    auth_url = http://keystone:5000/v3
     #memcached_servers = memcached:11211
     memcached_servers = memcached-0.memcached:11211,memcached-1.memcached:11211,memcached-2.memcached:11211
     auth_type = password
@@ -126,7 +126,7 @@ data:
     password = ___K8S_KEYSTONE_USER_NEUTRON_PASS___
     [matchmaker_redis]
     [nova]
-    auth_url = http://keystone:35357
+    auth_url = http://keystone:5000
     auth_type = password
     project_domain_name = default
     user_domain_name = default

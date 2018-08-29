@@ -130,7 +130,8 @@ spec:
       #  - "nfs-server"
       containers:
         - name: ceilometer-central
-          image: call518/oaas-queens:latest
+          #image: call518/oaas-queens:latest
+          image: call518/oaas-queens:0.4
           #imagePullPolicy: Always
           imagePullPolicy: IfNotPresent
           #securityContext:

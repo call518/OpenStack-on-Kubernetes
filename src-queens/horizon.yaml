@@ -216,7 +216,7 @@ spec:
           #    - --liveness
           ##livenessProbe:
           ##  tcpSocket:
-          ##    port: 35357
+          ##    port: 5000
           ##  initialDelaySeconds: 5
           ##  periodSeconds: 10
       volumes:

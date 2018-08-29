@@ -20,6 +20,8 @@ data:
     sed -i "s/___K8S_RABBITMQ_OPENSTACK_PASS___/$K8S_RABBITMQ_OPENSTACK_PASS/g" /etc/gnocchi/gnocchi.conf /etc/ceilometer/ceilometer.conf
     sed -i "s/___K8S_KEYSTONE_USER_CEILOMETER_PASS___/$K8S_KEYSTONE_USER_CEILOMETER_PASS/g" /etc/ceilometer/ceilometer.conf
     echo -e "\n[pipeline:main]\npipeline = gnocchi+auth" >> /etc/gnocchi/api-paste.ini
+    chmod 644 /etc/gnocchi/gnocchi.conf
+    chgrp gnocchi /etc/gnocchi/gnocchi.conf
     source /root/openrc/admin-openrc
     exist_gnocchi_db=$(mysql -s -N -q -A --connect-timeout=10 -hhaproxy-galera -uroot -p$MYSQL_ROOT_PASSWORD -e "SHOW DATABASES LIKE 'gnocchi';" 2>/dev/null)
     if [ "X$exist_gnocchi_db" == "X" ]; then

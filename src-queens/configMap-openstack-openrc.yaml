@@ -9,7 +9,7 @@ data:
     export OS_PROJECT_NAME=admin
     export OS_USERNAME=admin
     export OS_PASSWORD=$K8S_KEYSTONE_USER_ADMIN_PASS
-    export OS_AUTH_URL=http://keystone:35357/v3
+    export OS_AUTH_URL=http://keystone:5000/v3
     export OS_IDENTITY_API_VERSION=3
     export OS_IMAGE_API_VERSION=2
 

@@ -84,7 +84,7 @@ data:
     disk_formats = ami,ari,aki,vhd,vhdx,vmdk,raw,qcow2,vdi,iso,root-tar
     [keystone_authtoken]
     auth_uri = http://keystone:5000/v3
-    auth_url = http://keystone:35357/v3
+    auth_url = http://keystone:5000/v3
     #memcached_servers = memcached:11211
     memcached_servers = memcached-0.memcached:11211,memcached-1.memcached:11211,memcached-2.memcached:11211
     auth_type = password
@@ -117,7 +117,7 @@ data:
     connection = mysql+pymysql://glance:___K8S_GLANCE_DB_PASS___@haproxy-galera/glance
     [keystone_authtoken]
     auth_uri = http://keystone:5000/v3
-    auth_url = http://keystone:35357/v3
+    auth_url = http://keystone:5000/v3
     #memcached_servers = memcached:11211
     memcached_servers = memcached-0.memcached:11211,memcached-1.memcached:11211,memcached-2.memcached:11211
     auth_type = password

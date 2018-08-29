@@ -29,8 +29,8 @@ data:
     keystone-manage credential_setup --keystone-user keystone --keystone-group keystone
     if [ "X$exist_keyston_db" == "X" ]; then
       keystone-manage bootstrap --bootstrap-password $K8S_KEYSTONE_USER_ADMIN_PASS \
-        --bootstrap-admin-url http://keystone:35357/v3/ \
-        --bootstrap-internal-url http://keystone:35357/v3/ \
+        --bootstrap-admin-url http://keystone:5000/v3/ \
+        --bootstrap-internal-url http://keystone:5000/v3/ \
         --bootstrap-public-url http://keystone:5000/v3/ \
         --bootstrap-region-id RegionOne
       #openstack domain create --description "Default Domain" default
