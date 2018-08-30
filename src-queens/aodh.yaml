@@ -41,7 +41,7 @@ metadata:
     app: aodh
 spec:
   serviceName: "aodh"
-  replicas: 3
+  replicas: 1
   podManagementPolicy: OrderedReady
   #podManagementPolicy: Parallel
   selector:

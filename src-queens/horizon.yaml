@@ -45,7 +45,7 @@ metadata:
     app: horizon
 spec:
   #serviceName: "horizon"
-  replicas: 3
+  replicas: 1
   #podManagementPolicy: OrderedReady
   ##podManagementPolicy: Parallel
   selector:

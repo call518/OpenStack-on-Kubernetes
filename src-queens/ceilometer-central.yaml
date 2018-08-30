@@ -41,7 +41,7 @@ metadata:
     app: ceilometer-central
 spec:
   serviceName: "ceilometer-central"
-  replicas: 3
+  replicas: 1
   podManagementPolicy: OrderedReady
   #podManagementPolicy: Parallel
   selector:
