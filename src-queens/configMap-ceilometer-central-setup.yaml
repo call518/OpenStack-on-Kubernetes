@@ -12,7 +12,7 @@ data:
     cat /scripts/gnocchi.conf > /etc/gnocchi/gnocchi.conf
     cp -a /etc/ceilometer/ceilometer.conf /etc/ceilometer/ceilometer.conf.default
     cat /scripts/ceilometer.conf > /etc/ceilometer/ceilometer.conf
-    #cat /scripts/apache-gnocchi-api.conf > /etc/apache2/sites-available/gnocchi-api.conf
+    cat /scripts/apache-gnocchi-api.conf > /etc/apache2/sites-available/gnocchi-api.conf
     a2ensite gnocchi-api
     sed -i "s/___K8S_KEYSTONE_USER_GNOCCHI_PASS___/$K8S_KEYSTONE_USER_GNOCCHI_PASS/g" /etc/gnocchi/gnocchi.conf
     sed -i "s/___K8S_GNOCCHI_DB_PASS___/$K8S_GNOCCHI_DB_PASS/g" /etc/gnocchi/gnocchi.conf
@@ -226,3 +226,28 @@ data:
 #        CustomLog /var/log/apache2/gnocchi_access.log combined
 #    </VirtualHost>
 #    WSGISocketPrefix /var/run/apache2
+
+  apache-gnocchi-api.conf: |
+    Listen 8041
+    
+    <VirtualHost *:8041>
+        WSGIDaemonProcess gnocchi-api processes=2 threads=10 user=gnocchi display-name=%{GROUP}
+        WSGIProcessGroup gnocchi-api
+        WSGIScriptAlias / /usr/bin/gnocchi-api
+        WSGIApplicationGroup %{GLOBAL}
+        <IfVersion >= 2.4>
+            ErrorLogFormat "%{cu}t %M"
+        </IfVersion>
+        ErrorLog /var/log/apache2/gnocchi_error.log
+        CustomLog /var/log/apache2/gnocchi_access.log combined
+    
+        <Directory /usr/bin>
+            <IfVersion >= 2.4>
+                Require all granted
+            </IfVersion>
+            <IfVersion < 2.4>
+                Order allow,deny
+                Allow from all
+            </IfVersion>
+        </Directory>
+    </VirtualHost>
