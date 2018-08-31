@@ -35,7 +35,6 @@ data:
     import os
     from django.utils.translation import ugettext_lazy as _
     from horizon.utils import secret_key
-    from openstack_dashboard import exceptions
     from openstack_dashboard.settings import HORIZON_CONFIG
     DEBUG = False
     WEBROOT = '/'
@@ -50,7 +49,7 @@ data:
     OPENSTACK_KEYSTONE_DEFAULT_DOMAIN = 'default'
     LOCAL_PATH = os.path.dirname(os.path.abspath(__file__))
     SECRET_KEY = secret_key.generate_or_read_from_file('/var/lib/openstack-dashboard/secret_key')
-    SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+    #SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
     CACHES = {
         'default': {
             'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
@@ -79,7 +78,7 @@ data:
         'enable_quotas': True
     }
     OPENSTACK_CINDER_FEATURES = {
-        'enable_backup': True,
+        'enable_backup': False,
     }
     OPENSTACK_NEUTRON_NETWORK = {
         'enable_router': True,
@@ -91,11 +90,10 @@ data:
         'enable_firewall': True,
         'enable_vpn': True,
         'enable_fip_topology_check': True,
-    
         'default_dns_nameservers': ["8.8.8.8", "8.8.4.4", "168.126.63.1", "168.126.63.2"],
-    
         'profile_support': None,
         'supported_vnic_types': ['*'],
+        'physical_networks': [],
     }
     OPENSTACK_HEAT_STACK = {
         'enable_user_pass': True,
@@ -114,7 +112,7 @@ data:
     SWIFT_FILE_TRANSFER_CHUNK_SIZE = 512 * 1024
     INSTANCE_LOG_LENGTH = 35
     DROPDOWN_MAX_ITEMS = 30
-    TIME_ZONE = "Asia/Seoul"
+    TIME_ZONE = "UTC"
     #AVAILABLE_THEMES = [
     #    ('default', 'Default', 'themes/default'),
     #    ('material', 'Material', 'themes/material'),
@@ -123,8 +121,11 @@ data:
         'version': 1,
         'disable_existing_loggers': False,
         'formatters': {
+            'console': {
+                'format': '%(levelname)s %(name)s %(message)s'
+            },
             'operation': {
-                'format': '%(asctime)s %(message)s'
+                'format': '%(message)s'
             },
         },
         'handlers': {
@@ -135,6 +136,7 @@ data:
             'console': {
                 'level': 'INFO',
                 'class': 'logging.StreamHandler',
+                'formatter': 'console',
             },
             'operation': {
                 'level': 'INFO',
@@ -143,14 +145,6 @@ data:
             },
         },
         'loggers': {
-            'django.db.backends': {
-                'handlers': ['null'],
-                'propagate': False,
-            },
-            'requests': {
-                'handlers': ['null'],
-                'propagate': False,
-            },
             'horizon': {
                 'handlers': ['console'],
                 'level': 'DEBUG',
@@ -176,6 +170,11 @@ data:
                 'level': 'DEBUG',
                 'propagate': False,
             },
+            'keystoneauth': {
+                'handlers': ['console'],
+                'level': 'DEBUG',
+                'propagate': False,
+            },
             'keystoneclient': {
                 'handlers': ['console'],
                 'level': 'DEBUG',
@@ -191,17 +190,12 @@ data:
                 'level': 'DEBUG',
                 'propagate': False,
             },
-            'heatclient': {
-                'handlers': ['console'],
-                'level': 'DEBUG',
-                'propagate': False,
-            },
-            'ceilometerclient': {
-                'handlers': ['console'],
-                'level': 'DEBUG',
-                'propagate': False,
-            },
             'swiftclient': {
+                'handlers': ['console'],
+                'level': 'DEBUG',
+                'propagate': False,
+            },
+            'oslo_policy': {
                 'handlers': ['console'],
                 'level': 'DEBUG',
                 'propagate': False,
@@ -219,6 +213,22 @@ data:
             'django': {
                 'handlers': ['console'],
                 'level': 'DEBUG',
+                'propagate': False,
+            },
+            'django.db.backends': {
+                'handlers': ['null'],
+                'propagate': False,
+            },
+            'requests': {
+                'handlers': ['null'],
+                'propagate': False,
+            },
+            'urllib3': {
+                'handlers': ['null'],
+                'propagate': False,
+            },
+            'chardet.charsetprober': {
+                'handlers': ['null'],
                 'propagate': False,
             },
             'iso8601': {
@@ -337,11 +347,14 @@ data:
     }
     REST_API_REQUIRED_SETTINGS = ['OPENSTACK_HYPERVISOR_FEATURES',
                                   'LAUNCH_INSTANCE_DEFAULTS',
-                                  'OPENSTACK_IMAGE_FORMATS']
-    #DEFAULT_THEME = 'ubuntu'
+                                  'OPENSTACK_IMAGE_FORMATS',
+                                  'OPENSTACK_KEYSTONE_DEFAULT_DOMAIN',
+                                  'CREATE_IMAGE_DEFAULTS',
+                                  'ENFORCE_PASSWORD_CHECK']
+    DEFAULT_THEME = 'ubuntu'
     #DEFAULT_THEME = 'default'
-    DEFAULT_THEME = 'material'
+    #DEFAULT_THEME = 'material'
     WEBROOT='/horizon/'
-    ALLOWED_HOSTS = ['*', ]
+    ALLOWED_HOSTS = '*'
     COMPRESS_OFFLINE = True
     ALLOWED_PRIVATE_SUBNET_CIDR = {'ipv4': [], 'ipv6': []}
