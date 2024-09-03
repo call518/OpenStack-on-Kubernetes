@@ -13,7 +13,6 @@ Intro
 * **OaaS** is "**OpenStack as a Service**".
 
 * MAINTAINER: Jung-In.Jung (call518@gmail.com)
-* 2018-06-20 ~ Now
 
 ### Goals
 
