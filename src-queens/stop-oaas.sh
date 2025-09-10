@@ -1,4 +1,5 @@
 #!/bin/bash
+set -eou pipefail
 
 if [ "$1" != "--force" ]; then
 
