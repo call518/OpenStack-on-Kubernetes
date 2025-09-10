@@ -1,7 +1,7 @@
 # Reference: (N/A)
 # NFS Backend Issue(Not support snapshot/backup): https://bugzilla.redhat.com/show_bug.cgi?id=1388056
 
-apiVersion: policy/v1beta1
+apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: cinder-pdb

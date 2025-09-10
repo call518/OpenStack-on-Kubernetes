@@ -98,8 +98,10 @@ else
     done
 fi
 
-kubectl label nodes node-1.novalocal controller- compute- nfs-server-
-kubectl label nodes node-2.novalocal controller- compute-
-kubectl label nodes node-3.novalocal controller- compute-
-kubectl label nodes node-4.novalocal network-
-kubectl label nodes node-5.novalocal network-
+kubectl label nodes k8s-worker1 controller- nfs-server-
+kubectl label nodes k8s-worker2 controller-
+kubectl label nodes k8s-worker3 controller-
+kubectl label nodes k8s-worker4 network- compute-
+kubectl label nodes k8s-worker5 network- compute-
+kubectl label nodes k8s-worker6 network- compute-
+kubectl label nodes k8s-worker7 network- compute-

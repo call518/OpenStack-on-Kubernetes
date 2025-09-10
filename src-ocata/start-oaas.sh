@@ -1,10 +1,12 @@
 #!/bin/bash
 
-kubectl label nodes node-1.novalocal controller=true compute=true nfs-server=true
-kubectl label nodes node-2.novalocal controller=true compute=true
-kubectl label nodes node-3.novalocal controller=true compute=true
-kubectl label nodes node-4.novalocal network=true
-kubectl label nodes node-5.novalocal network=true
+kubectl label nodes k8s-worker1 controller=true nfs-server=true
+kubectl label nodes k8s-worker2 controller=true 
+kubectl label nodes k8s-worker3 controller=true 
+kubectl label nodes k8s-worker4 network=true compute=true
+kubectl label nodes k8s-worker5 network=true compute=true
+kubectl label nodes k8s-worker6 network=true compute=true
+kubectl label nodes k8s-worker7 network=true compute=true
 
 ./update-configMap-env-common.sh
 ./update-configMap-init-container-scripts.sh

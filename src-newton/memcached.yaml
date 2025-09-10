@@ -1,6 +1,6 @@
 ## Ref: None 
 
-apiVersion: policy/v1beta1
+apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: memcached-pdb
@@ -32,9 +32,9 @@ spec:
 
 ---
 
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: StatefulSet
-#apiVersion: apps/v1beta1
+#apiVersion: apps/v1
 #kind: Deployment
 metadata:
   name: memcached

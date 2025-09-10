@@ -1,6 +1,6 @@
 # Reference: https://blog.bluematador.com/posts/running-haproxy-docker-containers-kubernetes/
 
-apiVersion: policy/v1beta1
+apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: haproxy-pdb
