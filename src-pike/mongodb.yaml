@@ -21,7 +21,7 @@ spec:
   selector:
     app: mongodb
 ---
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: mongodb
@@ -30,6 +30,9 @@ spec:
   replicas: 3
   podManagementPolicy: OrderedReady
   #podManagementPolicy: Parallel
+  selector:
+    matchLabels:
+      app: mongodb
   template:
     metadata:
       labels:
