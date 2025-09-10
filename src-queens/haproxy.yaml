@@ -1,6 +1,6 @@
 # Reference: https://blog.bluematador.com/posts/running-haproxy-docker-containers-kubernetes/
 
-apiVersion: policy/v1beta1
+apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: haproxy-pdb
@@ -53,12 +53,15 @@ spec:
 
 ---
 
-apiVersion: apps/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: haproxy
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: haproxy
   selector:
     matchLabels:
       app: haproxy
