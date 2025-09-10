@@ -1,5 +1,4 @@
 #!/bin/bash
-set -eu -o pipefail
 
 kubectl label nodes k8s-worker1 controller=true nfs-server=true
 kubectl label nodes k8s-worker2 controller=true 
